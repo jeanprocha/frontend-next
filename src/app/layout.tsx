@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { Geist, Geist_Mono } from "next/font/google"
 import { ClerkProvider, Show, SignInButton, UserButton } from "@clerk/nextjs"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -59,8 +60,20 @@ export default function RootLayout({
                   </SignInButton>
                 </Show>
 
-                {/* Avatar do usuário — visível apenas para autenticados */}
+                {/* Links + avatar — visíveis apenas para autenticados */}
                 <Show when="signed-in">
+                  <Link
+                    href="/dashboard/companies"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    Empresas
+                  </Link>
+                  <Link
+                    href="/dashboard/history"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    Histórico
+                  </Link>
                   <UserButton />
                 </Show>
               </div>

@@ -4,6 +4,12 @@ import { useState, useEffect } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 
+// Remove a chave legada do localStorage que era usada pelo Zustand persist.
+// Pode ser removido após todos os usuários terem carregado a versão sem persist.
+if (typeof window !== "undefined") {
+  localStorage.removeItem("tribia-storage")
+}
+
 // Quando o browser restaura a página via bfcache (botão "voltar" após redirect
 // para um domínio externo, como o hosted sign-in do Clerk), o SDK do Clerk pode
 // ficar num estado onde modais/handlers ficam presos. Um reload resolve.

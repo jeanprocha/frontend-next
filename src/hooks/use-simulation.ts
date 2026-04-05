@@ -23,35 +23,54 @@ export function useSimulationMutation() {
   return useMutation({
     mutationKey: ["tax-simulation"],
     mutationFn: async ({ year, services, expenses, companyContext }: SimulationPayload) => {
-      // Passo 1: IA classifica despesas via RAG + LLM (LC 68/2024)
-      const batchResult = await classifyBatch(
-        expenses.map((e) => ({ description: e.description, context: companyContext })),
-      )
-      const classMap = new Map(batchResult.results.map((r) => [r.description, r]))
+      // Passo 1: IA classifica serviços e despesas em paralelo via RAG + LLM (LC 68/2024).
+      // Serviços → extrai regime_type (determina alíquota efetiva CBS/IBS no motor Go).
+      // Despesas → extrai is_eligible + regime_type (para créditos e badge de regime).
+      const [svcClassResult, expClassResult] = await Promise.all([
+        classifyBatch(
+          services.map((s) => ({ description: s.description, context: companyContext })),
+        ),
+        classifyBatch(
+          expenses.map((e) => ({ description: e.description, context: companyContext })),
+        ),
+      ])
 
-      // Passo 2: motor Go calcula impacto com créditos corretos injetados
+      const svcClassMap = new Map(svcClassResult.results.map((r) => [r.description, r]))
+      const expClassMap = new Map(expClassResult.results.map((r) => [r.description, r]))
+
+      // Passo 2: motor Go calcula impacto com regime_type por serviço e créditos corretos
       const simResult = await simulate({
         year,
         services: services.map((s) => ({
           description: s.description,
           amount: s.amount,
           iss_rate: s.iss_rate,
+          regime_type: svcClassMap.get(s.description)?.regime_type ?? "padrao",
         })),
         expenses: expenses.map((e) => ({
           description: e.description,
           amount: e.amount,
-          is_eligible: classMap.get(e.description)?.is_eligible ?? false,
+          is_eligible: expClassMap.get(e.description)?.is_eligible ?? false,
+          regime_type: expClassMap.get(e.description)?.regime_type ?? "padrao",
         })),
       })
 
       return {
         simulation: simResult,
-        classifications: batchResult.results,
+        classifications: expClassResult.results,
         expenses,
       }
     },
     onSuccess: async (data, variables) => {
-      setFormResults({ mode: "form", ...data })
+      setFormResults({
+        mode: "form",
+        ...data,
+        meta: {
+          createdAt: new Date().toISOString(),
+          companyContext: variables.companyContext,
+          year: variables.year,
+        },
+      })
 
       if (!userId) return
 

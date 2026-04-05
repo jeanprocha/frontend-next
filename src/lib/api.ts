@@ -1,5 +1,7 @@
 import type {
   BatchClassificationResponse,
+  CompanyCreatePayload,
+  CompanyTemplate,
   SimulationRecordCreatePayload,
   SimulationRecordCreateResponse,
   SimulationRecordDetailResponse,
@@ -118,4 +120,51 @@ export async function getSimulationRecord(
     throw new Error((err as { error?: string }).error ?? "Erro ao carregar simulação")
   }
   return res.json()
+}
+
+// --- Templates de Empresa ---
+
+export async function listCompanies(userId: string): Promise<CompanyTemplate[]> {
+  const res = await fetch(`${API_BASE}/companies`, {
+    headers: { "X-User-ID": userId },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? "Erro ao listar empresas")
+  }
+  const data = await res.json()
+  return (data ?? []).map((c: CompanyTemplate) => ({
+    ...c,
+    default_services: Array.isArray(c.default_services) ? c.default_services : [],
+  }))
+}
+
+export async function createCompany(
+  userId: string,
+  payload: CompanyCreatePayload,
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_BASE}/companies`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-User-ID": userId },
+    body: JSON.stringify({
+      ...payload,
+      default_services: payload.default_services,
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? "Erro ao criar empresa")
+  }
+  return res.json()
+}
+
+export async function deleteCompany(userId: string, id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/companies/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { "X-User-ID": userId },
+  })
+  if (!res.ok && res.status !== 204) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? "Erro ao excluir empresa")
+  }
 }

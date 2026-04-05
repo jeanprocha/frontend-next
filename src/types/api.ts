@@ -17,14 +17,16 @@ export interface SimulationResponse {
 
 export interface ServiceInput {
   description: string
-  amount: string    // ex: "10000.00"
-  iss_rate: string  // ex: "0.05" (5%)
+  amount: string      // ex: "10000.00"
+  iss_rate: string    // ex: "0.05" (5%)
+  regime_type?: string // "padrao" | "diferenciado_60" | "reduzido_zero"
 }
 
 export interface ExpenseInput {
   description: string
   amount: string
   is_eligible: boolean
+  regime_type?: string // "padrao" | "diferenciado_60" | "reduzido_zero"
 }
 
 export interface SimulationRequest {
@@ -46,6 +48,9 @@ export interface ClassificationItem {
   justification: string
   legal_base: string
   risk_level: string
+  // regime_type: regime tributário do item conforme Art. 131 LC 68/2024.
+  // "padrao" | "diferenciado_60" (saúde, educação) | "reduzido_zero" (cesta básica)
+  regime_type: string
   evidence: EvidenceArticle[]
   error?: string
 }
@@ -123,4 +128,20 @@ export interface SimulationRecordDetailResponse {
   services: FormServiceDTO[]
   expenses: FormExpenseDTO[]
   classifications: ClassificationItem[]
+}
+
+// --- Templates de Empresa ---
+
+export interface CompanyTemplate {
+  id: string
+  name: string
+  tax_context: string
+  default_services: ServiceInput[]
+  created_at: string
+}
+
+export interface CompanyCreatePayload {
+  name: string
+  tax_context: string
+  default_services: ServiceInput[]
 }

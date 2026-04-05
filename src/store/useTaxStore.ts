@@ -1,6 +1,6 @@
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
 import type {
+  CompanyTemplate,
   FormService,
   FormExpense,
   ClassificationItem,
@@ -9,35 +9,37 @@ import type {
 
 // ─── Tipos internos do store ─────────────────────────────────────────────────
 
-// Resultado de uma simulação via formulário manual — é o único modo que persiste,
-// pois o CSV é sempre efêmero (depende de um arquivo local do usuário).
+export interface ResultMeta {
+  createdAt: string
+  companyContext: string
+  year: number
+}
+
 export interface PersistedResults {
   mode: "form"
   simulation: SimulationResponse
   classifications: ClassificationItem[]
   expenses: FormExpense[]
+  meta?: ResultMeta
 }
 
 interface TaxState {
-  // ── Dados do formulário (persistidos) ──────────────────────────────────
   year: number
   companyContext: string
   services: FormService[]
   expenses: FormExpense[]
-
-  // ── Resultado da última simulação (persistido) ──────────────────────────
   results: PersistedResults | null
 
-  // ── Actions ─────────────────────────────────────────────────────────────
   setYear: (year: number) => void
   setCompanyContext: (ctx: string) => void
   setServices: (services: FormService[]) => void
   setExpenses: (expenses: FormExpense[]) => void
   setResults: (r: PersistedResults | null) => void
+  applyCompanyTemplate: (company: CompanyTemplate) => void
   reset: () => void
 }
 
-// ─── Valores padrão (mesmos defaults usados antes no useState) ───────────────
+// ─── Valores padrão ───────────────────────────────────────────────────────────
 
 const DEFAULTS = {
   year: 2026,
@@ -48,25 +50,29 @@ const DEFAULTS = {
   results: null as PersistedResults | null,
 }
 
-// ─── Store ───────────────────────────────────────────────────────────────────
+// ─── Store (sem persistência — estado vive apenas enquanto a aba está aberta) ──
 
-export const useTaxStore = create<TaxState>()(
-  persist(
-    (set) => ({
-      ...DEFAULTS,
+export const useTaxStore = create<TaxState>()((set) => ({
+  ...DEFAULTS,
 
-      setYear: (year) => set({ year }),
-      setCompanyContext: (companyContext) => set({ companyContext }),
-      setServices: (services) => set({ services }),
-      setExpenses: (expenses) => set({ expenses }),
-      setResults: (results) => set({ results }),
+  setYear: (year) => set({ year }),
+  setCompanyContext: (companyContext) => set({ companyContext }),
+  setServices: (services) => set({ services }),
+  setExpenses: (expenses) => set({ expenses }),
+  setResults: (results) => set({ results }),
 
-      // Reset limpa formulário E resultado, voltando aos defaults.
-      reset: () => set({ ...DEFAULTS }),
+  // Preenche contexto e serviços a partir de um template, forçando nova simulação.
+  applyCompanyTemplate: (company) =>
+    set({
+      companyContext: company.tax_context ?? "",
+      services: (company.default_services ?? []).map((s) => ({
+        id: crypto.randomUUID(),
+        description: s.description ?? "",
+        amount: s.amount ?? "",
+        iss_rate: s.iss_rate ?? "0.05",
+      })),
+      results: null,
     }),
-    {
-      name: "tribia-storage",
-      storage: createJSONStorage(() => localStorage),
-    },
-  ),
-)
+
+  reset: () => set({ ...DEFAULTS }),
+}))

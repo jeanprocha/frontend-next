@@ -1,14 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { SimulationHistory } from "@/components/tax/simulation-history"
+import Link from "next/link"
+import { History } from "lucide-react"
 import { SimulationForm } from "@/components/tax/simulation-form"
 import { SummaryCards } from "@/components/tax/summary-cards"
 import { ExpenseTable } from "@/components/tax/expense-table"
 import { UploadZone, type UploadResult } from "@/components/tax/upload-zone"
 import { CsvSummary } from "@/components/tax/csv-summary"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore, type PersistedResults } from "@/store/useTaxStore"
 import { useSimulationMutation } from "@/hooks/use-simulation"
@@ -126,11 +127,21 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Botão de reset quando há resultado */}
+          {/* Botões quando há resultado */}
           {results && (
-            <Button variant="outline" size="sm" onClick={reset} className="shrink-0">
-              ← {results.mode === "form" ? "Nova simulação" : "Novo arquivo"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
+              {results.mode === "form" && formResults?.meta && (
+                <Link
+                  href="/dashboard/history"
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  Voltar ao histórico
+                </Link>
+              )}
+              <Button variant="outline" size="sm" onClick={reset}>
+                ← {results.mode === "form" ? "Nova simulação" : "Novo arquivo"}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -141,7 +152,30 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <SimulationHistory onBeforeHydrate={() => setCsvResults(null)} />
+        {/* ── Banner: simulação carregada do histórico ─────────────────── */}
+        {formResults?.meta && (
+          <div className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <History className="h-4 w-4 shrink-0 text-accent mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-accent">Simulação do histórico</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {new Date(formResults.meta.createdAt).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {" · "}Ano {formResults.meta.year}
+                  {formResults.meta.companyContext
+                    ? ` · ${formResults.meta.companyContext.slice(0, 60)}${formResults.meta.companyContext.length > 60 ? "…" : ""}`
+                    : ""}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Entrada: Formulário ─────────────────────────────────────────── */}
         {inputMode === "form" && !results && !loading && (

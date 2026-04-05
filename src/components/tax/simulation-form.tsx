@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Settings2, Receipt, TrendingDown, Info, Plus, X, Sparkles } from "lucide-react"
+import { Settings2, Receipt, TrendingDown, Info, Plus, X, Sparkles, Building2 } from "lucide-react"
+import { useAuth } from "@clerk/nextjs"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
+import { listCompanies } from "@/lib/api"
 import type { FormExpense, FormService } from "@/types/api"
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -97,12 +100,10 @@ function FormSkeleton() {
 
 export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
   // ── Guard anti-hydration (Next.js SSR + localStorage) ──────────────────
-  // O componente só renderiza os dados do store após a montagem no cliente,
-  // evitando o mismatch entre HTML do servidor e do cliente.
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => { setHydrated(true) }, [])
 
-  // ── Estado global persistido (Zustand → localStorage) ──────────────────
+  // ── Estado global (Zustand) ─────────────────────────────────────────────
   const {
     year,
     companyContext,
@@ -112,7 +113,26 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
     setCompanyContext,
     setServices,
     setExpenses,
+    applyCompanyTemplate,
   } = useTaxStore()
+
+  // ── Seletor de empresa pré-cadastrada ───────────────────────────────────
+  const { userId } = useAuth()
+  const { data: companies, isPending: companiesLoading } = useQuery({
+    queryKey: ["companies", userId],
+    queryFn: () => listCompanies(userId!),
+    enabled: !!userId,
+    staleTime: 60_000,
+  })
+
+  function handleCompanySelect(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value
+    if (!id) return
+    const company = companies?.find((c) => c.id === id)
+    if (company) applyCompanyTemplate(company)
+    // Reseta o select para o estado "neutro" após aplicar
+    e.target.value = ""
+  }
 
   // Quando o store está vazio (primeira visita), semeamos os defaults.
   // Isso acontece UMA vez, após a hidratação, sem forçar um re-render extra.
@@ -177,6 +197,42 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
         {/* ── Coluna 1 e 2 — Inputs ─────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-4">
 
+          {/* Seletor de empresa pré-cadastrada ──────────────────────────── */}
+          {userId && (
+            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-muted bg-muted/30 px-4 py-2.5">
+              <Building2 className="size-4 shrink-0 text-muted-foreground" />
+              <div className="flex flex-1 items-center gap-2 min-w-0">
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                  Empresa:
+                </span>
+                {companiesLoading ? (
+                  <Skeleton className="h-7 w-48" />
+                ) : (
+                  <select
+                    onChange={handleCompanySelect}
+                    defaultValue=""
+                    className={cn(
+                      "flex-1 min-w-0 h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground",
+                      "focus:outline-none focus:ring-1 focus:ring-ring",
+                      "disabled:opacity-50",
+                    )}
+                  >
+                    <option value="" disabled>
+                      {companies && companies.length > 0
+                        ? "Selecionar empresa pré-cadastrada…"
+                        : "Nenhuma empresa cadastrada — preencha manualmente"}
+                    </option>
+                    {(companies ?? []).map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Card: Configuração ─────────────────────────────────────────── */}
           <Card className="rounded-xl border-muted/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="pb-3">
@@ -211,7 +267,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                 <Input
                   id="context"
                   placeholder="ex: empresa SaaS, regime regular IBS/CBS..."
-                  value={companyContext}
+                  value={companyContext ?? ""}
                   onChange={(e) => setCompanyContext(e.target.value)}
                   className="h-9"
                 />
@@ -264,21 +320,21 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                       <div key={svc.id} className="grid grid-cols-[1fr_112px_88px_32px] gap-2 items-center group">
                         <Input
                           placeholder="Consultoria, Licença SaaS..."
-                          value={svc.description}
+                          value={svc.description ?? ""}
                           onChange={(e) => updateService(svc.id, "description", e.target.value)}
                           required
                           className="h-8 text-sm"
                         />
                         <Input
                           placeholder="10000.00"
-                          value={svc.amount}
+                          value={svc.amount ?? ""}
                           onChange={(e) => updateService(svc.id, "amount", e.target.value)}
                           required
                           className="h-8 text-sm tabular-nums"
                         />
                         <Input
                           placeholder="0.05"
-                          value={svc.iss_rate}
+                          value={svc.iss_rate ?? ""}
                           onChange={(e) => updateService(svc.id, "iss_rate", e.target.value)}
                           required
                           className="h-8 text-sm tabular-nums"
@@ -351,13 +407,13 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                       <div key={exp.id} className="grid grid-cols-[1fr_112px_32px] gap-2 items-center group">
                         <Input
                           placeholder="AWS, GitHub, Aluguel..."
-                          value={exp.description}
+                          value={exp.description ?? ""}
                           onChange={(e) => updateExpense(exp.id, "description", e.target.value)}
                           className="h-8 text-sm"
                         />
                         <Input
                           placeholder="3000.00"
-                          value={exp.amount}
+                          value={exp.amount ?? ""}
                           onChange={(e) => updateExpense(exp.id, "amount", e.target.value)}
                           className="h-8 text-sm tabular-nums"
                         />

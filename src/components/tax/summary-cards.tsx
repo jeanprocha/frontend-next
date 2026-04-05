@@ -36,7 +36,8 @@ function BrlTooltip({ active, payload, label }: any) {
 
 export function SummaryCards({ result }: SummaryCardsProps) {
   const deltaNum = parseFloat(result.delta)
-  const saving = deltaNum < 0
+  // delta = currentNet - projectedNet; positivo = atual mais caro = economia com o novo regime.
+  const saving = deltaNum > 0
   const deltaLabel = saving ? "Economia estimada" : "Custo adicional"
   const deltaColor = saving ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
 

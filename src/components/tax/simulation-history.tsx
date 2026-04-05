@@ -2,8 +2,9 @@
 
 import { useAuth } from "@clerk/nextjs"
 import { useQuery } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
+import { FileClock, Loader2 } from "lucide-react"
 import { formatBRL, getSimulationRecord, listSimulationRecords } from "@/lib/api"
+import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { ClassificationItem, FormExpense } from "@/types/api"
 
@@ -102,9 +103,13 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
           </p>
         )}
         {!isPending && !isError && (!data || data.length === 0) && (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            Nenhuma simulação salva ainda. Rode uma simulação para criar o primeiro registro.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground opacity-60">
+            <FileClock className="h-8 w-8" aria-hidden />
+            <p className="text-sm">Nenhuma simulação salva ainda.</p>
+            <p className="text-xs text-center max-w-sm">
+              Rode uma simulação para criar o primeiro registro.
+            </p>
+          </div>
         )}
         {!isPending && data && data.length > 0 && (
           <ul className="divide-y divide-border max-h-56 overflow-y-auto">
@@ -126,14 +131,27 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
                         : ""}
                     </p>
                   </div>
-                  <div className="text-xs sm:text-right shrink-0">
-                    <span className="text-muted-foreground">Projetado líquido </span>
-                    <span className="font-mono font-semibold">
-                      {formatBRL(row.total_projected_tax)}
-                    </span>
-                    <span className="text-muted-foreground mx-1">·</span>
-                    <span className="text-muted-foreground">Δ </span>
-                    <span className="font-mono">{formatBRL(row.delta_impact)}</span>
+                  <div className="text-xs sm:text-right shrink-0 flex flex-col sm:items-end gap-1">
+                    <div>
+                      <span className="text-muted-foreground">Projetado líquido </span>
+                      <span className="font-mono font-semibold">
+                        {formatBRL(row.total_projected_tax)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground mr-1">Δ</span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-0.5 font-mono text-xs font-semibold px-2 py-0.5 rounded-full",
+                          parseFloat(row.delta_impact) < 0
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                            : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+                        )}
+                      >
+                        {parseFloat(row.delta_impact) < 0 ? "↓" : "↑"}
+                        {formatBRL(row.delta_impact)}
+                      </span>
+                    </div>
                   </div>
                 </button>
               </li>

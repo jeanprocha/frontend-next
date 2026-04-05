@@ -18,6 +18,19 @@ const riskVariant: Record<string, "default" | "secondary" | "destructive" | "out
   alto: "destructive",
 }
 
+// Mapeamento visual dos regimes tributários (Art. 131 LC 68/2024).
+const regimeLabel: Record<string, string> = {
+  diferenciado_60: "Reduzido 60%",
+  reduzido_zero: "Alíquota Zero",
+  padrao: "Padrão",
+}
+
+const regimeVariant: Record<string, "default" | "secondary" | "outline"> = {
+  diferenciado_60: "secondary",
+  reduzido_zero: "default",
+  padrao: "outline",
+}
+
 export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
   const [selected, setSelected] = useState<ClassificationItem | null>(null)
 
@@ -35,6 +48,7 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
               <th className="px-4 py-3 text-left font-medium">Descrição</th>
               <th className="px-4 py-3 text-right font-medium">Valor</th>
               <th className="px-4 py-3 text-center font-medium">Elegibilidade</th>
+              <th className="px-4 py-3 text-center font-medium">Regime CBS/IBS</th>
               <th className="px-4 py-3 text-center font-medium">Risco</th>
               <th className="px-4 py-3 text-center font-medium">Confiança</th>
               <th className="px-4 py-3 text-right font-medium">Base Legal</th>
@@ -59,6 +73,15 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
                       </Badge>
                     ) : (
                       <Badge variant="outline">—</Badge>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {c ? (
+                      <Badge variant={regimeVariant[c.regime_type] ?? "outline"}>
+                        {regimeLabel[c.regime_type] ?? "Padrão"}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
