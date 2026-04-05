@@ -2,6 +2,7 @@ import type {
   BatchClassificationResponse,
   CompanyCreatePayload,
   CompanyTemplate,
+  LawArticleResponse,
   SimulationRecordCreatePayload,
   SimulationRecordCreateResponse,
   SimulationRecordDetailResponse,
@@ -12,11 +13,25 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
-function bearerHeaders(token: string, extra?: Record<string, string>): HeadersInit {
-  return {
+/**
+ * Headers para rotas protegidas. Com AUTH_SKIP=true no backend Go, o middleware exige
+ * X-User-ID (o JWT sozinho não basta). Em produção com Clerk + JWKS, o header é ignorado
+ * na autorização, mas enviar o mesmo sub não prejudica.
+ */
+function authHeaders(
+  token: string,
+  userId: string,
+  extra?: Record<string, string>,
+): HeadersInit {
+  const uid = userId.trim()
+  const h: Record<string, string> = {
     Authorization: `Bearer ${token}`,
-    ...extra,
+    ...(extra ?? {}),
   }
+  if (uid) {
+    h["X-User-ID"] = uid
+  }
+  return h
 }
 
 // classifyBatch envia uma lista de descrições de despesas para o endpoint
@@ -63,6 +78,17 @@ export async function simulate(
   return res.json()
 }
 
+/** Texto integral do artigo (chunks agregados no backend). id = article_id da linha do chunk. */
+export async function fetchLawArticle(chunkArticleId: string): Promise<LawArticleResponse> {
+  const enc = encodeURIComponent(chunkArticleId)
+  const res = await fetch(`${API_BASE}/law/articles/${enc}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error ?? "Erro ao carregar artigo")
+  }
+  return res.json()
+}
+
 // formatBRL converte uma string decimal ("1234.50") para moeda brasileira.
 export function formatBRL(value: string): string {
   const num = parseFloat(value)
@@ -90,11 +116,12 @@ export function formatPctFraction(value: string | number): string {
 
 export async function saveSimulationRecord(
   token: string,
+  userId: string,
   payload: SimulationRecordCreatePayload,
 ): Promise<SimulationRecordCreateResponse> {
   const res = await fetch(`${API_BASE}/simulation-records`, {
     method: "POST",
-    headers: bearerHeaders(token, { "Content-Type": "application/json" }),
+    headers: authHeaders(token, userId, { "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
@@ -106,11 +133,12 @@ export async function saveSimulationRecord(
 
 export async function listSimulationRecords(
   token: string,
+  userId: string,
   limit = 20,
 ): Promise<SimulationRecordSummary[]> {
   const q = new URLSearchParams({ limit: String(limit) })
   const res = await fetch(`${API_BASE}/simulation-records?${q}`, {
-    headers: bearerHeaders(token),
+    headers: authHeaders(token, userId),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -121,10 +149,11 @@ export async function listSimulationRecords(
 
 export async function getSimulationRecord(
   token: string,
+  userId: string,
   id: string,
 ): Promise<SimulationRecordDetailResponse> {
   const res = await fetch(`${API_BASE}/simulation-records/${encodeURIComponent(id)}`, {
-    headers: bearerHeaders(token),
+    headers: authHeaders(token, userId),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -134,10 +163,14 @@ export async function getSimulationRecord(
 }
 
 /** Baixa o PDF de diagnóstico gerado no backend (GET /simulation-records/{id}/report). */
-export async function downloadSimulationReport(token: string, id: string): Promise<void> {
+export async function downloadSimulationReport(
+  token: string,
+  userId: string,
+  id: string,
+): Promise<void> {
   const res = await fetch(
     `${API_BASE}/simulation-records/${encodeURIComponent(id)}/report`,
-    { headers: bearerHeaders(token) },
+    { headers: authHeaders(token, userId) },
   )
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -156,9 +189,9 @@ export async function downloadSimulationReport(token: string, id: string): Promi
 
 // --- Templates de Empresa ---
 
-export async function listCompanies(token: string): Promise<CompanyTemplate[]> {
+export async function listCompanies(token: string, userId: string): Promise<CompanyTemplate[]> {
   const res = await fetch(`${API_BASE}/companies`, {
-    headers: bearerHeaders(token),
+    headers: authHeaders(token, userId),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -173,11 +206,12 @@ export async function listCompanies(token: string): Promise<CompanyTemplate[]> {
 
 export async function createCompany(
   token: string,
+  userId: string,
   payload: CompanyCreatePayload,
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_BASE}/companies`, {
     method: "POST",
-    headers: bearerHeaders(token, { "Content-Type": "application/json" }),
+    headers: authHeaders(token, userId, { "Content-Type": "application/json" }),
     body: JSON.stringify({
       ...payload,
       default_services: payload.default_services,
@@ -190,10 +224,14 @@ export async function createCompany(
   return res.json()
 }
 
-export async function deleteCompany(token: string, id: string): Promise<void> {
+export async function deleteCompany(
+  token: string,
+  userId: string,
+  id: string,
+): Promise<void> {
   const res = await fetch(`${API_BASE}/companies/${encodeURIComponent(id)}`, {
     method: "DELETE",
-    headers: bearerHeaders(token),
+    headers: authHeaders(token, userId),
   })
   if (!res.ok && res.status !== 204) {
     const err = await res.json().catch(() => ({ error: res.statusText }))

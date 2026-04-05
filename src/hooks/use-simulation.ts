@@ -173,7 +173,7 @@ export function useSimulationMutation() {
           console.error("[TribIA] Sem token de sessão para gravar histórico.")
           return
         }
-        await saveSimulationRecord(token, {
+        await saveSimulationRecord(token, userId, {
           company_context: variables.companyContext,
           company_regime: variables.companyRegime ?? "regular",
           year: variables.year,

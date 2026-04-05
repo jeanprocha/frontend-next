@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
   Sheet,
   SheetContent,
@@ -7,9 +8,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem } from "@/types/api"
+import { LegalBasisDrawer } from "./legal-basis-drawer"
 
 interface EvidenceDrawerProps {
   item: ClassificationItem | null
@@ -33,15 +36,25 @@ function formatArticleId(id: string): string {
 }
 
 export function EvidenceDrawer({ item, open, onClose }: EvidenceDrawerProps) {
-  if (!item) return null
+  const [lawChunkId, setLawChunkId] = useState<string | null>(null)
+  const [lawOpen, setLawOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      setLawOpen(false)
+      setLawChunkId(null)
+    }
+  }, [open])
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader className="mb-4">
-          <SheetTitle className="text-base leading-snug">
-            {item.description}
-          </SheetTitle>
+    <>
+      {item ? (
+        <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+          <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader className="mb-4">
+              <SheetTitle className="text-base leading-snug">
+                {item.description}
+              </SheetTitle>
           <div className="flex flex-wrap gap-2 pt-1">
             <Badge
               variant={item.is_eligible ? "default" : "destructive"}
@@ -111,12 +124,34 @@ export function EvidenceDrawer({ item, open, onClose }: EvidenceDrawerProps) {
                   <p className="leading-relaxed text-foreground/80 line-clamp-6">
                     {art.content}
                   </p>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="mt-2 h-auto p-0 text-xs text-primary"
+                    onClick={() => {
+                      setLawChunkId(art.article_id)
+                      setLawOpen(true)
+                    }}
+                  >
+                    Artigo completo
+                  </Button>
                 </div>
               ))}
             </div>
           </section>
         )}
-      </SheetContent>
-    </Sheet>
+          </SheetContent>
+        </Sheet>
+      ) : null}
+      <LegalBasisDrawer
+      chunkArticleId={lawChunkId}
+      open={lawOpen}
+      onOpenChange={(v) => {
+        setLawOpen(v)
+        if (!v) setLawChunkId(null)
+      }}
+    />
+  </>
   )
 }

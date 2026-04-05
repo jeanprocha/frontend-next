@@ -147,8 +147,8 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
     queryKey: ["companies", userId],
     queryFn: async () => {
       const token = await getToken()
-      if (!token) throw new Error("Não autenticado")
-      return listCompanies(token)
+      if (!token || !userId) throw new Error("Não autenticado")
+      return listCompanies(token, userId)
     },
     enabled: !!userId,
     staleTime: 60_000,

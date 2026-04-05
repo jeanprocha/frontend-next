@@ -57,8 +57,8 @@ export default function HistoryPage() {
     queryKey: ["simulation-records", userId],
     queryFn: async () => {
       const token = await getToken()
-      if (!token) throw new Error("Não autenticado")
-      return listSimulationRecords(token, 100)
+      if (!token || !userId) throw new Error("Não autenticado")
+      return listSimulationRecords(token, userId, 100)
     },
     enabled: isLoaded && !!userId,
   })
@@ -70,7 +70,7 @@ export default function HistoryPage() {
     try {
       const token = await getToken()
       if (!token) throw new Error("Não autenticado")
-      const d = await getSimulationRecord(token, id)
+      const d = await getSimulationRecord(token, userId, id)
       setYear(d.year)
       setCompanyContext(d.company_context)
       setServices(d.services)
@@ -109,8 +109,8 @@ export default function HistoryPage() {
     setPdfLoadingId(id)
     try {
       const token = await getToken()
-      if (!token) throw new Error("Não autenticado")
-      await downloadSimulationReport(token, id)
+      if (!token || !userId) throw new Error("Não autenticado")
+      await downloadSimulationReport(token, userId, id)
     } catch (e) {
       setPdfError((e as Error).message)
     } finally {

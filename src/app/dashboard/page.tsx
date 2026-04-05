@@ -1,10 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { History } from "lucide-react"
+import { History, Monitor, Presentation } from "lucide-react"
 import { SimulationForm } from "@/components/tax/simulation-form"
 import { SummaryCards } from "@/components/tax/summary-cards"
+import { TribiaInsights } from "@/components/tax/tribia-insights"
+import { TransitionChart } from "@/components/tax/transition-chart"
+import { SankeyFlow } from "@/components/tax/sankey-flow"
+import { CreditLeakageAlert } from "@/components/tax/credit-leakage-alert"
 import { ExpenseTable } from "@/components/tax/expense-table"
 import { UploadZone, type UploadResult } from "@/components/tax/upload-zone"
 import { CsvSummary } from "@/components/tax/csv-summary"
@@ -13,6 +17,16 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore, type PersistedResults } from "@/store/useTaxStore"
 import { useSimulationMutation } from "@/hooks/use-simulation"
+import { useBoardReady } from "@/hooks/use-board-ready"
+import {
+  BoardReadyHeader,
+  BoardReadyWatermark,
+} from "@/components/tax/board-ready-header"
+import { PrintButton } from "@/components/tax/print-button"
+import {
+  PrintReportFooter,
+  PrintReportHeader,
+} from "@/components/tax/print-report-chrome"
 import type {
   ClassificationItem,
   FormExpense,
@@ -33,6 +47,7 @@ type InputMode = "form" | "csv"
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { isBoardReady, setIsBoardReady, toggleBoardReady } = useBoardReady()
   const [inputMode, setInputMode] = useState<InputMode>("form")
 
   // Resultado de CSV: estado local efêmero
@@ -44,6 +59,7 @@ export default function DashboardPage() {
     setResults: setFormResults,
     companyRegime,
     imobiliarioRedutorAjusteBrl,
+    services,
   } = useTaxStore()
 
   // TanStack Query: substitui useState(loading) + useState(error) + try/catch
@@ -98,6 +114,7 @@ export default function DashboardPage() {
 
   // ── Reset ────────────────────────────────────────────────────────────────
   function reset() {
+    setIsBoardReady(false)
     setCsvResults(null)
     setCsvError(null)
     setFormResults(null)
@@ -106,13 +123,50 @@ export default function DashboardPage() {
 
   const displayError = error ?? csvError
 
+  const boardReadyActive =
+    isBoardReady && results?.mode === "form"
+
+  useEffect(() => {
+    if (!results || results.mode !== "form") {
+      setIsBoardReady(false)
+    }
+  }, [results, setIsBoardReady])
+
   return (
-    <main className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-7xl px-4 py-8 space-y-6">
+    <main className="min-h-screen bg-slate-50/50 relative">
+      {results?.mode === "form" && <BoardReadyWatermark />}
+      <div
+        className={cn(
+          "mx-auto max-w-7xl px-4 py-8 space-y-6",
+          boardReadyActive && "board-ready:max-w-5xl",
+        )}
+      >
+        {results?.mode === "form" && (
+          <>
+            <PrintReportHeader generatedAtIso={formResults?.meta?.createdAt} />
+            <BoardReadyHeader
+              companyContext={
+                formResults?.meta?.companyContext ?? undefined
+              }
+              year={results.simulation.year}
+              createdAtIso={formResults?.meta?.createdAt ?? null}
+            />
+          </>
+        )}
 
         {/* ── Page header ────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div className="space-y-0.5">
+        <div
+          className={cn(
+            "flex flex-col sm:flex-row sm:items-end gap-3",
+            boardReadyActive ? "sm:justify-end" : "sm:justify-between",
+          )}
+        >
+          <div
+            className={cn(
+              "space-y-0.5",
+              results?.mode === "form" && "board-ready:hidden",
+            )}
+          >
             <h1 className="text-2xl font-bold tracking-tight">Simulador de Reforma Tributária</h1>
             <p className="text-sm text-muted-foreground">
               Calcule o impacto da transição CBS/IBS com classificação de créditos por IA — LC 68/2024.
@@ -145,14 +199,45 @@ export default function DashboardPage() {
               {results.mode === "form" && formResults?.meta && (
                 <Link
                   href="/dashboard/history"
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "board-ready:hidden no-print print:hidden",
+                  )}
                 >
                   Voltar ao histórico
                 </Link>
               )}
-              <Button variant="outline" size="sm" onClick={reset}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={reset}
+                className="board-ready:hidden no-print print:hidden"
+              >
                 ← {results.mode === "form" ? "Nova simulação" : "Novo arquivo"}
               </Button>
+              {results.mode === "form" && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={toggleBoardReady}
+                  className="no-print print:hidden gap-1.5"
+                  aria-pressed={isBoardReady}
+                >
+                  {isBoardReady ? (
+                    <>
+                      <Monitor className="h-4 w-4" aria-hidden />
+                      Modo edição
+                    </>
+                  ) : (
+                    <>
+                      <Presentation className="h-4 w-4" aria-hidden />
+                      Modo apresentação
+                    </>
+                  )}
+                </Button>
+              )}
+              {boardReadyActive && <PrintButton />}
             </div>
           )}
         </div>
@@ -166,7 +251,7 @@ export default function DashboardPage() {
 
         {/* ── Banner: simulação carregada do histórico ─────────────────── */}
         {formResults?.meta && (
-          <div className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
+          <div className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 board-ready:hidden">
             <div className="flex items-start gap-2.5 min-w-0">
               <History className="h-4 w-4 shrink-0 text-accent mt-0.5" />
               <div className="min-w-0">
@@ -238,17 +323,29 @@ export default function DashboardPage() {
             {/* Cards — modo formulário */}
             {results.mode === "form" && (
               <div>
-                <h2 className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                <h2 className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wide board-ready:font-serif board-ready:text-lg board-ready:normal-case board-ready:text-foreground">
                   Comparativo Tributário — {results.simulation.year}
                 </h2>
                 <SummaryCards result={results.simulation} />
+                <div className="mt-4">
+                  <TribiaInsights result={results.simulation} />
+                </div>
+                <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 board-ready:grid-cols-1 board-ready:gap-10">
+                  <TransitionChart result={results.simulation} />
+                  <SankeyFlow
+                    simulation={results.simulation}
+                    expenses={results.expenses}
+                    services={services}
+                  />
+                </div>
+                <CreditLeakageAlert result={results.simulation} />
               </div>
             )}
 
             {/* Cards — modo CSV */}
             {results.mode === "csv" && (
               <div>
-                <h2 className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                <h2 className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wide board-ready:font-serif board-ready:text-lg board-ready:normal-case board-ready:text-foreground">
                   Resumo da Classificação — {results.expenses.length} despesas processadas
                 </h2>
                 <CsvSummary
@@ -261,16 +358,21 @@ export default function DashboardPage() {
             {/* Tabela de despesas */}
             <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b bg-muted/30">
-                <h2 className="text-sm font-semibold">Análise de Créditos — IA</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Clique em "Ver lei" para consultar os artigos da LC 68/2024 usados pela IA na classificação.
+                <h2 className="text-sm font-semibold board-ready:font-serif board-ready:text-base">
+                  Análise de Créditos — IA
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5 board-ready:hidden">
+                  Clique em &quot;Ver lei&quot; para consultar os artigos da LC 68/2024 usados pela IA na classificação.
                 </p>
               </div>
               <ExpenseTable
                 expenses={results.expenses}
                 classifications={results.classifications}
+                presentationMode={boardReadyActive}
               />
             </div>
+
+            {results.mode === "form" && <PrintReportFooter />}
 
           </div>
         )}

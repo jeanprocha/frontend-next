@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EvidenceDrawer } from "./evidence-drawer"
@@ -10,6 +10,8 @@ import type { ClassificationItem, FormExpense } from "@/types/api"
 interface ExpenseTableProps {
   expenses: FormExpense[]
   classifications: ClassificationItem[]
+  /** Oculta coluna Base Legal / Ver lei (modo apresentação ou impressão). */
+  presentationMode?: boolean
 }
 
 const riskVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -31,8 +33,16 @@ const regimeVariant: Record<string, "default" | "secondary" | "outline"> = {
   padrao: "outline",
 }
 
-export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
+export function ExpenseTable({
+  expenses,
+  classifications,
+  presentationMode = false,
+}: ExpenseTableProps) {
   const [selected, setSelected] = useState<ClassificationItem | null>(null)
+
+  useEffect(() => {
+    if (presentationMode) setSelected(null)
+  }, [presentationMode])
 
   const rows = expenses.map((exp) => ({
     ...exp,
@@ -51,7 +61,9 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
               <th className="px-4 py-3 text-center font-medium">Regime CBS/IBS</th>
               <th className="px-4 py-3 text-center font-medium">Risco</th>
               <th className="px-4 py-3 text-center font-medium">Confiança</th>
-              <th className="px-4 py-3 text-right font-medium">Base Legal</th>
+              {!presentationMode && (
+                <th className="px-4 py-3 text-right font-medium">Base Legal</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -114,27 +126,29 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
                           ? `${Math.round(c.confidence * 100)}%`
                           : "—"}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {hasErr ? (
-                      <span
-                        className="text-xs text-destructive line-clamp-2 max-w-[14rem] ml-auto block text-right"
-                        title={errMsg}
-                      >
-                        {errMsg}
-                      </span>
-                    ) : c ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-primary hover:text-primary h-auto py-1 px-2"
-                        onClick={() => setSelected(c)}
-                      >
-                        Ver lei
-                      </Button>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">sem dados</span>
-                    )}
-                  </td>
+                  {!presentationMode && (
+                    <td className="px-4 py-3 text-right">
+                      {hasErr ? (
+                        <span
+                          className="text-xs text-destructive line-clamp-2 max-w-[14rem] ml-auto block text-right"
+                          title={errMsg}
+                        >
+                          {errMsg}
+                        </span>
+                      ) : c ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary hover:text-primary h-auto py-1 px-2"
+                          onClick={() => setSelected(c)}
+                        >
+                          Ver lei
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">sem dados</span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               )
             })}
@@ -142,11 +156,13 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
         </table>
       </div>
 
-      <EvidenceDrawer
-        item={selected}
-        open={selected !== null}
-        onClose={() => setSelected(null)}
-      />
+      {!presentationMode && (
+        <EvidenceDrawer
+          item={selected}
+          open={selected !== null}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </>
   )
 }

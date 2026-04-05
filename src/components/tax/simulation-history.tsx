@@ -56,8 +56,8 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
     queryKey: ["simulation-records", userId],
     queryFn: async () => {
       const token = await getToken()
-      if (!token) throw new Error("Não autenticado")
-      return listSimulationRecords(token, 25)
+      if (!token || !userId) throw new Error("Não autenticado")
+      return listSimulationRecords(token, userId, 25)
     },
     enabled: isLoaded && !!userId,
   })
@@ -68,7 +68,7 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
     try {
       const token = await getToken()
       if (!token) return
-      const d = await getSimulationRecord(token, id)
+      const d = await getSimulationRecord(token, userId, id)
       setYear(d.year)
       setCompanyContext(d.company_context)
       setServices(d.services)
@@ -100,11 +100,11 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
     setPdfLoadingId(id)
     try {
       const token = await getToken()
-      if (!token) {
+      if (!token || !userId) {
         setPdfError("Sessão expirada. Entre novamente.")
         return
       }
-      await downloadSimulationReport(token, id)
+      await downloadSimulationReport(token, userId, id)
     } catch (e) {
       setPdfError((e as Error).message)
     } finally {

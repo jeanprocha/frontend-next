@@ -4,6 +4,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Modo apresentação: utilitários `board-ready:*` para descendentes de `.board-ready`
+ * (classe em `document.documentElement` via `useBoardReady`).
+ * Tailwind v4: `@variant` + `:where()` para menor especificidade.
+ */
+@variant board-ready (&:where(.board-ready *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -143,5 +150,37 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .no-print {
+    @media print {
+      display: none !important;
+    }
+  }
+
+  .print-page-break {
+    @media print {
+      break-before: page;
+    }
+  }
+}
+
+/* Impressão / PDF (window.print): cores, página A4, quebras em cards */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    margin: 15mm;
+    size: A4 portrait;
+  }
+
+  [data-slot="card"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

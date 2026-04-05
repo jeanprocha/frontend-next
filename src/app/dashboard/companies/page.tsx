@@ -36,7 +36,7 @@ function toServiceInput(s: DraftService): ServiceInput {
 // ─── Formulário inline de nova empresa ───────────────────────────────────────
 
 function NewCompanyForm({ onClose }: { onClose: () => void }) {
-  const { getToken } = useAuth()
+  const { userId, getToken } = useAuth()
   const queryClient = useQueryClient()
   const [name, setName] = useState("")
   const [taxContext, setTaxContext] = useState("")
@@ -47,8 +47,8 @@ function NewCompanyForm({ onClose }: { onClose: () => void }) {
   const mutation = useMutation({
     mutationFn: async (payload: CompanyCreatePayload) => {
       const token = await getToken()
-      if (!token) throw new Error("Não autenticado")
-      return createCompany(token, payload)
+      if (!token || !userId) throw new Error("Não autenticado")
+      return createCompany(token, userId, payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["companies"] })
@@ -211,14 +211,14 @@ function CompanyCard({
   company: CompanyTemplate
   onUse: (c: CompanyTemplate) => void
 }) {
-  const { getToken } = useAuth()
+  const { userId, getToken } = useAuth()
   const queryClient = useQueryClient()
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const token = await getToken()
-      if (!token) throw new Error("Não autenticado")
-      return deleteCompany(token, company.id)
+      if (!token || !userId) throw new Error("Não autenticado")
+      return deleteCompany(token, userId, company.id)
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["companies"] }),
   })
@@ -297,8 +297,8 @@ export default function CompaniesPage() {
     queryKey: ["companies", userId],
     queryFn: async () => {
       const token = await getToken()
-      if (!token) throw new Error("Não autenticado")
-      return listCompanies(token)
+      if (!token || !userId) throw new Error("Não autenticado")
+      return listCompanies(token, userId)
     },
     enabled: !!userId,
     staleTime: 60_000,

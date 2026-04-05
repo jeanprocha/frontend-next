@@ -33,7 +33,7 @@ export default function RootLayout({
       >
         <body className="min-h-full flex flex-col bg-background text-foreground">
           {/* ── Navbar fixa ───────────────────────────────────────────────── */}
-          <header className="fixed inset-x-0 top-0 z-50 h-14 border-b bg-background/80 backdrop-blur-sm">
+          <header className="fixed inset-x-0 top-0 z-50 h-14 border-b bg-background/80 backdrop-blur-sm print:hidden">
             <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-4">
               {/* Logo mark */}
               <a href="/" className="flex items-center gap-2 select-none">
@@ -81,7 +81,7 @@ export default function RootLayout({
           </header>
 
           {/* Compensa a altura da navbar */}
-          <div className="pt-14 flex flex-col flex-1">
+          <div className="pt-14 print:pt-0 flex flex-col flex-1">
             <Providers>
               <TooltipProvider>
                 {children}

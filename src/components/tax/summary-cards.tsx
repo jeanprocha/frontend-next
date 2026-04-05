@@ -39,10 +39,21 @@ function BrlTooltip({ active, payload, label }: any) {
   )
 }
 
+function netTaxSemantics(netStr: string): { isCreditor: boolean; netLabel: string } {
+  const n = parseFloat(netStr)
+  const isCreditor = Number.isFinite(n) && n < 0
+  return {
+    isCreditor,
+    netLabel: isCreditor ? "Crédito acumulado recuperável (ilustrativo)" : "Imposto líquido a pagar (ilustrativo)",
+  }
+}
+
 export function SummaryCards({ result }: SummaryCardsProps) {
   let deltaValue = parseFloat(result.delta)
   const projNet = parseFloat(result.projected.net_tax)
   const currNet = parseFloat(result.current.net_tax)
+  const currentNetMeta = netTaxSemantics(result.current.net_tax)
+  const projectedNetMeta = netTaxSemantics(result.projected.net_tax)
   if (!Number.isFinite(deltaValue) && Number.isFinite(projNet) && Number.isFinite(currNet)) {
     deltaValue = projNet - currNet
   }
@@ -105,7 +116,13 @@ export function SummaryCards({ result }: SummaryCardsProps) {
       {/* ── Três cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {/* Regime atual */}
-        <Card className="border-l-4 border-l-muted-foreground/30">
+        <Card
+          className={cn(
+            "border-l-4 border-l-muted-foreground/30",
+            currentNetMeta.isCreditor &&
+              "border-l-emerald-500/60 bg-emerald-50/50 dark:bg-emerald-950/15 dark:border-l-emerald-500/50",
+          )}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Regime Atual
@@ -113,8 +130,23 @@ export function SummaryCards({ result }: SummaryCardsProps) {
             <p className="text-[11px] text-muted-foreground/70 -mt-0.5">PIS/COFINS + ISS</p>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className="text-2xl font-bold tabular-nums">
+            <p
+              className={cn(
+                "text-2xl font-bold tabular-nums",
+                currentNetMeta.isCreditor && "text-emerald-700 dark:text-emerald-300",
+              )}
+            >
               {formatBRL(result.current.net_tax)}
+            </p>
+            <p
+              className={cn(
+                "text-[11px] font-medium",
+                currentNetMeta.isCreditor
+                  ? "text-emerald-800/90 dark:text-emerald-300/90"
+                  : "text-muted-foreground/80",
+              )}
+            >
+              {currentNetMeta.netLabel}
             </p>
             <p className="text-xs text-muted-foreground">
               Bruto {formatBRL(result.current.gross_tax)}
@@ -125,7 +157,13 @@ export function SummaryCards({ result }: SummaryCardsProps) {
         </Card>
 
         {/* Projetado */}
-        <Card className="border-l-4 border-l-accent">
+        <Card
+          className={cn(
+            "border-l-4 border-l-accent",
+            projectedNetMeta.isCreditor &&
+              "border-l-emerald-500/70 bg-emerald-50/55 dark:bg-emerald-950/20 dark:border-l-emerald-400/60",
+          )}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Projetado {result.year}
@@ -133,8 +171,25 @@ export function SummaryCards({ result }: SummaryCardsProps) {
             <p className="text-[11px] text-muted-foreground/70 -mt-0.5">CBS · IBS</p>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className="text-2xl font-bold tabular-nums text-accent">
+            <p
+              className={cn(
+                "text-2xl font-bold tabular-nums",
+                projectedNetMeta.isCreditor
+                  ? "text-emerald-700 dark:text-emerald-300"
+                  : "text-accent",
+              )}
+            >
               {formatBRL(result.projected.net_tax)}
+            </p>
+            <p
+              className={cn(
+                "text-[11px] font-medium",
+                projectedNetMeta.isCreditor
+                  ? "text-emerald-800/90 dark:text-emerald-300/90"
+                  : "text-muted-foreground/80",
+              )}
+            >
+              {projectedNetMeta.netLabel}
             </p>
             <p className="text-xs text-muted-foreground">
               Bruto {formatBRL(result.projected.gross_tax)}

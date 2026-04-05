@@ -7,6 +7,23 @@ export interface TaxBreakdown {
   net_tax: string
 }
 
+export interface TransitionSeriesPoint {
+  year: number
+  old_tax_net: string
+  new_tax_net: string
+  total_tax_net: string
+}
+
+/** Vazamento ilustrativo: despesa inelegível e crédito CBS/IBS não apropriado (calculado no backend). */
+export interface CreditLeak {
+  description: string
+  value: string
+  lost_credit: string
+  reason?: string
+  fix?: string
+  regime_type?: string
+}
+
 export interface SimulationResponse {
   year: number
   /** Eco do perfil tributário no simulador (persistido no histórico / PDF). */
@@ -16,6 +33,14 @@ export interface SimulationResponse {
   /** projetado − atual: positivo = custo adicional; negativo = economia */
   delta: string
   delta_pct: string
+  /** Insight educativo pós-simulação (LLM); omitido se API desligou STRATEGY_INSIGHT_ENABLED. */
+  strategy_insight?: string
+  /** Soma dos valores dos serviços (receita); para gráfico em % da receita. */
+  revenue_total?: string
+  /** Trajetória 2026–2033 (legado vs CBS/IBS no modelo TribIA). */
+  transition_series?: TransitionSeriesPoint[]
+  /** Despesas inelegíveis com crédito hipotético perdido (ilustrativo). */
+  credit_leaks?: CreditLeak[]
 }
 
 export interface ServiceInput {
@@ -58,6 +83,14 @@ export interface EvidenceArticle {
   article_id: string
   content: string
   similarity: number
+}
+
+/** Resposta de GET /law/articles/{id} — artigo LC 68 remontado a partir dos chunks. */
+export interface LawArticleResponse {
+  id: string
+  title: string
+  content: string
+  source: string
 }
 
 export interface ClassificationItem {
