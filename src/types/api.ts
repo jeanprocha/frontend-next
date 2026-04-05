@@ -11,6 +11,7 @@ export interface SimulationResponse {
   year: number
   current: TaxBreakdown
   projected: TaxBreakdown
+  /** projetado − atual: positivo = custo adicional; negativo = economia */
   delta: string
   delta_pct: string
 }
@@ -31,6 +32,19 @@ export interface ExpenseInput {
 
 export interface SimulationRequest {
   year: number
+  /**
+   * Perfil da empresa: omitir ou "regular" = PIS/COFINS/ISS vs CBS/IBS;
+   * "mei" = DAS fixo; "simples_puro" | "simples_hibrido" = baseline Simples ilustrativo no atual;
+   * híbrido = projeção CBS/IBS integral com créditos como o regular;
+   * "diferenciado_60" = atual como regular; projeção de saída com redução de 60% em toda a receita;
+   * "aliquota_zero" = atual como regular; projeção CBS/IBS zero na receita (cesta básica / social, ilustrativo);
+   * "imobiliario_venda" / "imobiliario_aluguel" = projeção com redutor de alíquota e base (ilustrativo).
+   */
+  company_regime?: string
+  /** Texto livre; o ramo MEI no motor exige company_regime "mei" (sem inferência por texto). */
+  company_context?: string
+  /** R$ abatidos da receita total na projeção imobiliária; omitir = variáveis de ambiente no backend ou 0 */
+  imobiliario_redutor_ajuste_brl?: string
   services: ServiceInput[]
   expenses: ExpenseInput[]
 }
@@ -42,6 +56,8 @@ export interface EvidenceArticle {
 }
 
 export interface ClassificationItem {
+  /** Eco do batch (id da linha no formulário); evita colisão com descrições duplicadas. */
+  client_id?: string
   description: string
   is_eligible: boolean
   confidence: number
@@ -92,7 +108,6 @@ export interface SimulationRecordSummary {
 }
 
 export interface SimulationRecordCreatePayload {
-  user_id: string
   organization_id?: string | null
   company_context: string
   year: number

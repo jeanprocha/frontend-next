@@ -33,7 +33,7 @@ function truncate(s: string, max: number): string {
 
 export default function HistoryPage() {
   const router = useRouter()
-  const { userId, isLoaded } = useAuth()
+  const { userId, isLoaded, getToken } = useAuth()
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -47,7 +47,11 @@ export default function HistoryPage() {
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: ["simulation-records", userId],
-    queryFn: () => listSimulationRecords(userId!, 100),
+    queryFn: async () => {
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      return listSimulationRecords(token, 100)
+    },
     enabled: isLoaded && !!userId,
   })
 
@@ -56,7 +60,9 @@ export default function HistoryPage() {
     setLoadingId(id)
     setLoadError(null)
     try {
-      const d = await getSimulationRecord(userId, id)
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      const d = await getSimulationRecord(token, id)
       setYear(d.year)
       setCompanyContext(d.company_context)
       setServices(d.services)
@@ -157,6 +163,9 @@ export default function HistoryPage() {
             <ul className="divide-y divide-border">
               {data.map((row) => {
                 const isThisLoading = loadingId === row.id
+                const deltaNum = parseFloat(row.delta_impact)
+                const deltaNeutral = !Number.isFinite(deltaNum) || deltaNum === 0
+                const deltaSaving = deltaNum < 0
 
                 return (
                   <li key={row.id}>
@@ -209,12 +218,14 @@ export default function HistoryPage() {
                               <span
                                 className={cn(
                                   "inline-flex items-center gap-0.5 font-mono text-xs font-semibold px-2 py-0.5 rounded-full",
-                                  parseFloat(row.delta_impact) < 0
-                                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                                    : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+                                  deltaNeutral
+                                    ? "bg-muted/60 text-muted-foreground"
+                                    : deltaSaving
+                                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                                      : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
                                 )}
                               >
-                                {parseFloat(row.delta_impact) < 0 ? "↓" : "↑"}
+                                {deltaNeutral ? "→ " : deltaSaving ? "↓ " : "↑ "}
                                 {formatBRL(row.delta_impact)}
                               </span>
                             </div>

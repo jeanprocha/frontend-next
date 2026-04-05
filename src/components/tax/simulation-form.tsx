@@ -1,7 +1,21 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Settings2, Receipt, TrendingDown, Info, Plus, X, Sparkles, Building2 } from "lucide-react"
+import {
+  Apple,
+  Building2,
+  CircleHelp,
+  Home,
+  Info,
+  Lightbulb,
+  Plus,
+  Receipt,
+  Settings2,
+  Sparkles,
+  GraduationCap,
+  TrendingDown,
+  X,
+} from "lucide-react"
 import { useAuth } from "@clerk/nextjs"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
@@ -16,7 +30,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { useTaxStore } from "@/store/useTaxStore"
+import {
+  useTaxStore,
+  type CompanyRegimeOption,
+  isImobiliarioRegime,
+} from "@/store/useTaxStore"
 import { listCompanies } from "@/lib/api"
 import type { FormExpense, FormService } from "@/types/api"
 
@@ -107,20 +125,28 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
   const {
     year,
     companyContext,
+    companyRegime,
+    imobiliarioRedutorAjusteBrl,
     services: storedServices,
     expenses: storedExpenses,
     setYear,
     setCompanyContext,
+    setCompanyRegime,
+    setImobiliarioRedutorAjusteBrl,
     setServices,
     setExpenses,
     applyCompanyTemplate,
   } = useTaxStore()
 
   // ── Seletor de empresa pré-cadastrada ───────────────────────────────────
-  const { userId } = useAuth()
+  const { userId, getToken } = useAuth()
   const { data: companies, isPending: companiesLoading } = useQuery({
     queryKey: ["companies", userId],
-    queryFn: () => listCompanies(userId!),
+    queryFn: async () => {
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      return listCompanies(token)
+    },
     enabled: !!userId,
     staleTime: 60_000,
   })
@@ -258,6 +284,181 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                 <p className="text-[11px] text-muted-foreground">
                   2026–2033 conforme cronograma da reforma
                 </p>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <div className="flex items-center gap-1.5">
+                  <Label
+                    htmlFor="company-regime"
+                    className="text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                  >
+                    Perfil tributário
+                  </Label>
+                  <Tooltip>
+                    <TooltipTrigger
+                      className="inline-flex rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+                      aria-label="Sobre os perfis tributários"
+                    >
+                      <CircleHelp className="size-3.5" aria-hidden />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                      Regime geral: PIS, COFINS e ISS no atual versus CBS/IBS na projeção. Benefícios LC 68/2024:
+                      saúde/educação/cultura (-60% na saída projetada); MEI com DAS fixo ilustrativo. Incentivo
+                      social: cesta básica / medicamentos com CBS+IBS zero na saída projetada (créditos nas compras
+                      podem deixar o líquido negativo — posição de crédito). Setor imobiliário: projeção com
+                      redução sobre a alíquota padrão do ano e redutor opcional de base (ilustrativo). Simples
+                      Nacional: modelo ilustrativo no atual e puro/híbrido na projeção. Não substitui orientação
+                      profissional.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <select
+                  id="company-regime"
+                  value={companyRegime}
+                  onChange={(e) => setCompanyRegime(e.target.value as CompanyRegimeOption)}
+                  className={cn(
+                    "h-9 w-full rounded-md border border-input bg-background px-2 text-sm",
+                    "focus:outline-none focus:ring-1 focus:ring-ring",
+                  )}
+                >
+                  <optgroup label="Regime geral">
+                    <option value="regular">Lucro Real / Presumido (alíquota cheia)</option>
+                  </optgroup>
+                  <optgroup label="Benefícios LC 68/2024">
+                    <option value="diferenciado_60">Saúde, Educação e Cultura (-60%)</option>
+                    <option value="mei">MEI (carga fixa mensal — DAS ilustrativo)</option>
+                  </optgroup>
+                  <optgroup label="Simples Nacional">
+                    <option value="simples_puro">
+                      Simples puro — crédito restrito (IBS/CBS no DAS, modelo ilustrativo)
+                    </option>
+                    <option value="simples_hibrido">
+                      Simples híbrido — recolhimento por fora (CBS/IBS integral + créditos)
+                    </option>
+                  </optgroup>
+                  <optgroup label="Setor imobiliário">
+                    <option value="imobiliario_venda">
+                      Incorporação e venda de imóveis (redução de 40% sobre a alíquota CBS+IBS)
+                    </option>
+                    <option value="imobiliario_aluguel">
+                      Locação e arrendamento (redução de 60% sobre a alíquota CBS+IBS)
+                    </option>
+                  </optgroup>
+                  <optgroup label="Incentivo social">
+                    <option value="aliquota_zero">
+                      Cesta básica / medicamentos (alíquota zero CBS+IBS na saída)
+                    </option>
+                  </optgroup>
+                </select>
+                {isImobiliarioRegime(companyRegime) && (
+                  <div className="space-y-1.5">
+                    <Label
+                      htmlFor="imobiliario-redutor"
+                      className="text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                    >
+                      Redutor de ajuste (R$, opcional)
+                    </Label>
+                    <Input
+                      id="imobiliario-redutor"
+                      inputMode="decimal"
+                      placeholder="Ex.: 40000.00 — vazio usa padrão do servidor (env)"
+                      value={imobiliarioRedutorAjusteBrl}
+                      onChange={(e) => setImobiliarioRedutorAjusteBrl(e.target.value)}
+                      className="h-9"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Valor ilustrativo abatido da receita total antes de aplicar a alíquota efetiva na projeção.
+                    </p>
+                  </div>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  Valores baseados em alíquotas estimadas da LC 68/2024. Consulte um especialista para
+                  decisões fiscais.
+                </p>
+                {companyRegime === "simples_hibrido" && (
+                  <div
+                    className="flex gap-2.5 rounded-md border border-amber-200/80 bg-amber-50/80 p-3 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-100"
+                    role="note"
+                  >
+                    <Lightbulb
+                      className="size-4 shrink-0 text-amber-700 dark:text-amber-300"
+                      aria-hidden
+                    />
+                    <div className="min-w-0 space-y-1 text-[11px] leading-snug">
+                      <p className="font-semibold text-amber-900 dark:text-amber-50">
+                        Foco em competitividade B2B
+                      </p>
+                      <p className="text-amber-900/95 dark:text-amber-100/90">
+                        No modo híbrido você recolhe IBS/CBS na alíquota cheia da simulação, mas a operação
+                        gera crédito integral para seus clientes. Indicado para quem vende para grandes
+                        empresas e quer reduzir atrito em contratos que exigem crédito pleno na cadeia.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {companyRegime === "diferenciado_60" && (
+                  <div
+                    className="mt-4 flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500 bg-blue-50/50 p-4 duration-300 dark:border-blue-900/40 dark:border-l-blue-400 dark:bg-blue-950/20"
+                    role="note"
+                  >
+                    <div className="shrink-0 rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
+                      <GraduationCap className="size-5" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-blue-900 dark:text-blue-50">Setor favorecido</h4>
+                      <p className="mt-1 text-xs leading-relaxed text-blue-700 dark:text-blue-200/90">
+                        Sua atividade possui <strong>60% de redução</strong> na alíquota padrão CBS+IBS. O TribIA
+                        aplica <strong>40% dessa alíquota</strong> sobre a receita do <strong>ano selecionado</strong>
+                        ; na referência plena (26,5%), isso equivale a cerca de <strong>10,6%</strong>. Você mantém o
+                        direito ao <strong>abatimento integral de créditos</strong> nas despesas elegíveis,
+                        conforme o regime de cada fornecedor. Confirme o enquadramento com seu contador.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {companyRegime === "aliquota_zero" && (
+                  <div
+                    className="mt-4 flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-emerald-100 border-l-4 border-l-emerald-500 bg-emerald-50/50 p-4 duration-300 dark:border-emerald-900/40 dark:border-l-emerald-500 dark:bg-emerald-950/20"
+                    role="note"
+                  >
+                    <div className="shrink-0 rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300">
+                      <Apple className="size-5" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-50">
+                        Alíquota zero com manutenção de crédito
+                      </h4>
+                      <p className="mt-1 text-xs leading-relaxed text-emerald-700 dark:text-emerald-200/90">
+                        A projeção trata a saída como <strong>isenta de CBS+IBS</strong> sobre a receita de
+                        serviços (ilustrativo, Anexo I / cesta básica). Um valor <strong>negativo</strong> no
+                        líquido projetado indica <strong>saldo credor</strong>: créditos de compras elegíveis
+                        superam o tributo na saída — posição típica a tratar com seu contador (compensação /
+                        ressarcimento conforme regras vigentes).
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {isImobiliarioRegime(companyRegime) && (
+                  <div
+                    className="mt-4 flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-purple-100 border-l-4 border-l-purple-500 bg-purple-50/50 p-4 duration-300 dark:border-purple-900/40 dark:border-l-purple-400 dark:bg-purple-950/25"
+                    role="note"
+                  >
+                    <div className="shrink-0 rounded-lg bg-purple-100 p-2 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300">
+                      <Home className="size-5" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-purple-900 dark:text-purple-50">
+                        Mecanismo de ajuste imobiliário
+                      </h4>
+                      <p className="mt-1 text-xs leading-relaxed text-purple-700 dark:text-purple-200/90">
+                        A projeção aplica uma <strong>alíquota CBS+IBS efetiva reduzida</strong> conforme o perfil
+                        (percentual da alíquota padrão do <strong>ano da simulação</strong>) e, se informado, o{" "}
+                        <strong>redutor de ajuste</strong> em R$ sobre a receita agregada — modelo ilustrativo da LC
+                        68/2024 para viabilidade, não substitui cálculo fiscal real. Créditos nas compras seguem o
+                        regime de cada fornecedor.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="context" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

@@ -1,6 +1,11 @@
 "use client"
 
 import {
+  ArrowDownRight,
+  ArrowUpRight,
+  MoveRight,
+} from "lucide-react"
+import {
   BarChart,
   Bar,
   XAxis,
@@ -35,11 +40,38 @@ function BrlTooltip({ active, payload, label }: any) {
 }
 
 export function SummaryCards({ result }: SummaryCardsProps) {
-  const deltaNum = parseFloat(result.delta)
-  // delta = currentNet - projectedNet; positivo = atual mais caro = economia com o novo regime.
-  const saving = deltaNum > 0
-  const deltaLabel = saving ? "Economia estimada" : "Custo adicional"
-  const deltaColor = saving ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+  let deltaValue = parseFloat(result.delta)
+  const projNet = parseFloat(result.projected.net_tax)
+  const currNet = parseFloat(result.current.net_tax)
+  if (!Number.isFinite(deltaValue) && Number.isFinite(projNet) && Number.isFinite(currNet)) {
+    deltaValue = projNet - currNet
+  }
+  // delta = projetado − atual (API Go). Negativo = economia; positivo = custo adicional.
+  const neutral = !Number.isFinite(deltaValue) || deltaValue === 0
+  const saving = deltaValue < 0
+  const increase = deltaValue > 0
+  const absDelta = Math.abs(deltaValue)
+  const absDeltaStr = absDelta.toFixed(2)
+  const deltaLabel = neutral
+    ? "Sem variação"
+    : saving
+      ? "Economia projetada"
+      : "Aumento de carga"
+  const deltaDisplay =
+    neutral || !Number.isFinite(absDelta)
+      ? formatBRL("0")
+      : `${increase ? "+" : saving ? "−" : ""}${formatBRL(absDeltaStr)}`
+  const DeltaIcon = neutral ? MoveRight : saving ? ArrowDownRight : ArrowUpRight
+  const deltaCardClass = neutral
+    ? "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30"
+    : saving
+      ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+      : "border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20"
+  const deltaTextClass = neutral
+    ? "text-slate-700 dark:text-slate-300"
+    : saving
+      ? "text-emerald-700 dark:text-emerald-300"
+      : "text-red-700 dark:text-red-300"
 
   // Dataset para o BarChart
   const chartData = [
@@ -105,14 +137,10 @@ export function SummaryCards({ result }: SummaryCardsProps) {
         </Card>
 
         {/* Delta */}
-        <Card
-          className={cn(
-            "border-l-4",
-            saving ? "border-l-emerald-500" : "border-l-rose-500",
-          )}
-        >
+        <Card className={deltaCardClass}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <DeltaIcon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
               {deltaLabel}
             </CardTitle>
             <p className="text-[11px] text-muted-foreground/70 -mt-0.5">
@@ -120,8 +148,8 @@ export function SummaryCards({ result }: SummaryCardsProps) {
             </p>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className={cn("text-2xl font-bold tabular-nums", deltaColor)}>
-              {formatBRL(result.delta)}
+            <p className={cn("text-2xl font-bold tabular-nums", deltaTextClass)}>
+              {deltaDisplay}
             </p>
             <p className="text-xs text-muted-foreground">
               Variação de {formatPct(result.delta_pct)}

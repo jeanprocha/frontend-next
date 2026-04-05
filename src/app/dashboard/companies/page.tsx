@@ -35,7 +35,8 @@ function toServiceInput(s: DraftService): ServiceInput {
 
 // ─── Formulário inline de nova empresa ───────────────────────────────────────
 
-function NewCompanyForm({ onClose, userId }: { onClose: () => void; userId: string }) {
+function NewCompanyForm({ onClose }: { onClose: () => void }) {
+  const { getToken } = useAuth()
   const queryClient = useQueryClient()
   const [name, setName] = useState("")
   const [taxContext, setTaxContext] = useState("")
@@ -44,7 +45,11 @@ function NewCompanyForm({ onClose, userId }: { onClose: () => void; userId: stri
   ])
 
   const mutation = useMutation({
-    mutationFn: (payload: CompanyCreatePayload) => createCompany(userId, payload),
+    mutationFn: async (payload: CompanyCreatePayload) => {
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      return createCompany(token, payload)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["companies"] })
       onClose()
@@ -201,17 +206,20 @@ function NewCompanyForm({ onClose, userId }: { onClose: () => void; userId: stri
 
 function CompanyCard({
   company,
-  userId,
   onUse,
 }: {
   company: CompanyTemplate
-  userId: string
   onUse: (c: CompanyTemplate) => void
 }) {
+  const { getToken } = useAuth()
   const queryClient = useQueryClient()
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteCompany(userId, company.id),
+    mutationFn: async () => {
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      return deleteCompany(token, company.id)
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["companies"] }),
   })
 
@@ -281,13 +289,17 @@ function CompanyCard({
 
 export default function CompaniesPage() {
   const router = useRouter()
-  const { userId } = useAuth()
+  const { userId, getToken } = useAuth()
   const [showForm, setShowForm] = useState(false)
   const applyCompanyTemplate = useTaxStore((s) => s.applyCompanyTemplate)
 
   const { data: companies, isPending, isError } = useQuery({
     queryKey: ["companies", userId],
-    queryFn: () => listCompanies(userId!),
+    queryFn: async () => {
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      return listCompanies(token)
+    },
     enabled: !!userId,
     staleTime: 60_000,
   })
@@ -333,7 +345,7 @@ export default function CompaniesPage() {
 
       {/* Formulário inline */}
       {showForm && userId && (
-        <NewCompanyForm userId={userId} onClose={() => setShowForm(false)} />
+        <NewCompanyForm onClose={() => setShowForm(false)} />
       )}
 
       {/* Estado de carregamento */}
@@ -360,12 +372,7 @@ export default function CompaniesPage() {
       {!isPending && !isError && companies && companies.length > 0 && (
         <div className={cn("grid gap-3 sm:grid-cols-2")}>
           {companies.map((c) => (
-            <CompanyCard
-              key={c.id}
-              company={c}
-              userId={userId!}
-              onUse={handleUse}
-            />
+            <CompanyCard key={c.id} company={c} onUse={handleUse} />
           ))}
         </div>
       )}

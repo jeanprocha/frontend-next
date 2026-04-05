@@ -23,15 +23,34 @@ export interface PersistedResults {
   meta?: ResultMeta
 }
 
+export type CompanyRegimeOption =
+  | "regular"
+  | "mei"
+  | "simples_puro"
+  | "simples_hibrido"
+  | "diferenciado_60"
+  | "aliquota_zero"
+  | "imobiliario_venda"
+  | "imobiliario_aluguel"
+
+export function isImobiliarioRegime(r: CompanyRegimeOption): boolean {
+  return r === "imobiliario_venda" || r === "imobiliario_aluguel"
+}
+
 interface TaxState {
   year: number
   companyContext: string
+  companyRegime: CompanyRegimeOption
+  /** Redutor de base (R$) para perfis imobiliários; vazio = backend usa env ou 0 */
+  imobiliarioRedutorAjusteBrl: string
   services: FormService[]
   expenses: FormExpense[]
   results: PersistedResults | null
 
   setYear: (year: number) => void
   setCompanyContext: (ctx: string) => void
+  setCompanyRegime: (r: CompanyRegimeOption) => void
+  setImobiliarioRedutorAjusteBrl: (v: string) => void
   setServices: (services: FormService[]) => void
   setExpenses: (expenses: FormExpense[]) => void
   setResults: (r: PersistedResults | null) => void
@@ -45,6 +64,8 @@ const DEFAULTS = {
   year: 2026,
   companyContext:
     "Empresa SaaS B2B, regime regular IBS/CBS, fornecimento de software como serviço",
+  companyRegime: "regular" as CompanyRegimeOption,
+  imobiliarioRedutorAjusteBrl: "",
   services: [] as FormService[],
   expenses: [] as FormExpense[],
   results: null as PersistedResults | null,
@@ -57,6 +78,8 @@ export const useTaxStore = create<TaxState>()((set) => ({
 
   setYear: (year) => set({ year }),
   setCompanyContext: (companyContext) => set({ companyContext }),
+  setCompanyRegime: (companyRegime) => set({ companyRegime }),
+  setImobiliarioRedutorAjusteBrl: (imobiliarioRedutorAjusteBrl) => set({ imobiliarioRedutorAjusteBrl }),
   setServices: (services) => set({ services }),
   setExpenses: (expenses) => set({ expenses }),
   setResults: (results) => set({ results }),

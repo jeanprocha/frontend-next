@@ -34,7 +34,7 @@ interface SimulationHistoryProps {
 }
 
 export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
-  const { userId, isLoaded } = useAuth()
+  const { userId, isLoaded, getToken } = useAuth()
   const {
     setYear,
     setCompanyContext,
@@ -45,7 +45,11 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: ["simulation-records", userId],
-    queryFn: () => listSimulationRecords(userId!, 25),
+    queryFn: async () => {
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      return listSimulationRecords(token, 25)
+    },
     enabled: isLoaded && !!userId,
   })
 
@@ -53,7 +57,9 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
     if (!userId) return
     onBeforeHydrate?.()
     try {
-      const d = await getSimulationRecord(userId, id)
+      const token = await getToken()
+      if (!token) return
+      const d = await getSimulationRecord(token, id)
       setYear(d.year)
       setCompanyContext(d.company_context)
       setServices(d.services)
@@ -113,7 +119,11 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
         )}
         {!isPending && data && data.length > 0 && (
           <ul className="divide-y divide-border max-h-56 overflow-y-auto">
-            {data.map((row) => (
+            {data.map((row) => {
+              const deltaNum = parseFloat(row.delta_impact)
+              const deltaNeutral = !Number.isFinite(deltaNum) || deltaNum === 0
+              const deltaSaving = deltaNum < 0
+              return (
               <li key={row.id}>
                 <button
                   type="button"
@@ -143,19 +153,22 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
                       <span
                         className={cn(
                           "inline-flex items-center gap-0.5 font-mono text-xs font-semibold px-2 py-0.5 rounded-full",
-                          parseFloat(row.delta_impact) < 0
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                            : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+                          deltaNeutral
+                            ? "bg-muted/60 text-muted-foreground"
+                            : deltaSaving
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                              : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
                         )}
                       >
-                        {parseFloat(row.delta_impact) < 0 ? "↓" : "↑"}
+                        {deltaNeutral ? "→ " : deltaSaving ? "↓ " : "↑ "}
                         {formatBRL(row.delta_impact)}
                       </span>
                     </div>
                   </div>
                 </button>
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </div>

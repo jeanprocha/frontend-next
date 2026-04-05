@@ -57,6 +57,10 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
           <tbody>
             {rows.map((row) => {
               const c = row.classification
+              const errMsg = c?.error?.trim()
+              const hasErr = Boolean(errMsg)
+              const noRagEvidence =
+                c && !hasErr && (!c.evidence || c.evidence.length === 0)
               return (
                 <tr
                   key={row.id}
@@ -67,7 +71,11 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
                     {formatBRL(row.amount)}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {c ? (
+                    {hasErr ? (
+                      <Badge variant="outline" title={errMsg}>
+                        Erro na classificação
+                      </Badge>
+                    ) : c ? (
                       <Badge variant={c.is_eligible ? "default" : "destructive"}>
                         {c.is_eligible ? "Elegível" : "Não Elegível"}
                       </Badge>
@@ -76,7 +84,9 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {c ? (
+                    {hasErr ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : c ? (
                       <Badge variant={regimeVariant[c.regime_type] ?? "outline"}>
                         {regimeLabel[c.regime_type] ?? "Padrão"}
                       </Badge>
@@ -85,7 +95,9 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {c ? (
+                    {hasErr ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : c ? (
                       <Badge variant={riskVariant[c.risk_level] ?? "outline"}>
                         {c.risk_level}
                       </Badge>
@@ -94,10 +106,23 @@ export function ExpenseTable({ expenses, classifications }: ExpenseTableProps) {
                     )}
                   </td>
                   <td className="px-4 py-3 text-center tabular-nums text-muted-foreground">
-                    {c ? `${Math.round(c.confidence * 100)}%` : "—"}
+                    {hasErr
+                      ? "—"
+                      : noRagEvidence
+                        ? "N/A"
+                        : c
+                          ? `${Math.round(c.confidence * 100)}%`
+                          : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {c ? (
+                    {hasErr ? (
+                      <span
+                        className="text-xs text-destructive line-clamp-2 max-w-[14rem] ml-auto block text-right"
+                        title={errMsg}
+                      >
+                        {errMsg}
+                      </span>
+                    ) : c ? (
                       <Button
                         variant="ghost"
                         size="sm"

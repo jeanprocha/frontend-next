@@ -39,7 +39,12 @@ export default function DashboardPage() {
   const [csvResults, setCsvResults] = useState<CsvResults | null>(null)
 
   // Resultado de formulário: lido do Zustand (persistido no localStorage)
-  const { results: formResults, setResults: setFormResults } = useTaxStore()
+  const {
+    results: formResults,
+    setResults: setFormResults,
+    companyRegime,
+    imobiliarioRedutorAjusteBrl,
+  } = useTaxStore()
 
   // TanStack Query: substitui useState(loading) + useState(error) + try/catch
   const mutation = useSimulationMutation()
@@ -60,7 +65,14 @@ export default function DashboardPage() {
     companyContext: string,
   ) {
     setCsvResults(null)
-    mutation.mutate({ year, services, expenses, companyContext })
+    mutation.mutate({
+      year,
+      services,
+      expenses,
+      companyContext,
+      companyRegime,
+      imobiliarioRedutorAjusteBrl,
+    })
   }
 
   // ── Fluxo CSV (inalterado) ───────────────────────────────────────────────
