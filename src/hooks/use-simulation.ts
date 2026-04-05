@@ -35,6 +35,21 @@ const PREFIX_CLASSIFY_IMOBILIARIO =
   "Priorize elegibilidade a crédito IBS/CBS em materiais de construção (cimento, aço, etc.), serviços de empreiteira e subempreitada usados na atividade, " +
   "sempre com base nos trechos recuperados da lei; não invente regras.]\n\n"
 
+const PREFIX_CLASSIFY_PROF_LIBERAL =
+  "[Perfil simulador: company_regime prof_liberal — sociedade ou escritório de profissões regulamentadas (advocacia, engenharia, contabilidade, arquitetura; ilustrativo). " +
+  "Priorize elegibilidade a crédito em software de gestão e ERP jurídico, assinaturas digitais, bases de dados profissionais, certificações e locação de sala/escritório alinhados à atividade-fim; " +
+  "use apenas trechos da lei recuperados como base.]\n\n"
+
+const PREFIX_CLASSIFY_EXPORTADORA =
+  "[Perfil simulador: company_regime exportadora — operação com foco em mercado externo (exportação, ilustrativo). " +
+  "Priorize análise de elegibilidade a crédito IBS/CBS em fretes internacionais, armazenagem portuária ou logística, despachante aduaneiro e insumos ligados à cadeia de exportação, " +
+  "sempre com base exclusiva nos trechos da LC 68/2024 recuperados abaixo; não afirme benefício sem âncora no texto.]\n\n"
+
+const PREFIX_CLASSIFY_ENTIDADE_IMUNE =
+  "[Perfil simulador: company_regime entidade_imune — entidade imune ou ISFL (ilustrativo). " +
+  "No modelo TribIA a entidade não apropria créditos de IBS/CBS nas compras; avalie elegibilidade de forma conservadora e ancore qualquer conclusão nos trechos recuperados da lei; " +
+  "não prometa crédito sem suporte explícito no contexto.]\n\n"
+
 function mapByClientId<T extends { client_id?: string; description: string }>(
   results: T[],
 ): Map<string, T> {
@@ -58,6 +73,15 @@ function classificationContextForAI(
   }
   if (isImobiliarioRegime(companyRegime)) {
     return PREFIX_CLASSIFY_IMOBILIARIO + companyContext
+  }
+  if (companyRegime === "prof_liberal") {
+    return PREFIX_CLASSIFY_PROF_LIBERAL + companyContext
+  }
+  if (companyRegime === "exportadora") {
+    return PREFIX_CLASSIFY_EXPORTADORA + companyContext
+  }
+  if (companyRegime === "entidade_imune") {
+    return PREFIX_CLASSIFY_ENTIDADE_IMUNE + companyContext
   }
   return companyContext
 }
@@ -151,8 +175,12 @@ export function useSimulationMutation() {
         }
         await saveSimulationRecord(token, {
           company_context: variables.companyContext,
+          company_regime: variables.companyRegime ?? "regular",
           year: variables.year,
-          simulation: data.simulation,
+          simulation: {
+            ...data.simulation,
+            company_regime: variables.companyRegime ?? "regular",
+          },
           services: variables.services.map((s) => ({
             description: s.description,
             amount: s.amount,

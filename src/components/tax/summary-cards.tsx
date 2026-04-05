@@ -92,6 +92,14 @@ export function SummaryCards({ result }: SummaryCardsProps) {
     },
   ]
 
+  const chartNumericValues = chartData.flatMap((d) => [d.Atual, d.Projetado]).filter(Number.isFinite)
+  const yDataMin = chartNumericValues.length ? Math.min(...chartNumericValues) : 0
+  const yDataMax = chartNumericValues.length ? Math.max(...chartNumericValues) : 0
+  const yFloor = Math.min(0, yDataMin)
+  const yCeil = Math.max(0, yDataMax)
+  const span = yCeil - yFloor
+  const yPad = Math.max(span * 0.08, Math.abs(yCeil) * 0.05, Math.abs(yFloor) * 0.05, 1)
+
   return (
     <div className="space-y-4">
       {/* ── Três cards ─────────────────────────────────────────────────── */}
@@ -185,6 +193,7 @@ export function SummaryCards({ result }: SummaryCardsProps) {
                 tickLine={false}
               />
               <YAxis
+                domain={[yFloor - yPad, yCeil + yPad]}
                 tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
                 axisLine={false}
                 tickLine={false}

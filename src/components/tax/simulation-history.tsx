@@ -1,9 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useQuery } from "@tanstack/react-query"
-import { FileClock, Loader2 } from "lucide-react"
-import { formatBRL, getSimulationRecord, listSimulationRecords } from "@/lib/api"
+import { FileClock, FileDown, Loader2 } from "lucide-react"
+import {
+  downloadSimulationReport,
+  formatBRL,
+  getSimulationRecord,
+  listSimulationRecords,
+} from "@/lib/api"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { ClassificationItem, FormExpense } from "@/types/api"
@@ -35,6 +42,8 @@ interface SimulationHistoryProps {
 
 export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
   const { userId, isLoaded, getToken } = useAuth()
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null)
+  const [pdfError, setPdfError] = useState<string | null>(null)
   const {
     setYear,
     setCompanyContext,
@@ -86,6 +95,23 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
     }
   }
 
+  async function handleDownloadPDF(id: string) {
+    setPdfError(null)
+    setPdfLoadingId(id)
+    try {
+      const token = await getToken()
+      if (!token) {
+        setPdfError("Sessão expirada. Entre novamente.")
+        return
+      }
+      await downloadSimulationReport(token, id)
+    } catch (e) {
+      setPdfError((e as Error).message)
+    } finally {
+      setPdfLoadingId(null)
+    }
+  }
+
   if (!isLoaded || !userId) return null
 
   return (
@@ -118,58 +144,81 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
           </div>
         )}
         {!isPending && data && data.length > 0 && (
-          <ul className="divide-y divide-border max-h-56 overflow-y-auto">
-            {data.map((row) => {
-              const deltaNum = parseFloat(row.delta_impact)
-              const deltaNeutral = !Number.isFinite(deltaNum) || deltaNum === 0
-              const deltaSaving = deltaNum < 0
-              return (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  onClick={() => void handleOpenRecord(row.id)}
-                  className="w-full text-left px-3 py-3 rounded-lg hover:bg-muted/60 transition-colors flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"
-                >
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(row.created_at)}
-                    </span>
-                    <p className="text-sm font-medium mt-0.5">
-                      Ano {row.year}
-                      {row.company_context
-                        ? ` · ${truncate(row.company_context, 48)}`
-                        : ""}
-                    </p>
-                  </div>
-                  <div className="text-xs sm:text-right shrink-0 flex flex-col sm:items-end gap-1">
-                    <div>
-                      <span className="text-muted-foreground">Projetado líquido </span>
-                      <span className="font-mono font-semibold">
-                        {formatBRL(row.total_projected_tax)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground mr-1">Δ</span>
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-0.5 font-mono text-xs font-semibold px-2 py-0.5 rounded-full",
-                          deltaNeutral
-                            ? "bg-muted/60 text-muted-foreground"
-                            : deltaSaving
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                              : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
-                        )}
-                      >
-                        {deltaNeutral ? "→ " : deltaSaving ? "↓ " : "↑ "}
-                        {formatBRL(row.delta_impact)}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              </li>
-              )
-            })}
-          </ul>
+          <div className="space-y-2">
+            {pdfError && (
+              <p className="text-xs text-destructive px-1" role="alert">
+                {pdfError}
+              </p>
+            )}
+            <ul className="divide-y divide-border max-h-56 overflow-y-auto">
+              {data.map((row) => {
+                const deltaNum = parseFloat(row.delta_impact)
+                const deltaNeutral = !Number.isFinite(deltaNum) || deltaNum === 0
+                const deltaSaving = deltaNum < 0
+                return (
+                  <li key={row.id} className="flex items-stretch gap-1 py-1 first:pt-0">
+                    <button
+                      type="button"
+                      onClick={() => void handleOpenRecord(row.id)}
+                      className="min-w-0 flex-1 text-left px-3 py-3 rounded-lg hover:bg-muted/60 transition-colors flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"
+                    >
+                      <div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(row.created_at)}
+                        </span>
+                        <p className="text-sm font-medium mt-0.5">
+                          Ano {row.year}
+                          {row.company_context
+                            ? ` · ${truncate(row.company_context, 48)}`
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="text-xs sm:text-right shrink-0 flex flex-col sm:items-end gap-1">
+                        <div>
+                          <span className="text-muted-foreground">Projetado líquido </span>
+                          <span className="font-mono font-semibold">
+                            {formatBRL(row.total_projected_tax)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground mr-1">Δ</span>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-0.5 font-mono text-xs font-semibold px-2 py-0.5 rounded-full",
+                              deltaNeutral
+                                ? "bg-muted/60 text-muted-foreground"
+                                : deltaSaving
+                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                                  : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+                            )}
+                          >
+                            {deltaNeutral ? "→ " : deltaSaving ? "↓ " : "↑ "}
+                            {formatBRL(row.delta_impact)}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-auto min-h-12 w-10 shrink-0 self-stretch sm:self-center"
+                      title="Baixar diagnóstico (PDF)"
+                      aria-label="Baixar diagnóstico em PDF"
+                      disabled={pdfLoadingId === row.id}
+                      onClick={() => void handleDownloadPDF(row.id)}
+                    >
+                      {pdfLoadingId === row.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : (
+                        <FileDown className="h-4 w-4" aria-hidden />
+                      )}
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         )}
       </div>
     </section>

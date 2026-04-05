@@ -5,8 +5,14 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@clerk/nextjs"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, FileClock, Loader2 } from "lucide-react"
-import { formatBRL, getSimulationRecord, listSimulationRecords } from "@/lib/api"
+import { ArrowLeft, FileClock, FileDown, Loader2 } from "lucide-react"
+import {
+  downloadSimulationReport,
+  formatBRL,
+  getSimulationRecord,
+  listSimulationRecords,
+} from "@/lib/api"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { ClassificationItem, FormExpense } from "@/types/api"
@@ -35,7 +41,9 @@ export default function HistoryPage() {
   const router = useRouter()
   const { userId, isLoaded, getToken } = useAuth()
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [pdfError, setPdfError] = useState<string | null>(null)
 
   const {
     setYear,
@@ -96,6 +104,20 @@ export default function HistoryPage() {
     }
   }
 
+  async function handleDownloadPDF(id: string) {
+    setPdfError(null)
+    setPdfLoadingId(id)
+    try {
+      const token = await getToken()
+      if (!token) throw new Error("Não autenticado")
+      await downloadSimulationReport(token, id)
+    } catch (e) {
+      setPdfError((e as Error).message)
+    } finally {
+      setPdfLoadingId(null)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-50/50">
       <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
@@ -125,6 +147,11 @@ export default function HistoryPage() {
         {loadError && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
             {loadError}
+          </div>
+        )}
+        {pdfError && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
+            {pdfError}
           </div>
         )}
 
@@ -168,7 +195,7 @@ export default function HistoryPage() {
                 const deltaSaving = deltaNum < 0
 
                 return (
-                  <li key={row.id}>
+                  <li key={row.id} className="flex items-stretch gap-1 px-1 py-1">
                     <button
                       type="button"
                       disabled={isThisLoading}
@@ -181,7 +208,7 @@ export default function HistoryPage() {
                         )
                       }
                       className={cn(
-                        "w-full text-left px-5 py-4 hover:bg-muted/50 transition-colors",
+                        "min-w-0 flex-1 text-left px-4 py-4 hover:bg-muted/50 transition-colors",
                         "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2",
                         isThisLoading && "opacity-60 cursor-wait",
                       )}
@@ -198,7 +225,6 @@ export default function HistoryPage() {
                         </p>
                       </div>
 
-                      {/* Valores */}
                       <div className="text-xs sm:text-right shrink-0 flex flex-col sm:items-end gap-1 pl-5 sm:pl-0">
                         {isThisLoading ? (
                           <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -233,6 +259,22 @@ export default function HistoryPage() {
                         )}
                       </div>
                     </button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-auto min-h-14 w-10 shrink-0 self-stretch sm:self-center mr-2"
+                      title="Baixar diagnóstico (PDF)"
+                      aria-label="Baixar diagnóstico em PDF"
+                      disabled={isThisLoading || pdfLoadingId === row.id}
+                      onClick={() => void handleDownloadPDF(row.id)}
+                    >
+                      {pdfLoadingId === row.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : (
+                        <FileDown className="h-4 w-4" aria-hidden />
+                      )}
+                    </Button>
                   </li>
                 )
               })}

@@ -5,11 +5,14 @@ import {
   Apple,
   Building2,
   CircleHelp,
+  Globe,
+  HeartHandshake,
   Home,
   Info,
   Lightbulb,
   Plus,
   Receipt,
+  Scale,
   Settings2,
   Sparkles,
   GraduationCap,
@@ -302,10 +305,13 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
                       Regime geral: PIS, COFINS e ISS no atual versus CBS/IBS na projeção. Benefícios LC 68/2024:
-                      saúde/educação/cultura (-60% na saída projetada); MEI com DAS fixo ilustrativo. Incentivo
-                      social: cesta básica / medicamentos com CBS+IBS zero na saída projetada (créditos nas compras
-                      podem deixar o líquido negativo — posição de crédito). Setor imobiliário: projeção com
-                      redução sobre a alíquota padrão do ano e redutor opcional de base (ilustrativo). Simples
+                      saúde/educação/cultura (-60% na saída projetada); profissões regulamentadas (-30% ilustrativo
+                      na alíquota projetada); MEI com DAS fixo ilustrativo. Incentivo social: cesta básica /
+                      medicamentos com CBS+IBS zero na saída projetada (créditos nas compras podem deixar o líquido
+                      negativo — posição de crédito). Mercado externo: exportadora com CBS+IBS zero na saída
+                      projetada e créditos nas compras (ilustrativo). Entidades sem fins lucrativos: imunidade ilustrativa na saída
+                      projetada sem créditos no modelo (custo de aquisições na narrativa do produto). Setor imobiliário: projeção com redução sobre a alíquota padrão
+                      do ano e redutor opcional de base (ilustrativo). Simples
                       Nacional: modelo ilustrativo no atual e puro/híbrido na projeção. Não substitui orientação
                       profissional.
                     </TooltipContent>
@@ -325,6 +331,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                   </optgroup>
                   <optgroup label="Benefícios LC 68/2024">
                     <option value="diferenciado_60">Saúde, Educação e Cultura (-60%)</option>
+                    <option value="prof_liberal">Profissionais liberais (−30% na alíquota projetada)</option>
                     <option value="mei">MEI (carga fixa mensal — DAS ilustrativo)</option>
                   </optgroup>
                   <optgroup label="Simples Nacional">
@@ -346,6 +353,16 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                   <optgroup label="Incentivo social">
                     <option value="aliquota_zero">
                       Cesta básica / medicamentos (alíquota zero CBS+IBS na saída)
+                    </option>
+                  </optgroup>
+                  <optgroup label="Mercado externo">
+                    <option value="exportadora">
+                      Exportadora (imunidade ilustrativa CBS+IBS na saída; créditos nas compras)
+                    </option>
+                  </optgroup>
+                  <optgroup label="Entidades sem fins lucrativos">
+                    <option value="entidade_imune">
+                      Entidade imune (ONGs, templos, partidos — saída zero; sem créditos no modelo)
                     </option>
                   </optgroup>
                 </select>
@@ -395,6 +412,29 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                     </div>
                   </div>
                 )}
+                {companyRegime === "prof_liberal" && (
+                  <div
+                    className="mt-4 flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-indigo-100 border-l-4 border-l-indigo-500 bg-indigo-50/50 p-4 duration-300 dark:border-indigo-900/40 dark:border-l-indigo-400 dark:bg-indigo-950/20"
+                    role="note"
+                  >
+                    <div className="shrink-0 rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-300">
+                      <Scale className="size-5" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-50">
+                        Profissões regulamentadas (ilustrativo)
+                      </h4>
+                      <p className="mt-1 text-xs leading-relaxed text-indigo-800 dark:text-indigo-200/90">
+                        Sociedades de advogados, engenheiros, contadores, arquitetos e demais profissões com registro
+                        podem enquadrar-se em benefícios específicos na LC 68/2024. O TribIA aplica na projeção{" "}
+                        <strong>70% da alíquota CBS+IBS padrão do ano selecionado</strong> (redução ilustrativa de 30%
+                        sobre essa alíquota), mantendo <strong>créditos por despesa elegível</strong> conforme o regime
+                        de cada fornecedor. Compare com o cenário &quot;Lucro Real / Presumido&quot; para avaliar troca
+                        de estratégia; confirme o enquadramento com seu contador.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {companyRegime === "diferenciado_60" && (
                   <div
                     className="mt-4 flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500 bg-blue-50/50 p-4 duration-300 dark:border-blue-900/40 dark:border-l-blue-400 dark:bg-blue-950/20"
@@ -433,6 +473,53 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                         líquido projetado indica <strong>saldo credor</strong>: créditos de compras elegíveis
                         superam o tributo na saída — posição típica a tratar com seu contador (compensação /
                         ressarcimento conforme regras vigentes).
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {companyRegime === "entidade_imune" && (
+                  <div
+                    className="mt-4 flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50/50 p-4 duration-300 dark:border-slate-700 dark:border-l-slate-500 dark:bg-slate-900/25"
+                    role="note"
+                  >
+                    <div className="shrink-0 rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      <HeartHandshake className="size-5" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-50">
+                        Imunidade de saída (sem créditos no modelo)
+                      </h4>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-200/90">
+                        O TribIA trata a <strong>projeção</strong> como <strong>CBS+IBS zero sobre a receita informada</strong>{" "}
+                        (ilustrativo para doações, anuidades etc., sem modelar imunidade integral no regime atual).{" "}
+                        <strong>Não há apropriação de créditos</strong> no cenário projetado: o imposto embutido nas compras tende a
+                        permanecer como <strong>custo</strong>, podendo elevar o custo operacional face a um contribuinte que
+                        compensa IBS/CBS na cadeia — em ordem de grandeza, até a <strong>alíquota combinada do ano</strong> da
+                        simulação sobre o valor das aquisições tributadas (ilustrativo). Confirme com especialista e normas
+                        aplicáveis ao caso.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {companyRegime === "exportadora" && (
+                  <div
+                    className="mt-4 flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-sky-100 border-l-4 border-l-sky-500 bg-sky-50/50 p-4 duration-300 dark:border-sky-900/40 dark:border-l-sky-400 dark:bg-sky-950/20"
+                    role="note"
+                  >
+                    <div className="shrink-0 rounded-lg bg-sky-100 p-2 text-sky-600 dark:bg-sky-900/50 dark:text-sky-300">
+                      <Globe className="size-5" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-sky-900 dark:text-sky-50">
+                        Exportação — imunidade ilustrativa na saída
+                      </h4>
+                      <p className="mt-1 text-xs leading-relaxed text-sky-800 dark:text-sky-200/90">
+                        O TribIA projeta <strong>CBS+IBS zero sobre a receita de serviços</strong> (modelo
+                        ilustrativo de imunidade na saída), mantendo <strong>créditos nas compras elegíveis</strong>{" "}
+                        conforme o regime de cada fornecedor. A conta é distinta da cesta básica na narrativa de
+                        produto. Um <strong>líquido projetado negativo</strong> sugere posição de{" "}
+                        <strong>saldo credor</strong> ilustrativa — tema para alinhar com seu contador (compensação,
+                        ressarcimento ou manutenção de créditos conforme normas aplicáveis ao caso).
                       </p>
                     </div>
                   </div>

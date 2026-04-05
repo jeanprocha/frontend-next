@@ -9,6 +9,8 @@ export interface TaxBreakdown {
 
 export interface SimulationResponse {
   year: number
+  /** Eco do perfil tributário no simulador (persistido no histórico / PDF). */
+  company_regime?: string
   current: TaxBreakdown
   projected: TaxBreakdown
   /** projetado − atual: positivo = custo adicional; negativo = economia */
@@ -38,7 +40,10 @@ export interface SimulationRequest {
    * híbrido = projeção CBS/IBS integral com créditos como o regular;
    * "diferenciado_60" = atual como regular; projeção de saída com redução de 60% em toda a receita;
    * "aliquota_zero" = atual como regular; projeção CBS/IBS zero na receita (cesta básica / social, ilustrativo);
-   * "imobiliario_venda" / "imobiliario_aluguel" = projeção com redutor de alíquota e base (ilustrativo).
+   * "exportadora" = atual como regular; projeção CBS/IBS zero na receita (imunidade ilustrativa na saída; créditos nas compras; líquido projetado pode ser negativo — saldo credor ilustrativo; distinto de cesta básica na narrativa);
+   * "entidade_imune" = atual como regular (baseline ilustrativo); projeção CBS/IBS zero na saída e sem créditos no modelo (consumidor final ilustrativo; distinto de exportadora);
+   * "imobiliario_venda" / "imobiliario_aluguel" = projeção com redutor de alíquota e base (ilustrativo);
+   * "prof_liberal" = atual como regular; projeção com 70% da alíquota CBS+IBS padrão do ano (redução ilustrativa de 30%; profissões regulamentadas).
    */
   company_regime?: string
   /** Texto livre; o ramo MEI no motor exige company_regime "mei" (sem inferência por texto). */
@@ -110,6 +115,8 @@ export interface SimulationRecordSummary {
 export interface SimulationRecordCreatePayload {
   organization_id?: string | null
   company_context: string
+  /** Perfil do simulador (ex.: exportadora, aliquota_zero) para PDF e reidratação. */
+  company_regime?: string
   year: number
   simulation: SimulationResponse
   services: ServiceInput[]
@@ -139,6 +146,7 @@ export interface SimulationRecordDetailResponse {
   created_at: string
   year: number
   company_context: string
+  company_regime?: string
   simulation: SimulationResponse
   services: FormServiceDTO[]
   expenses: FormExpenseDTO[]

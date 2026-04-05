@@ -133,6 +133,27 @@ export async function getSimulationRecord(
   return res.json()
 }
 
+/** Baixa o PDF de diagnóstico gerado no backend (GET /simulation-records/{id}/report). */
+export async function downloadSimulationReport(token: string, id: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/simulation-records/${encodeURIComponent(id)}/report`,
+    { headers: bearerHeaders(token) },
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? "Erro ao baixar diagnóstico")
+  }
+  const blob = await res.blob()
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `Diagnostico_Reforma_Tributaria_${id.slice(0, 8)}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}
+
 // --- Templates de Empresa ---
 
 export async function listCompanies(token: string): Promise<CompanyTemplate[]> {
