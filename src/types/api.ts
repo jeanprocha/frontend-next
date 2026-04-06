@@ -109,10 +109,31 @@ export interface ClassificationItem {
   error?: string
 }
 
+/** Linha de GET /strategy-tags ou descoberta pós-classificação. */
+export interface StrategyTag {
+  pattern: string
+  label: string
+  category?: string
+  color_scheme: string
+}
+
+export interface StrategyTagsListResponse {
+  tags: StrategyTag[]
+}
+
 export interface BatchClassificationResponse {
   total: number
   processed: number
   results: ClassificationItem[]
+  /** Padrões realmente inseridos na base neste batch. */
+  discovered_tags?: StrategyTag[]
+}
+
+/** Metadados agregados do RAG pós-classificação (relevância da recuperação, não “certeza” do LLM). */
+export interface AiMetadata {
+  confidence_score: number
+  sources_analyzed: string[]
+  tokens_processed?: number
 }
 
 // Formulário de entrada — estrutura interna do frontend antes de chamar a API.

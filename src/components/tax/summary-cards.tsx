@@ -22,6 +22,8 @@ import type { SimulationResponse } from "@/types/api"
 
 interface SummaryCardsProps {
   result: SimulationResponse
+  /** Cenário A (referência) para comparar carga líquida projetada lado a lado com `result` (B) */
+  compareBaseline?: SimulationResponse
 }
 
 // Tooltip customizado para exibir valores em BRL
@@ -48,7 +50,7 @@ function netTaxSemantics(netStr: string): { isCreditor: boolean; netLabel: strin
   }
 }
 
-export function SummaryCards({ result }: SummaryCardsProps) {
+export function SummaryCards({ result, compareBaseline }: SummaryCardsProps) {
   let deltaValue = parseFloat(result.delta)
   const projNet = parseFloat(result.projected.net_tax)
   const currNet = parseFloat(result.current.net_tax)
@@ -113,7 +115,43 @@ export function SummaryCards({ result }: SummaryCardsProps) {
 
   return (
     <div className="space-y-4">
-      {/* ── Três cards ─────────────────────────────────────────────────── */}
+      {compareBaseline && (
+        <Card className="border-slate-200/90 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/25">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Comparativo A/B — carga líquida projetada (CBS/IBS)
+            </CardTitle>
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5 leading-snug">
+              Referência congelada (A) vs simulação atual (B). Os cartões abaixo referem-se ao cenário B.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-slate-200/80 bg-background/80 px-4 py-3 dark:border-slate-700">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Simulação A (referência) · {compareBaseline.year}
+                </p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-slate-600 dark:text-slate-300">
+                  {formatBRL(compareBaseline.projected.net_tax)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-emerald-500/25 bg-emerald-50/40 px-4 py-3 dark:border-emerald-500/20 dark:bg-emerald-950/20">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800/90 dark:text-emerald-300/90">
+                  Simulação B (atual) · {result.year}
+                </p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                  {formatBRL(result.projected.net_tax)}
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 text-[10px] text-muted-foreground leading-snug">
+              Se alterou serviços, despesas ou contexto após congelar A, trate o comparativo como ilustrativo.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Três cards (cenário B quando há compareBaseline) ───────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {/* Regime atual */}
         <Card

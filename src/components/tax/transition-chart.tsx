@@ -6,7 +6,9 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ComposedChart,
   Legend,
+  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -20,6 +22,7 @@ import type { SimulationResponse } from "@/types/api"
 
 const OLD_COLOR = "#64748b"
 const NEW_COLOR = "#10b981"
+const AB_A_COLOR = "#94a3b8"
 const MIN_YEAR = 2026
 const MAX_YEAR = 2033
 
@@ -29,6 +32,14 @@ interface ChartRow {
   year: number
   legado: number
   novo: number
+  inflection: boolean
+}
+
+interface ChartRowAb {
+  year: number
+  legado: number
+  novoA: number
+  novoB: number
   inflection: boolean
 }
 
@@ -68,11 +79,62 @@ function buildRows(
   })
 }
 
+function buildAbRows(
+  current: NonNullable<SimulationResponse["transition_series"]>,
+  baseline: NonNullable<SimulationResponse["transition_series"]>,
+  mode: DisplayMode,
+  revenue: number,
+): ChartRowAb[] {
+  const curMap = new Map(current.map((p) => [p.year, p]))
+  const baseMap = new Map(baseline.map((p) => [p.year, p]))
+  const years = new Set<number>()
+  for (const p of current) {
+    if (p.year >= MIN_YEAR && p.year <= MAX_YEAR) years.add(p.year)
+  }
+  for (const p of baseline) {
+    if (p.year >= MIN_YEAR && p.year <= MAX_YEAR) years.add(p.year)
+  }
+  const sorted = [...years].sort((a, b) => a - b)
+
+  let inflectionYear: number | null = null
+  for (const y of sorted) {
+    const c = curMap.get(y)
+    if (!c) continue
+    const oldN = parseMoney(c.old_tax_net)
+    const newN = parseMoney(c.new_tax_net)
+    if (newN < oldN) {
+      inflectionYear = y
+      break
+    }
+  }
+
+  return sorted.map((year) => {
+    const c = curMap.get(year)
+    const b = baseMap.get(year)
+    let legado = c ? parseMoney(c.old_tax_net) : 0
+    let novoB = c ? parseMoney(c.new_tax_net) : 0
+    let novoA = b ? parseMoney(b.new_tax_net) : 0
+    if (mode === "pct" && revenue > 0) {
+      legado = (legado / revenue) * 100
+      novoB = (novoB / revenue) * 100
+      novoA = (novoA / revenue) * 100
+    }
+    return {
+      year,
+      legado,
+      novoA,
+      novoB,
+      inflection: inflectionYear !== null && year === inflectionYear,
+    }
+  })
+}
+
 function TransitionTooltip({
   active,
   payload,
   label,
   mode,
+  abMode,
 }: {
   active?: boolean
   payload?: Array<{
@@ -80,10 +142,11 @@ function TransitionTooltip({
     value?: number
     color?: string
     dataKey?: string
-    payload?: ChartRow
+    payload?: ChartRow | ChartRowAb
   }>
   label?: string | number
   mode: DisplayMode
+  abMode?: boolean
 }) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload
@@ -104,7 +167,9 @@ function TransitionTooltip({
       ))}
       {row && (
         <p className="mt-1.5 pt-1.5 border-t text-[10px] text-muted-foreground leading-snug">
-          Legado: PIS/COFINS/ISS (modelo atual). Novo: CBS/IBS (projetado). Valores ilustrativos (TribIA).
+          {abMode
+            ? "Legado a partir do cenário B. CBS/IBS: A = referência congelada, B = simulação atual."
+            : "Legado: PIS/COFINS/ISS (modelo atual). Novo: CBS/IBS (projetado). Valores ilustrativos (TribIA)."}
         </p>
       )}
     </div>
@@ -113,10 +178,14 @@ function TransitionTooltip({
 
 interface TransitionChartProps {
   result: SimulationResponse
+  /** Cenário A (referência): compara CBS/IBS projetado (new) vs cenário B = result */
+  abBaselineResult?: SimulationResponse
 }
 
-export function TransitionChart({ result }: TransitionChartProps) {
+export function TransitionChart({ result, abBaselineResult }: TransitionChartProps) {
   const series = result.transition_series
+  const baseSeries = abBaselineResult?.transition_series
+  const abMode = Boolean(abBaselineResult && baseSeries?.length && series?.length)
   const [mode, setMode] = useState<DisplayMode>("brl")
 
   const revenue = useMemo(() => {
@@ -124,10 +193,15 @@ export function TransitionChart({ result }: TransitionChartProps) {
     return Number.isFinite(r) && r > 0 ? r : 0
   }, [result.revenue_total])
 
-  const chartData = useMemo(() => {
-    if (!series?.length) return []
+  const chartDataSingle = useMemo(() => {
+    if (!series?.length || abMode) return [] as ChartRow[]
     return buildRows(series, mode, revenue)
-  }, [series, mode, revenue])
+  }, [series, mode, revenue, abMode])
+
+  const chartDataAb = useMemo(() => {
+    if (!series?.length || !abMode || !baseSeries?.length) return [] as ChartRowAb[]
+    return buildAbRows(series, baseSeries, mode, revenue)
+  }, [series, baseSeries, mode, revenue, abMode])
 
   const refYear = useMemo(() => {
     const y = new Date().getFullYear()
@@ -142,11 +216,25 @@ export function TransitionChart({ result }: TransitionChartProps) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <CardTitle className="text-sm font-semibold">
-              Transição temporal (2026–2033)
+              {abMode ? "Projeção comparativa (A vs B)" : "Transição temporal (2026–2033)"}
             </CardTitle>
             <p className="text-[11px] text-muted-foreground mt-1 max-w-xl leading-snug">
-              Carga líquida legado vs. CBS/IBS projetado por ano, com as premissas do simulador (LC 68/2024 — alíquotas estimadas).
+              {abMode
+                ? "CBS/IBS projetado por ano: referência (A, tracejado) vs simulação atual (B, sólido). Legado a partir do cenário B."
+                : "Carga líquida legado vs. CBS/IBS projetado por ano, com as premissas do simulador (LC 68/2024 — alíquotas estimadas)."}
             </p>
+            {abMode && (
+              <div className="mt-2 flex flex-wrap gap-4 text-[10px] font-semibold uppercase text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-slate-400" />
+                  Cenário A (referência)
+                </span>
+                <span className="flex items-center gap-1.5 text-emerald-600">
+                  <span className="inline-block h-0.5 w-4 bg-emerald-500" />
+                  Cenário B (atual)
+                </span>
+              </div>
+            )}
           </div>
           <div
             className="inline-flex rounded-lg border bg-muted/40 p-0.5 gap-0.5 shrink-0"
@@ -185,65 +273,136 @@ export function TransitionChart({ result }: TransitionChartProps) {
       </CardHeader>
       <CardContent className="pt-0">
         <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis
-              dataKey="year"
-              type="number"
-              domain={[MIN_YEAR, MAX_YEAR]}
-              ticks={[2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033]}
-              tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-              axisLine={false}
-              tickLine={false}
-              width={48}
-              tickFormatter={(v) =>
-                mode === "brl"
-                  ? `${(v / 1000).toFixed(0)}k`
-                  : `${Number(v).toFixed(0)}%`
-              }
-            />
-            <Tooltip content={<TransitionTooltip mode={mode} />} />
-            <Legend
-              wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
-              iconType="square"
-              iconSize={8}
-            />
-            <ReferenceLine
-              x={refYear}
-              stroke="var(--color-muted-foreground)"
-              strokeDasharray="4 4"
-              strokeOpacity={0.6}
-              label={{
-                value: "Hoje",
-                position: "top",
-                fill: "var(--color-muted-foreground)",
-                fontSize: 10,
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="legado"
-              name="Legado (PIS/COFINS/ISS)"
-              stackId="a"
-              stroke={OLD_COLOR}
-              fill={OLD_COLOR}
-              fillOpacity={0.55}
-            />
-            <Area
-              type="monotone"
-              dataKey="novo"
-              name="CBS/IBS (projetado)"
-              stackId="a"
-              stroke={NEW_COLOR}
-              fill={NEW_COLOR}
-              fillOpacity={0.55}
-            />
-          </AreaChart>
+          {abMode ? (
+            <ComposedChart data={chartDataAb} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <XAxis
+                dataKey="year"
+                type="number"
+                domain={[MIN_YEAR, MAX_YEAR]}
+                ticks={[2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033]}
+                tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                axisLine={false}
+                tickLine={false}
+                width={48}
+                tickFormatter={(v) =>
+                  mode === "brl"
+                    ? `${(v / 1000).toFixed(0)}k`
+                    : `${Number(v).toFixed(0)}%`
+                }
+              />
+              <Tooltip content={<TransitionTooltip mode={mode} abMode />} />
+              <Legend
+                wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
+                iconType="line"
+                iconSize={8}
+              />
+              <ReferenceLine
+                x={refYear}
+                stroke="var(--color-muted-foreground)"
+                strokeDasharray="4 4"
+                strokeOpacity={0.6}
+                label={{
+                  value: "Hoje",
+                  position: "top",
+                  fill: "var(--color-muted-foreground)",
+                  fontSize: 10,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="legado"
+                name="Legado (B)"
+                stroke={OLD_COLOR}
+                fill={OLD_COLOR}
+                fillOpacity={0.35}
+              />
+              <Line
+                type="monotone"
+                dataKey="novoA"
+                name="CBS/IBS cenário A"
+                stroke={AB_A_COLOR}
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="novoB"
+                name="CBS/IBS cenário B"
+                stroke={NEW_COLOR}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </ComposedChart>
+          ) : (
+            <AreaChart data={chartDataSingle} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <XAxis
+                dataKey="year"
+                type="number"
+                domain={[MIN_YEAR, MAX_YEAR]}
+                ticks={[2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033]}
+                tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                axisLine={false}
+                tickLine={false}
+                width={48}
+                tickFormatter={(v) =>
+                  mode === "brl"
+                    ? `${(v / 1000).toFixed(0)}k`
+                    : `${Number(v).toFixed(0)}%`
+                }
+              />
+              <Tooltip content={<TransitionTooltip mode={mode} />} />
+              <Legend
+                wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
+                iconType="square"
+                iconSize={8}
+              />
+              <ReferenceLine
+                x={refYear}
+                stroke="var(--color-muted-foreground)"
+                strokeDasharray="4 4"
+                strokeOpacity={0.6}
+                label={{
+                  value: "Hoje",
+                  position: "top",
+                  fill: "var(--color-muted-foreground)",
+                  fontSize: 10,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="legado"
+                name="Legado (PIS/COFINS/ISS)"
+                stackId="a"
+                stroke={OLD_COLOR}
+                fill={OLD_COLOR}
+                fillOpacity={0.55}
+              />
+              <Area
+                type="monotone"
+                dataKey="novo"
+                name="CBS/IBS (projetado)"
+                stackId="a"
+                stroke={NEW_COLOR}
+                fill={NEW_COLOR}
+                fillOpacity={0.55}
+              />
+            </AreaChart>
+          )}
         </ResponsiveContainer>
       </CardContent>
     </Card>

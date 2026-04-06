@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import { CommandMenu } from "@/components/command-menu"
 
 // Remove a chave legada do localStorage que era usada pelo Zustand persist.
 // Pode ser removido após todos os usuários terem carregado a versão sem persist.
@@ -44,6 +45,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <BfcacheGuard />
+      <CommandMenu />
       {children}
       {process.env.NODE_ENV === "development" && (
         <ReactQueryDevtools initialIsOpen={false} />

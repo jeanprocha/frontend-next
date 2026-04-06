@@ -14,6 +14,7 @@ import {
 } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { aggregateRagMetadata } from "@/lib/rag-metadata"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { ClassificationItem, FormExpense } from "@/types/api"
 
@@ -84,11 +85,13 @@ export default function HistoryPage() {
         amount: e.amount,
       }))
       setExpenses(expenses)
+      const ai_metadata = aggregateRagMetadata([], classifications)
       setFormResults({
         mode: "form",
         simulation: d.simulation,
         classifications,
         expenses,
+        ai_metadata: ai_metadata ?? null,
         meta: {
           createdAt,
           companyContext: companyContext ?? "",

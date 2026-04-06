@@ -8,7 +8,9 @@ import {
   type CompanyRegimeOption,
   isImobiliarioRegime,
 } from "@/store/useTaxStore"
-import type { FormExpense, FormService } from "@/types/api"
+import { aggregateRagMetadata } from "@/lib/rag-metadata"
+import { normalizeText } from "@/lib/strategy-tags-match"
+import type { FormExpense, FormService, StrategyTag, StrategyTagsListResponse } from "@/types/api"
 
 // Payload recebido via mutate() — não acoplado ao Zustand internamente,
 // o que torna o hook testável e reutilizável em outros contextos.
@@ -86,6 +88,23 @@ function classificationContextForAI(
   return companyContext
 }
 
+function mergeDiscoveredStrategyTags(
+  a: { discovered_tags?: StrategyTag[] },
+  b: { discovered_tags?: StrategyTag[] },
+): StrategyTag[] {
+  const m = new Map<string, StrategyTag>()
+  for (const d of [...(a.discovered_tags ?? []), ...(b.discovered_tags ?? [])]) {
+    const p = normalizeText(d.pattern)
+    if (!p) continue
+    m.set(p, {
+      ...d,
+      pattern: p,
+      color_scheme: d.color_scheme?.trim() || "emerald",
+    })
+  }
+  return [...m.values()]
+}
+
 export function useSimulationMutation() {
   const { setResults: setFormResults } = useTaxStore()
   const { userId, getToken } = useAuth()
@@ -125,6 +144,27 @@ export function useSimulationMutation() {
       const svcClassMap = mapByClientId(svcClassResult.results)
       const expClassMap = mapByClientId(expClassResult.results)
 
+      const discoveredStrategyTags = mergeDiscoveredStrategyTags(svcClassResult, expClassResult)
+      if (discoveredStrategyTags.length > 0) {
+        queryClient.setQueryData<StrategyTagsListResponse>(["strategy-tags"], (old) => {
+          const cur = old?.tags ?? []
+          const seen = new Set(cur.map((t) => normalizeText(t.pattern)))
+          const next = [...cur]
+          for (const d of discoveredStrategyTags) {
+            const p = normalizeText(d.pattern)
+            if (seen.has(p)) continue
+            seen.add(p)
+            next.push({
+              pattern: p,
+              label: d.label,
+              category: d.category,
+              color_scheme: d.color_scheme || "emerald",
+            })
+          }
+          return { tags: next }
+        })
+      }
+
       // Passo 2: motor Go calcula impacto com regime_type por serviço e créditos corretos
       const redutorTrim = imobiliarioRedutorAjusteBrl?.trim() ?? ""
       const simResult = await simulate({
@@ -148,22 +188,43 @@ export function useSimulationMutation() {
         })),
       })
 
+      const ai_metadata = aggregateRagMetadata(
+        svcClassResult.results,
+        expClassResult.results,
+      )
+
       return {
         simulation: simResult,
         classifications: expClassResult.results,
         expenses,
+        discoveredStrategyTags,
+        ai_metadata,
       }
     },
     onSuccess: async (data, variables) => {
       setFormResults({
         mode: "form",
-        ...data,
+        simulation: data.simulation,
+        classifications: data.classifications,
+        expenses: data.expenses,
+        ai_metadata: data.ai_metadata ?? null,
         meta: {
           createdAt: new Date().toISOString(),
           companyContext: variables.companyContext,
           year: variables.year,
         },
       })
+
+      if (data.discoveredStrategyTags.length > 0) {
+        const { appendStrategyTagHighlightPatterns, setStrategyTagsDiscoveryMessage } =
+          useTaxStore.getState()
+        appendStrategyTagHighlightPatterns(
+          data.discoveredStrategyTags.map((d) => normalizeText(d.pattern)),
+        )
+        setStrategyTagsDiscoveryMessage(
+          "IA identificou um novo padrão fiscal e atualizou a base global.",
+        )
+      }
 
       if (!userId) return
 

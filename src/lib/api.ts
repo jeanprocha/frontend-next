@@ -1,5 +1,6 @@
 import type {
   BatchClassificationResponse,
+  StrategyTagsListResponse,
   CompanyCreatePayload,
   CompanyTemplate,
   LawArticleResponse,
@@ -52,6 +53,16 @@ export async function classifyBatch(
     throw new Error(err.error ?? "Erro ao classificar despesas")
   }
 
+  return res.json()
+}
+
+/** Lista padrões para chips de contexto (cache no backend). */
+export async function fetchStrategyTags(): Promise<StrategyTagsListResponse> {
+  const res = await fetch(`${API_BASE}/strategy-tags`, { method: "GET" })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error ?? "Erro ao carregar tags de estratégia")
+  }
   return res.json()
 }
 

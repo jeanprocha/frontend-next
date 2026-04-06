@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import type {
+  AiMetadata,
   CompanyTemplate,
   FormService,
   FormExpense,
@@ -21,6 +22,8 @@ export interface PersistedResults {
   classifications: ClassificationItem[]
   expenses: FormExpense[]
   meta?: ResultMeta
+  /** Agregado RAG (serviços + despesas); omitido em registos antigos / sem evidências. */
+  ai_metadata?: AiMetadata | null
 }
 
 export type CompanyRegimeOption =
@@ -49,6 +52,10 @@ interface TaxState {
   services: FormService[]
   expenses: FormExpense[]
   results: PersistedResults | null
+  /** Mensagem após simulação quando a API gravou novas strategy_tags (chips). */
+  strategyTagsDiscoveryMessage: string | null
+  /** Padrões normalizados para realçar chips recém-inseridos na sessão. */
+  strategyTagHighlightPatterns: string[]
 
   setYear: (year: number) => void
   setCompanyContext: (ctx: string) => void
@@ -57,6 +64,9 @@ interface TaxState {
   setServices: (services: FormService[]) => void
   setExpenses: (expenses: FormExpense[]) => void
   setResults: (r: PersistedResults | null) => void
+  setStrategyTagsDiscoveryMessage: (msg: string | null) => void
+  appendStrategyTagHighlightPatterns: (patterns: string[]) => void
+  clearStrategyTagsDiscoveryUi: () => void
   applyCompanyTemplate: (company: CompanyTemplate) => void
   reset: () => void
 }
@@ -72,6 +82,8 @@ const DEFAULTS = {
   services: [] as FormService[],
   expenses: [] as FormExpense[],
   results: null as PersistedResults | null,
+  strategyTagsDiscoveryMessage: null as string | null,
+  strategyTagHighlightPatterns: [] as string[],
 }
 
 // ─── Store (sem persistência — estado vive apenas enquanto a aba está aberta) ──
@@ -87,6 +99,16 @@ export const useTaxStore = create<TaxState>()((set) => ({
   setExpenses: (expenses) => set({ expenses }),
   setResults: (results) => set({ results }),
 
+  setStrategyTagsDiscoveryMessage: (strategyTagsDiscoveryMessage) => set({ strategyTagsDiscoveryMessage }),
+  appendStrategyTagHighlightPatterns: (patterns) =>
+    set((s) => ({
+      strategyTagHighlightPatterns: [
+        ...new Set([...s.strategyTagHighlightPatterns, ...patterns.filter(Boolean)]),
+      ],
+    })),
+  clearStrategyTagsDiscoveryUi: () =>
+    set({ strategyTagsDiscoveryMessage: null, strategyTagHighlightPatterns: [] }),
+
   // Preenche contexto e serviços a partir de um template, forçando nova simulação.
   applyCompanyTemplate: (company) =>
     set({
@@ -100,5 +122,10 @@ export const useTaxStore = create<TaxState>()((set) => ({
       results: null,
     }),
 
-  reset: () => set({ ...DEFAULTS }),
+  reset: () =>
+    set({
+      ...DEFAULTS,
+      strategyTagsDiscoveryMessage: null,
+      strategyTagHighlightPatterns: [],
+    }),
 }))
