@@ -116,35 +116,35 @@ export function SummaryCards({ result, compareBaseline }: SummaryCardsProps) {
   return (
     <div className="space-y-4">
       {compareBaseline && (
-        <Card className="border-slate-200/90 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/25">
+        <Card className="border-slate-200/90 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/25 print:border print:border-foreground/25 print:bg-transparent print:shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Comparativo A/B — carga líquida projetada (CBS/IBS)
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground/80 mt-0.5 leading-snug">
+            <p className="text-sm text-muted-foreground/80 mt-0.5 leading-snug">
               Referência congelada (A) vs simulação atual (B). Os cartões abaixo referem-se ao cenário B.
             </p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200/80 bg-background/80 px-4 py-3 dark:border-slate-700">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-lg border border-slate-200/80 bg-background/80 px-4 py-3 dark:border-slate-700 print:border-foreground/25 print:bg-transparent">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Simulação A (referência) · {compareBaseline.year}
                 </p>
                 <p className="mt-1 text-xl font-bold tabular-nums text-slate-600 dark:text-slate-300">
                   {formatBRL(compareBaseline.projected.net_tax)}
                 </p>
               </div>
-              <div className="rounded-lg border border-emerald-500/25 bg-emerald-50/40 px-4 py-3 dark:border-emerald-500/20 dark:bg-emerald-950/20">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800/90 dark:text-emerald-300/90">
+              <div className="rounded-lg border border-emerald-500/25 bg-emerald-50/40 px-4 py-3 dark:border-emerald-500/20 dark:bg-emerald-950/20 print:border print:border-foreground/25 print:bg-transparent">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800/90 dark:text-emerald-300/90 print:text-foreground">
                   Simulação B (atual) · {result.year}
                 </p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                <p className="mt-1 text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400 print:text-foreground">
                   {formatBRL(result.projected.net_tax)}
                 </p>
               </div>
             </div>
-            <p className="mt-3 text-[10px] text-muted-foreground leading-snug">
+            <p className="mt-3 text-xs text-muted-foreground leading-snug">
               Se alterou serviços, despesas ou contexto após congelar A, trate o comparativo como ilustrativo.
             </p>
           </CardContent>
@@ -156,31 +156,31 @@ export function SummaryCards({ result, compareBaseline }: SummaryCardsProps) {
         {/* Regime atual */}
         <Card
           className={cn(
-            "border-l-4 border-l-muted-foreground/30",
+            "border-l-4 border-l-muted-foreground/30 print:border print:border-foreground/25 print:bg-transparent print:shadow-none",
             currentNetMeta.isCreditor &&
-              "border-l-emerald-500/60 bg-emerald-50/50 dark:bg-emerald-950/15 dark:border-l-emerald-500/50",
+              "border-l-emerald-500/60 bg-emerald-50/50 dark:bg-emerald-950/15 dark:border-l-emerald-500/50 print:border-l-foreground/35 print:bg-transparent",
           )}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Regime Atual
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground/70 -mt-0.5">PIS/COFINS + ISS</p>
+            <p className="text-sm text-muted-foreground/70 -mt-0.5">PIS/COFINS + ISS</p>
           </CardHeader>
           <CardContent className="space-y-1">
             <p
               className={cn(
                 "text-2xl font-bold tabular-nums",
-                currentNetMeta.isCreditor && "text-emerald-700 dark:text-emerald-300",
+                currentNetMeta.isCreditor && "text-emerald-700 dark:text-emerald-300 print:text-foreground",
               )}
             >
               {formatBRL(result.current.net_tax)}
             </p>
             <p
               className={cn(
-                "text-[11px] font-medium",
+                "text-sm font-medium",
                 currentNetMeta.isCreditor
-                  ? "text-emerald-800/90 dark:text-emerald-300/90"
+                  ? "text-emerald-800/90 dark:text-emerald-300/90 print:text-foreground"
                   : "text-muted-foreground/80",
               )}
             >
@@ -197,33 +197,33 @@ export function SummaryCards({ result, compareBaseline }: SummaryCardsProps) {
         {/* Projetado */}
         <Card
           className={cn(
-            "border-l-4 border-l-accent",
+            "border-l-4 border-l-accent print:border print:border-foreground/25 print:bg-transparent print:shadow-none",
             projectedNetMeta.isCreditor &&
-              "border-l-emerald-500/70 bg-emerald-50/55 dark:bg-emerald-950/20 dark:border-l-emerald-400/60",
+              "border-l-emerald-500/70 bg-emerald-50/55 dark:bg-emerald-950/20 dark:border-l-emerald-400/60 print:border-l-foreground/35 print:bg-transparent",
           )}
         >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Projetado {result.year}
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground/70 -mt-0.5">CBS · IBS</p>
+            <p className="text-sm text-muted-foreground/70 -mt-0.5">CBS · IBS</p>
           </CardHeader>
           <CardContent className="space-y-1">
             <p
               className={cn(
                 "text-2xl font-bold tabular-nums",
                 projectedNetMeta.isCreditor
-                  ? "text-emerald-700 dark:text-emerald-300"
-                  : "text-accent",
+                  ? "text-emerald-700 dark:text-emerald-300 print:text-foreground"
+                  : "text-accent print:text-foreground",
               )}
             >
               {formatBRL(result.projected.net_tax)}
             </p>
             <p
               className={cn(
-                "text-[11px] font-medium",
+                "text-sm font-medium",
                 projectedNetMeta.isCreditor
-                  ? "text-emerald-800/90 dark:text-emerald-300/90"
+                  ? "text-emerald-800/90 dark:text-emerald-300/90 print:text-foreground"
                   : "text-muted-foreground/80",
               )}
             >
@@ -238,18 +238,29 @@ export function SummaryCards({ result, compareBaseline }: SummaryCardsProps) {
         </Card>
 
         {/* Delta */}
-        <Card className={deltaCardClass}>
+        <Card
+          className={cn(
+            deltaCardClass,
+            "print:border print:border-foreground/25 print:bg-transparent print:shadow-none",
+          )}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
               <DeltaIcon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
               {deltaLabel}
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground/70 -mt-0.5">
+            <p className="text-sm text-muted-foreground/70 -mt-0.5">
               vs. regime atual
             </p>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className={cn("text-2xl font-bold tabular-nums", deltaTextClass)}>
+            <p
+              className={cn(
+                "text-2xl font-bold tabular-nums",
+                deltaTextClass,
+                "print:text-foreground",
+              )}
+            >
               {deltaDisplay}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -260,7 +271,7 @@ export function SummaryCards({ result, compareBaseline }: SummaryCardsProps) {
       </div>
 
       {/* ── Gráfico comparativo ─────────────────────────────────────────── */}
-      <Card>
+      <Card className="print:border print:border-foreground/25 print:bg-transparent print:shadow-none">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Comparativo visual — Atual vs. {result.year}

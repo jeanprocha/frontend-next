@@ -1,10 +1,12 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Papa from "papaparse"
+import { useAuth } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { classifyBatch } from "@/lib/api"
+import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 import type { ClassificationItem, FormExpense } from "@/types/api"
 
 export interface UploadResult {
@@ -12,10 +14,14 @@ export interface UploadResult {
   classifications: ClassificationItem[]
 }
 
+export type UploadZonePipelinePhase = "idle" | "parsing" | "classifying" | "done"
+
 interface UploadZoneProps {
   companyContext?: string
   onResult: (result: UploadResult) => void
   onError: (msg: string) => void
+  /** Para alinhar glow / data-pipeline-stage ao processamento do CSV. */
+  onPhaseChange?: (phase: UploadZonePipelinePhase) => void
 }
 
 type Phase =
@@ -32,10 +38,30 @@ function findCol(headers: string[], candidates: string[]): string | undefined {
   return headers.find((h) => candidates.includes(h.trim().toLowerCase()))
 }
 
-export function UploadZone({ companyContext = "", onResult, onError }: UploadZoneProps) {
+export function UploadZone({
+  companyContext = "",
+  onResult,
+  onError,
+  onPhaseChange,
+}: UploadZoneProps) {
+  const { userId, getToken } = useAuth()
+  const plgTier = useTribiaPlgTier()
   const inputRef = useRef<HTMLInputElement>(null)
   const [phase, setPhase] = useState<Phase>({ type: "idle" })
   const [fileName, setFileName] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!onPhaseChange) return
+    const p: UploadZonePipelinePhase =
+      phase.type === "idle"
+        ? "idle"
+        : phase.type === "parsing"
+          ? "parsing"
+          : phase.type === "classifying"
+            ? "classifying"
+            : "done"
+    onPhaseChange(p)
+  }, [phase, onPhaseChange])
 
   async function handleFile(file: File) {
     setFileName(file.name)
@@ -74,8 +100,15 @@ export function UploadZone({ companyContext = "", onResult, onError }: UploadZon
         setPhase({ type: "classifying", total: rows.length })
 
         try {
+          const token = await getToken()
+          const plgAuth =
+            token && userId
+              ? { token, userId, plan: plgTier }
+              : null
           const batch = await classifyBatch(
             rows.map((r) => ({ description: r.description, context: companyContext })),
+            5,
+            plgAuth,
           )
 
           onResult({ expenses: rows, classifications: batch.results })

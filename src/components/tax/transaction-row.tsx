@@ -4,8 +4,6 @@ import { AlertTriangle, Info, ShieldCheck, Trash2, Zap } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-type TransactionRowVariant = "service" | "expense"
-
 export type ExpenseFiscalStatus = "eligible" | "risk" | "neutral"
 
 interface TransactionRowBase {
@@ -37,7 +35,7 @@ const ghostInput =
 
 /** Labels visíveis ao focar qualquer campo da linha; permanecem no DOM para leitores de ecrã. */
 const contextualLabel =
-  "block min-h-3 text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground opacity-0 transition-opacity duration-150 motion-reduce:transition-none group-focus-within/row:opacity-100"
+  "block min-h-3 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground opacity-0 transition-opacity duration-150 motion-reduce:transition-none group-focus-within/row:opacity-100"
 
 function expenseFiscalShell(status: ExpenseFiscalStatus) {
   switch (status) {
@@ -187,6 +185,7 @@ export function TransactionRow(props: TransactionRowProps) {
             "opacity-100 lg:translate-x-0 lg:opacity-100",
             "lg:opacity-0 lg:translate-x-1 lg:group-hover/row:translate-x-0 lg:group-hover/row:opacity-100",
             "lg:group-focus-within/row:translate-x-0 lg:group-focus-within/row:opacity-100",
+            "tribia-row-actions-always-visible",
           )}
         >
           <button

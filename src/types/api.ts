@@ -93,6 +93,12 @@ export interface LawArticleResponse {
   source: string
 }
 
+/** Índices em pontos de código Unicode no texto do contexto enviado ao classificador (início inclusivo, fim exclusivo). */
+export interface MatchedSpan {
+  start: number
+  end: number
+}
+
 export interface ClassificationItem {
   /** Eco do batch (id da linha no formulário); evita colisão com descrições duplicadas. */
   client_id?: string
@@ -106,6 +112,8 @@ export interface ClassificationItem {
   // "padrao" | "diferenciado_60" (saúde, educação) | "reduzido_zero" (cesta básica)
   regime_type: string
   evidence: EvidenceArticle[]
+  /** Âncora no contexto da empresa (runas); omitido se a LLM não devolver ou validação falhar. */
+  matched_span?: MatchedSpan
   error?: string
 }
 
@@ -129,11 +137,25 @@ export interface BatchClassificationResponse {
   discovered_tags?: StrategyTag[]
 }
 
+/** Desagregação do score global (transparência “Como calculámos isto”). */
+export interface AiMetadataBreakdown {
+  /** Média das maiores similaridades RAG por linha com evidência (0–1). */
+  rag_similarity_mean: number
+  /** Média da confiança do classificador nas linhas sem erro (0–1). */
+  llm_confidence_mean: number
+  /** Linhas classificadas com pelo menos um trecho recuperado / total classificadas sem erro. */
+  evidence_coverage: number
+  classified_count: number
+  with_evidence_count: number
+}
+
 /** Metadados agregados do RAG pós-classificação (relevância da recuperação, não “certeza” do LLM). */
 export interface AiMetadata {
+  /** Score combinado 0–1 para o gauge macro (ver breakdown). */
   confidence_score: number
   sources_analyzed: string[]
   tokens_processed?: number
+  breakdown?: AiMetadataBreakdown
 }
 
 // Formulário de entrada — estrutura interna do frontend antes de chamar a API.
@@ -164,6 +186,9 @@ export interface SimulationRecordSummary {
   company_context?: string | null
   delta_impact: string
   total_projected_tax: string
+  /** Série agregada (listagem) para sparkline / preview Time-Traveler sem GET completo. */
+  transition_series?: TransitionSeriesPoint[]
+  strategy_insight?: string | null
 }
 
 export interface SimulationRecordCreatePayload {

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { CommandMenu } from "@/components/command-menu"
+import { TribiaPlanProvider } from "@/components/tribia/tribia-plan-provider"
+import { initThemeFromStorage } from "@/lib/theme-preference"
 
 // Remove a chave legada do localStorage que era usada pelo Zustand persist.
 // Pode ser removido após todos os usuários terem carregado a versão sem persist.
@@ -28,6 +30,10 @@ function BfcacheGuard() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    initThemeFromStorage()
+  }, [])
+
   // useState garante que cada sessão do navegador use sua própria instância
   // do QueryClient, evitando vazamento de estado entre requests no SSR.
   const [queryClient] = useState(
@@ -44,9 +50,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BfcacheGuard />
-      <CommandMenu />
-      {children}
+      <TribiaPlanProvider>
+        <BfcacheGuard />
+        <CommandMenu />
+        {children}
+      </TribiaPlanProvider>
       {process.env.NODE_ENV === "development" && (
         <ReactQueryDevtools initialIsOpen={false} />
       )}

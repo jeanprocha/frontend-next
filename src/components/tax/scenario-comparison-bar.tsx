@@ -38,7 +38,7 @@ export function ScenarioComparisonBar({
         <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
           <ArrowLeftRight className="size-4 shrink-0 text-emerald-400" aria-hidden />
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
               Comparação A/B ativa
             </p>
             <p className="truncate text-xs text-slate-200">
@@ -53,7 +53,7 @@ export function ScenarioComparisonBar({
               variant="ghost"
               size="sm"
               onClick={onUseCurrentAsBaseline}
-              className="h-8 border border-slate-600/80 bg-slate-800/80 text-[10px] font-semibold uppercase tracking-wide text-slate-200 hover:bg-slate-700 hover:text-white"
+              className="h-8 border border-slate-600/80 bg-slate-800/80 text-xs font-semibold uppercase tracking-wide text-slate-200 hover:bg-slate-700 hover:text-white"
             >
               Usar B como referência
             </Button>
@@ -63,7 +63,7 @@ export function ScenarioComparisonBar({
             variant="ghost"
             size="sm"
             onClick={onAdjustParams}
-            className="h-8 gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-300 hover:bg-slate-800 hover:text-white"
+            className="h-8 gap-1 text-xs font-semibold uppercase tracking-wide text-slate-300 hover:bg-slate-800 hover:text-white"
           >
             <Pencil className="size-3" aria-hidden />
             Ajustar parâmetros
@@ -73,7 +73,7 @@ export function ScenarioComparisonBar({
             variant="ghost"
             size="sm"
             onClick={onCancel}
-            className="h-8 gap-1 text-[10px] font-semibold uppercase tracking-wide text-red-300 hover:bg-red-950/50 hover:text-red-200"
+            className="h-8 gap-1 text-xs font-semibold uppercase tracking-wide text-red-300 hover:bg-red-950/50 hover:text-red-200"
           >
             <X className="size-3" aria-hidden />
             Cancelar

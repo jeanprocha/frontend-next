@@ -19,6 +19,10 @@ export interface BoardReadyHeaderProps {
   /** ISO 8601 ou data já formatada; se omitido, usa `new Date()` */
   createdAtIso?: string | null
   className?: string
+  /** Premium: substitui marca TribIA por logotipo / nome do cliente */
+  whiteLabel?: boolean
+  clientBrandName?: string | null
+  clientLogoUrl?: string | null
 }
 
 function formatReportDate(iso?: string | null): string {
@@ -49,6 +53,9 @@ export function BoardReadyHeader({
   year,
   createdAtIso,
   className,
+  whiteLabel = false,
+  clientBrandName,
+  clientLogoUrl,
 }: BoardReadyHeaderProps) {
   const hasContext = Boolean(companyContext?.trim())
   const displayContext = hasContext
@@ -64,10 +71,10 @@ export function BoardReadyHeader({
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1 min-w-0 sm:max-w-[60%]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             LC 68/2024 — CBS / IBS
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground font-serif">
+          <h1 className="font-board-report text-2xl font-semibold tracking-tight text-foreground">
             {title}
           </h1>
           <p className="text-xs text-muted-foreground tabular-nums">
@@ -78,7 +85,7 @@ export function BoardReadyHeader({
         </div>
         <div className="shrink-0 text-right space-y-3 min-w-0 sm:max-w-[40%]">
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold leading-none mb-1">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground font-bold leading-none mb-1">
               Contexto da simulação
             </p>
             <p
@@ -88,18 +95,33 @@ export function BoardReadyHeader({
               {displayContext}
             </p>
             {!hasContext && (
-              <p className="text-[10px] text-muted-foreground mt-1 text-left sm:text-right">
+              <p className="text-xs text-muted-foreground mt-1 text-left sm:text-right">
                 Texto livre do formulário; não substitui razão social.
               </p>
             )}
           </div>
           <div aria-hidden>
-            <span className="inline-block text-xl font-semibold tracking-tight text-primary font-serif">
-              TribIA
-            </span>
-            <span className="block text-[10px] text-muted-foreground mt-0.5">
-              Simulador de reforma tributária
-            </span>
+            {whiteLabel && clientLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={clientLogoUrl}
+                alt=""
+                className="max-h-10 max-w-[140px] object-contain object-right ml-auto"
+              />
+            ) : whiteLabel && clientBrandName ? (
+              <span className="inline-block text-lg font-semibold tracking-tight text-foreground font-board-report">
+                {clientBrandName}
+              </span>
+            ) : (
+              <>
+                <span className="inline-block text-xl font-semibold tracking-tight text-primary font-serif">
+                  TribIA
+                </span>
+                <span className="block text-xs text-muted-foreground mt-0.5">
+                  Simulador de reforma tributária
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -108,14 +130,22 @@ export function BoardReadyHeader({
 }
 
 /** Marca d’água discreta; visível com ancestral `.board-ready` (inclui impressão). */
-export function BoardReadyWatermark() {
+export function BoardReadyWatermark({
+  visible = true,
+  label = "Gerado por TribIA",
+}: {
+  visible?: boolean
+  /** Free: incluir “Free” na etiqueta */
+  label?: string
+}) {
+  if (!visible) return null
   return (
     <div
       className="hidden board-ready:flex print:hidden pointer-events-none fixed inset-0 z-[1] items-center justify-center overflow-hidden"
       aria-hidden
     >
-      <span className="select-none text-5xl sm:text-6xl md:text-7xl font-serif text-muted-foreground/[0.07] rotate-[-16deg]">
-        Gerado por TribIA
+      <span className="font-board-report select-none text-5xl sm:text-6xl md:text-7xl text-muted-foreground/[0.07] rotate-[-16deg]">
+        {label}
       </span>
     </div>
   )

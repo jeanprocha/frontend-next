@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { fetchStrategyTags } from "@/lib/api"
-import { getFallbackStrategyTags } from "@/lib/strategy-tags-match"
+import { dedupeStrategyTagsByPattern, getFallbackStrategyTags } from "@/lib/strategy-tags-match"
 import type { StrategyTag } from "@/types/api"
 
 export function useStrategyTags(): {
@@ -21,9 +21,9 @@ export function useStrategyTags(): {
 
   const tags = useMemo((): StrategyTag[] => {
     if (q.data?.tags != null && q.data.tags.length > 0) {
-      return q.data.tags
+      return dedupeStrategyTagsByPattern(q.data.tags)
     }
-    return getFallbackStrategyTags()
+    return dedupeStrategyTagsByPattern(getFallbackStrategyTags())
   }, [q.data])
 
   return {

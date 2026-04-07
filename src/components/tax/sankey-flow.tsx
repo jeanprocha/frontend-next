@@ -133,7 +133,7 @@ export function SankeyFlow({ simulation, expenses, services }: SankeyFlowProps) 
       </CardHeader>
       <CardContent className="pt-0">
         <SankeyInner data={graph} />
-        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[10px] text-muted-foreground uppercase tracking-wide">
+        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground uppercase tracking-wide">
           <span className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-sm bg-[#10b981]" aria-hidden />
             Créditos

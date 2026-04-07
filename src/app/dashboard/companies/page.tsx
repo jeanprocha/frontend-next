@@ -1,13 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@clerk/nextjs"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Building2, Plus, Receipt, Trash2, X } from "lucide-react"
+import { Building2, Plus, Receipt, Trash2, X } from "lucide-react"
 import { createCompany, deleteCompany, listCompanies } from "@/lib/api"
+import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { useTaxStore } from "@/store/useTaxStore"
+import { ShellBreadcrumb } from "@/components/shell/shell-breadcrumb"
+import { shellPageClass } from "@/lib/shell-layout"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,6 +40,7 @@ function toServiceInput(s: DraftService): ServiceInput {
 
 function NewCompanyForm({ onClose }: { onClose: () => void }) {
   const { userId, getToken } = useAuth()
+  const plgTier = useTribiaPlgTier()
   const queryClient = useQueryClient()
   const [name, setName] = useState("")
   const [taxContext, setTaxContext] = useState("")
@@ -48,10 +52,11 @@ function NewCompanyForm({ onClose }: { onClose: () => void }) {
     mutationFn: async (payload: CompanyCreatePayload) => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")
-      return createCompany(token, userId, payload)
+      return createCompany(token, userId, payload, plgTier)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["companies"] })
+      queryClient.invalidateQueries({ queryKey: ["plg-quota"] })
       onClose()
     },
   })
@@ -145,9 +150,9 @@ function NewCompanyForm({ onClose }: { onClose: () => void }) {
         {services.length > 0 && (
           <div className="space-y-1.5">
             <div className="grid grid-cols-[1fr_100px_80px_28px] gap-2 px-1">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Descrição</span>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor (R$)</span>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Alíq. ISS</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Descrição</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Valor (R$)</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Alíq. ISS</span>
               <span />
             </div>
             {services.map((svc) => (
@@ -253,18 +258,18 @@ function CompanyCard({
 
       {services.length > 0 && (
         <div className="space-y-1">
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
             <Receipt className="size-3" />
             Serviços recorrentes
           </p>
           <div className="flex flex-wrap gap-1">
             {services.slice(0, 4).map((s, i) => (
-              <Badge key={i} variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">
+              <Badge key={i} variant="secondary" className="text-xs h-4 px-1.5 font-normal">
                 {s.description || "Serviço"}
               </Badge>
             ))}
             {services.length > 4 && (
-              <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-normal">
+              <Badge variant="outline" className="text-xs h-4 px-1.5 font-normal">
                 +{services.length - 4}
               </Badge>
             )}
@@ -293,12 +298,14 @@ export default function CompaniesPage() {
   const [showForm, setShowForm] = useState(false)
   const applyCompanyTemplate = useTaxStore((s) => s.applyCompanyTemplate)
 
+  const plgTierList = useTribiaPlgTier()
+
   const { data: companies, isPending, isError } = useQuery({
-    queryKey: ["companies", userId],
+    queryKey: ["companies", userId, plgTierList],
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")
-      return listCompanies(token, userId)
+      return listCompanies(token, userId, plgTierList)
     },
     enabled: !!userId,
     staleTime: 60_000,
@@ -309,18 +316,21 @@ export default function CompaniesPage() {
     router.push("/dashboard")
   }
 
+  useEffect(() => {
+    patchDashboardCommandBridge({
+      openCompaniesNewForm: () => setShowForm(true),
+    })
+    return () => patchDashboardCommandBridge({ openCompaniesNewForm: null })
+  }, [])
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="size-3.5" />
-          Dashboard
-        </Link>
-      </div>
+    <div className={shellPageClass()}>
+      <ShellBreadcrumb
+        items={[
+          { label: "Simulador", href: "/dashboard" },
+          { label: "Empresas" },
+        ]}
+      />
 
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -383,7 +393,8 @@ export default function CompaniesPage() {
           <Building2 className="size-10" aria-hidden />
           <p className="text-sm font-medium">Nenhuma empresa cadastrada ainda.</p>
           <p className="text-xs text-center max-w-xs">
-            Clique em "Nova empresa" para cadastrar um cliente com contexto tributário e serviços recorrentes.
+            Clique em «Nova empresa» para cadastrar um cliente com contexto tributário e serviços recorrentes.
+            Perfis guardados aqui aceleram o pipeline de simulação no painel principal.
           </p>
         </div>
       )}

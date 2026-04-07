@@ -166,7 +166,7 @@ function TransitionTooltip({
         </p>
       ))}
       {row && (
-        <p className="mt-1.5 pt-1.5 border-t text-[10px] text-muted-foreground leading-snug">
+        <p className="mt-1.5 pt-1.5 border-t text-xs text-muted-foreground leading-snug">
           {abMode
             ? "Legado a partir do cenário B. CBS/IBS: A = referência congelada, B = simulação atual."
             : "Legado: PIS/COFINS/ISS (modelo atual). Novo: CBS/IBS (projetado). Valores ilustrativos (TribIA)."}
@@ -218,13 +218,13 @@ export function TransitionChart({ result, abBaselineResult }: TransitionChartPro
             <CardTitle className="text-sm font-semibold">
               {abMode ? "Projeção comparativa (A vs B)" : "Transição temporal (2026–2033)"}
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground mt-1 max-w-xl leading-snug">
+            <p className="text-sm text-muted-foreground mt-1 max-w-xl leading-snug">
               {abMode
                 ? "CBS/IBS projetado por ano: referência (A, tracejado) vs simulação atual (B, sólido). Legado a partir do cenário B."
                 : "Carga líquida legado vs. CBS/IBS projetado por ano, com as premissas do simulador (LC 68/2024 — alíquotas estimadas)."}
             </p>
             {abMode && (
-              <div className="mt-2 flex flex-wrap gap-4 text-[10px] font-semibold uppercase text-muted-foreground">
+              <div className="mt-2 flex flex-wrap gap-4 text-xs font-semibold uppercase text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-slate-400" />
                   Cenário A (referência)

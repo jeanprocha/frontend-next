@@ -48,12 +48,12 @@ export function RegimeFollowUps() {
               onChange={(e) => setImobiliarioRedutorAjusteBrl(e.target.value)}
               className="h-9"
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Valor ilustrativo abatido da receita total antes de aplicar a alíquota efetiva na projeção.
             </p>
           </div>
         )}
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Valores baseados em alíquotas estimadas da LC 68/2024. Consulte um especialista para decisões fiscais.
         </p>
         {companyRegime === "simples_hibrido" && (
@@ -65,7 +65,7 @@ export function RegimeFollowUps() {
               className="size-4 shrink-0 text-amber-700 dark:text-amber-300"
               aria-hidden
             />
-            <div className="min-w-0 space-y-1 text-[11px] leading-snug">
+            <div className="min-w-0 space-y-1 text-sm leading-snug">
               <p className="font-semibold text-amber-900 dark:text-amber-50">
                 Foco em competitividade B2B
               </p>

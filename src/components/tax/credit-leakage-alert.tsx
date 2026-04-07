@@ -76,7 +76,7 @@ export function CreditLeakageAlert({ result }: CreditLeakageAlertProps) {
             </summary>
             <div className="grid gap-3 border-t border-border bg-muted/20 px-4 py-3 md:grid-cols-2">
               <div className="rounded-md border border-border bg-background p-3">
-                <h4 className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                <h4 className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   <AlertCircle className="size-3" />
                   Motivo (modelo)
                 </h4>
@@ -90,7 +90,7 @@ export function CreditLeakageAlert({ result }: CreditLeakageAlertProps) {
                   "border-[#86efac] bg-[#f0fdf4] dark:border-emerald-800 dark:bg-emerald-950/40",
                 )}
               >
-                <h4 className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+                <h4 className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
                   <Lightbulb className="size-3" />
                   Sugestão
                 </h4>

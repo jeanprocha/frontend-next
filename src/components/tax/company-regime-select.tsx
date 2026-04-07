@@ -1,12 +1,8 @@
 "use client"
 
 import { CircleHelp } from "lucide-react"
+import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
 import { Label } from "@/components/ui/label"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { CompanyRegimeOption } from "@/store/useTaxStore"
 
@@ -20,28 +16,27 @@ interface CompanyRegimeSelectProps {
   showLabel?: boolean
 }
 
-const regimeHelpTooltip = (
-  <Tooltip>
-    <TooltipTrigger
+const REGIME_HELP_TEXT =
+  "Regime geral: PIS, COFINS e ISS no atual versus CBS/IBS na projeção. Benefícios LC 68/2024: saúde/educação/cultura (-60% na saída projetada); profissões regulamentadas (-30% ilustrativo na alíquota projetada); MEI com DAS fixo ilustrativo. Incentivo social: cesta básica / medicamentos com CBS+IBS zero na saída projetada (créditos nas compras podem deixar o líquido negativo — posição de crédito). Mercado externo: exportadora com CBS+IBS zero na saída projetada e créditos nas compras (ilustrativo). Entidades sem fins lucrativos: imunidade ilustrativa na saída projetada sem créditos no modelo (custo de aquisições na narrativa do produto). Setor imobiliário: projeção com redução sobre a alíquota padrão do ano e redutor opcional de base (ilustrativo). Simples Nacional: modelo ilustrativo no atual e puro/híbrido na projeção. Não substitui orientação profissional."
+
+export function RegimeProfileHelp() {
+  return (
+    <GlossaryHelpTrigger
+      preferSheetOnTouch
+      ariaLabel="Sobre os perfis tributários"
+      sheetTitle="Perfis tributários"
+      content={
+        <p className="text-sm leading-relaxed text-inherit">
+          {REGIME_HELP_TEXT}
+        </p>
+      }
+      contentClassName="max-w-md pt-0"
       className="inline-flex rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
-      aria-label="Sobre os perfis tributários"
     >
       <CircleHelp className="size-3.5" aria-hidden />
-    </TooltipTrigger>
-    <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
-      Regime geral: PIS, COFINS e ISS no atual versus CBS/IBS na projeção. Benefícios LC 68/2024:
-      saúde/educação/cultura (-60% na saída projetada); profissões regulamentadas (-30% ilustrativo
-      na alíquota projetada); MEI com DAS fixo ilustrativo. Incentivo social: cesta básica /
-      medicamentos com CBS+IBS zero na saída projetada (créditos nas compras podem deixar o líquido
-      negativo — posição de crédito). Mercado externo: exportadora com CBS+IBS zero na saída
-      projetada e créditos nas compras (ilustrativo). Entidades sem fins lucrativos: imunidade ilustrativa na saída
-      projetada sem créditos no modelo (custo de aquisições na narrativa do produto). Setor imobiliário: projeção com redução sobre a alíquota padrão
-      do ano e redutor opcional de base (ilustrativo). Simples
-      Nacional: modelo ilustrativo no atual e puro/híbrido na projeção. Não substitui orientação
-      profissional.
-    </TooltipContent>
-  </Tooltip>
-)
+    </GlossaryHelpTrigger>
+  )
+}
 
 export function CompanyRegimeSelect({
   id = "company-regime",
@@ -57,15 +52,13 @@ export function CompanyRegimeSelect({
         <div className="flex items-center gap-1.5">
           <Label
             htmlFor={id}
-            className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest"
+            className="text-xs font-medium text-muted-foreground uppercase tracking-widest"
           >
             Perfil tributário
           </Label>
-          {regimeHelpTooltip}
+          <RegimeProfileHelp />
         </div>
-      ) : (
-        <div className="flex justify-end">{regimeHelpTooltip}</div>
-      )}
+      ) : null}
       <select
         id={id}
         value={value}

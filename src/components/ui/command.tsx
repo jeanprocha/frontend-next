@@ -103,7 +103,7 @@ function CommandGroup({
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground",
+        "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground",
         className,
       )}
       {...props}
@@ -144,7 +144,7 @@ function CommandShortcut({ className, ...props }: React.ComponentProps<"span">) 
     <span
       data-slot="command-shortcut"
       className={cn(
-        "ml-auto text-[10px] font-mono tracking-wider text-muted-foreground tabular-nums",
+        "ml-auto text-xs font-mono tracking-wider text-muted-foreground tabular-nums",
         className,
       )}
       {...props}

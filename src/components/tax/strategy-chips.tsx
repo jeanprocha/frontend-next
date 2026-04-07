@@ -1,10 +1,16 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { colorSchemeToChipClasses, normalizeText } from "@/lib/strategy-tags-match"
+import {
+  colorSchemeToChipClasses,
+  matchActiveStrategyTags,
+  normalizeText,
+} from "@/lib/strategy-tags-match"
+import { emitStrategyTagSuggested } from "@/lib/strategy-tags-telemetry"
+import { useTaxStore } from "@/store/useTaxStore"
 import type { StrategyTag } from "@/types/api"
 
 interface StrategyChipsProps {
@@ -12,63 +18,90 @@ interface StrategyChipsProps {
   tags: StrategyTag[]
   /** Padrões já normalizados (normalizeText) recém-descobertos na sessão. */
   highlightPatterns?: readonly string[]
+  /** ID do elemento com a legenda (ex. Context Hub). */
+  describedById?: string
 }
 
-export function StrategyChips({ text, tags, highlightPatterns = [] }: StrategyChipsProps) {
+const TITLE_KNOWN = "Abrir briefing — etiqueta do vocabulário TribIA"
+const TITLE_NEW = "Abrir briefing — integrada após a última simulação"
+
+export function StrategyChips({
+  text,
+  tags,
+  highlightPatterns = [],
+  describedById,
+}: StrategyChipsProps) {
   const reduceMotion = useReducedMotion() ?? false
-  const highlightSet = useMemo(
-    () => new Set(highlightPatterns.map((p) => normalizeText(p))),
-    [highlightPatterns],
+  const suggestedEmitted = useRef(new Set<string>())
+  const openBriefing = useTaxStore((s) => s.openAnalystBriefingFromChip)
+
+  const activeRows = useMemo(
+    () => matchActiveStrategyTags(text, tags, highlightPatterns),
+    [text, tags, highlightPatterns],
   )
 
-  const activeRows = useMemo(() => {
-    const normInput = normalizeText(text)
-    const seenLabels = new Set<string>()
-    const rows: { tag: StrategyTag; isNew: boolean }[] = []
-    for (const t of tags) {
-      const pn = normalizeText(t.pattern)
-      if (!normInput.includes(pn)) continue
-      if (seenLabels.has(t.label)) continue
-      seenLabels.add(t.label)
-      rows.push({ tag: t, isNew: highlightSet.has(pn) })
+  useEffect(() => {
+    for (const { tag, isNew } of activeRows) {
+      if (isNew) continue
+      const pn = normalizeText(tag.pattern)
+      if (!pn || suggestedEmitted.current.has(pn)) continue
+      suggestedEmitted.current.add(pn)
+      emitStrategyTagSuggested({
+        pattern_key: pn,
+        label_key: normalizeText(tag.label).slice(0, 64),
+      })
     }
-    return rows
-  }, [text, tags, highlightSet])
+  }, [activeRows])
 
   return (
-    <div className="mt-3 flex min-h-7 flex-wrap gap-2">
+    <div
+      className="mt-3 flex min-h-7 flex-wrap gap-2"
+      role={describedById ? "group" : undefined}
+      aria-describedby={describedById}
+    >
       <AnimatePresence mode="popLayout">
-        {activeRows.map(({ tag, isNew }) => (
-          <motion.div
-            key={tag.label}
-            layout={!reduceMotion}
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.8, y: 5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={
-              reduceMotion
-                ? { opacity: 0, transition: { duration: 0 } }
-                : { opacity: 0, scale: 0.8, y: 5 }
-            }
-            transition={
-              reduceMotion
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 380, damping: 28 }
-            }
-            className={cn(
-              "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-tight shadow-sm",
-              colorSchemeToChipClasses(tag.color_scheme),
-              isNew &&
-                "ring-2 ring-emerald-500/50 shadow-md shadow-emerald-500/20 dark:ring-emerald-400/40 dark:shadow-emerald-900/30",
-            )}
-          >
-            <Sparkles
-              size={10}
-              className={cn(!reduceMotion && "motion-safe:animate-pulse")}
-              aria-hidden
-            />
-            {tag.label}
-          </motion.div>
-        ))}
+        {activeRows.map(({ tag, isNew }) => {
+          const rowKey = `${normalizeText(tag.pattern)}::${tag.label}`
+          return (
+            <motion.button
+              type="button"
+              key={rowKey}
+              layout={!reduceMotion}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={
+                reduceMotion
+                  ? { opacity: 0, transition: { duration: 0 } }
+                  : { opacity: 0, scale: 0.96, y: 4 }
+              }
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : { type: "spring", stiffness: 420, damping: 32 }
+              }
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-tight cursor-pointer text-left",
+                isNew
+                  ? cn(
+                      colorSchemeToChipClasses(tag.color_scheme),
+                      "shadow-md shadow-emerald-500/15 ring-2 ring-emerald-500/45 dark:ring-emerald-400/35",
+                    )
+                  : "border-border/80 bg-muted/35 text-foreground/90 shadow-none dark:border-border/60 dark:bg-muted/25",
+              )}
+              onClick={() => openBriefing(tag)}
+              title={isNew ? TITLE_NEW : TITLE_KNOWN}
+            >
+              {isNew && (
+                <Sparkles
+                  size={10}
+                  className={cn("shrink-0 text-emerald-600 dark:text-emerald-400", !reduceMotion && "motion-safe:animate-pulse")}
+                  aria-hidden
+                />
+              )}
+              {tag.label}
+            </motion.button>
+          )
+        })}
       </AnimatePresence>
     </div>
   )

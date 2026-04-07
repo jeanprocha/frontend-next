@@ -11,6 +11,48 @@
  */
 @variant board-ready (&:where(.board-ready *));
 
+/*
+ * Plano 10 — Board-Ready: serif narrativa (next/font --font-board-serif no html).
+ */
+.font-board-report {
+  font-family: var(--font-board-serif), ui-serif, Georgia, "Times New Roman", serif;
+}
+
+/* Modo apresentação: sem glow de pipeline no canvas */
+.board-ready .dashboard-pipeline-glow {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/*
+ * Plano 08 — paridade touch (tablet / reunião):
+ * alvos mínimos ~44×44px e ghost mais legível quando não há hover fino.
+ */
+@media (hover: none), (pointer: coarse) {
+  .tribia-touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+  .tribia-evidence-trigger {
+    opacity: 0.72;
+  }
+  /*
+   * TransactionRow: botão remover visível em lg+ sem depender de hover (§10).
+   * Sobrepõe utilitários Tailwind `lg:opacity-0` / `lg:translate-x-*` no wrapper.
+   */
+  .tribia-row-actions-always-visible {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+  }
+}
+
+/* Com rato fino, o trigger RAG permanece discreto (complementa classes no componente). */
+@media (hover: hover) and (pointer: fine) {
+  .tribia-evidence-trigger:not(:hover):not(:focus-visible) {
+    opacity: 0.45;
+  }
+}
+
 /* Brilho “respiração” atrás do ResultSidebar (motion-safe via utilitário no componente) */
 @keyframes soft-pulse {
   0%,
@@ -162,8 +204,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /**
+   * Escala global do root: ~+18,75% face ao tamanho por defeito do browser (ex. 16px → ~19px por 1rem).
+   * Tamanhos de texto Tailwind (`text-sm`, `text-base`, …) e espaçamentos em `rem` acompanham na mesma proporção.
+   */
   html {
     @apply font-sans;
+    font-size: 110%;
   }
 }
 
@@ -181,6 +228,127 @@
   }
 }
 
+/* Dashboard: posição do glow radial animável (transição suave; reduced-motion sem transition) */
+@property --tribia-glow-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+
+@property --tribia-glow-y {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 10%;
+}
+
+@property --tribia-glow-opacity {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.08;
+}
+
+@property --tribia-glow-w {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 45%;
+}
+
+@property --tribia-glow-h {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 38%;
+}
+
+/* Assinaturas por estágio: opacidade + tamanho do elipse (herdam no .dashboard-pipeline-glow) */
+main[data-pipeline-stage="context"] {
+  --tribia-glow-opacity: 0.055;
+  --tribia-glow-w: 32%;
+  --tribia-glow-h: 28%;
+}
+
+main[data-pipeline-stage="classification"] {
+  --tribia-glow-opacity: 0.075;
+  --tribia-glow-w: 40%;
+  --tribia-glow-h: 35%;
+}
+
+main[data-pipeline-stage="simulation"] {
+  --tribia-glow-opacity: 0.078;
+  --tribia-glow-w: 42%;
+  --tribia-glow-h: 37%;
+}
+
+main[data-pipeline-stage="verdict"] {
+  --tribia-glow-opacity: 0.09;
+  --tribia-glow-w: 48%;
+  --tribia-glow-h: 40%;
+}
+
+.dark main[data-pipeline-stage="context"] {
+  --tribia-glow-opacity: 0.045;
+}
+
+.dark main[data-pipeline-stage="classification"] {
+  --tribia-glow-opacity: 0.06;
+}
+
+.dark main[data-pipeline-stage="simulation"] {
+  --tribia-glow-opacity: 0.062;
+}
+
+.dark main[data-pipeline-stage="verdict"] {
+  --tribia-glow-opacity: 0.072;
+}
+
+.dashboard-pipeline-glow {
+  background-image: radial-gradient(
+    var(--tribia-glow-w) var(--tribia-glow-h) at var(--tribia-glow-x) var(--tribia-glow-y),
+    rgb(16 185 129 / var(--tribia-glow-opacity)) 0%,
+    transparent 55%
+  );
+  transition:
+    --tribia-glow-x 1.05s ease,
+    --tribia-glow-y 1.05s ease,
+    --tribia-glow-opacity 1.05s ease,
+    --tribia-glow-w 1.05s ease,
+    --tribia-glow-h 1.05s ease;
+}
+
+.dark .dashboard-pipeline-glow {
+  background-image: radial-gradient(
+    var(--tribia-glow-w) var(--tribia-glow-h) at var(--tribia-glow-x) var(--tribia-glow-y),
+    rgb(16 185 129 / var(--tribia-glow-opacity)) 0%,
+    transparent 55%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-pipeline-glow {
+    transition: none;
+  }
+}
+
+@keyframes pipeline-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.97;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.dashboard-pipeline-glow--pulse {
+  animation: pipeline-glow-breathe 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-pipeline-glow--pulse {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* Impressão / PDF (window.print): cores, página A4, quebras em cards */
 @media print {
   * {
@@ -193,8 +361,30 @@
     size: A4 portrait;
   }
 
+  html,
+  body {
+    background: white !important;
+    color: var(--foreground) !important;
+  }
+
+  .dashboard-pipeline-glow,
+  .dashboard-pipeline-glow--pulse {
+    display: none !important;
+  }
+
+  /* Ink-friendly: sem sombras pesadas nem blur decorativo nos cards */
   [data-slot="card"] {
     break-inside: avoid;
     page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .tribia-print-flatten-shadow {
+    box-shadow: none !important;
+  }
+
+  /* Evitar halos emerald decorativos em painéis que usam blur (fora de data-slot card) */
+  .blur-3xl {
+    display: none !important;
   }
 }

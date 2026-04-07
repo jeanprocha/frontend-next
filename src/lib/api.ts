@@ -35,21 +35,94 @@ function authHeaders(
   return h
 }
 
+/** Header de plano para quotas PLG no backend (Go). */
+export function tribiaPlanHeader(plan: string): Record<string, string> {
+  return { "X-Tribia-Plan": plan }
+}
+
+export interface PlgQuotaResponse {
+  plan: string
+  simulations_today: number
+  daily_limit: number
+  companies_count: number
+  company_limit: number
+  enforcement_enabled: boolean
+}
+
+export async function fetchPlgQuota(
+  token: string,
+  userId: string,
+  plan: string,
+): Promise<PlgQuotaResponse> {
+  const res = await fetch(`${API_BASE}/plg/quota`, {
+    headers: authHeaders(token, userId, {
+      ...tribiaPlanHeader(plan),
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error((err as { error?: string }).error ?? "Erro ao carregar quota PLG")
+  }
+  return res.json()
+}
+
+export interface ApiPlgError extends Error {
+  code?: string
+  limit?: number
+  used?: number
+  plan?: string
+}
+
+function parsePlgErrorPayload(status: number, body: unknown): Error {
+  const o = body as {
+    error?: string
+    code?: string
+    limit?: number
+    used?: number
+    plan?: string
+  }
+  const msg =
+    o?.error ??
+    (status === 403 ? "Limite do plano atingido" : "Erro na API")
+  const e = new Error(msg) as ApiPlgError
+  e.code = o?.code
+  e.limit = o?.limit
+  e.used = o?.used
+  e.plan = o?.plan
+  return e
+}
+
+export interface ClassifySimulatePlgOpts {
+  token: string
+  userId: string
+  plan: string
+}
+
 // classifyBatch envia uma lista de descrições de despesas para o endpoint
 // POST /credit-classifications/batch, que usa RAG + LLM para determinar
 // elegibilidade a crédito de IBS/CBS conforme a LC 68/2024.
 export async function classifyBatch(
   expenses: { description: string; context?: string; client_id?: string }[],
   maxConcurrency = 5,
+  plg?: ClassifySimulatePlgOpts | null,
 ): Promise<BatchClassificationResponse> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (plg?.token && plg.userId) {
+    Object.assign(headers, authHeaders(plg.token, plg.userId, tribiaPlanHeader(plg.plan)) as Record<string, string>)
+  }
+
   const res = await fetch(`${API_BASE}/credit-classifications/batch`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ expenses, max_concurrency: maxConcurrency }),
   })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    if (res.status === 403 && raw && typeof raw === "object" && "code" in raw) {
+      throw parsePlgErrorPayload(res.status, raw)
+    }
+    const err = raw as { error?: string }
     throw new Error(err.error ?? "Erro ao classificar despesas")
   }
 
@@ -74,15 +147,25 @@ export async function fetchStrategyTags(): Promise<StrategyTagsListResponse> {
 // negativo = economia). delta_pct = delta / líquido atual × 100 quando o atual > 0.
 export async function simulate(
   payload: SimulationRequest,
+  plg?: ClassifySimulatePlgOpts | null,
 ): Promise<SimulationResponse> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (plg?.token && plg.userId) {
+    Object.assign(headers, authHeaders(plg.token, plg.userId, tribiaPlanHeader(plg.plan)) as Record<string, string>)
+  }
+
   const res = await fetch(`${API_BASE}/simulations`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
   })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    if (res.status === 403 && raw && typeof raw === "object" && "code" in raw) {
+      throw parsePlgErrorPayload(res.status, raw)
+    }
+    const err = raw as { error?: string }
     throw new Error(err.error ?? "Erro ao calcular simulação")
   }
 
@@ -100,28 +183,7 @@ export async function fetchLawArticle(chunkArticleId: string): Promise<LawArticl
   return res.json()
 }
 
-// formatBRL converte uma string decimal ("1234.50") para moeda brasileira.
-export function formatBRL(value: string): string {
-  const num = parseFloat(value)
-  if (isNaN(num)) return "R$ —"
-  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-}
-
-// formatPct formata um valor já em percentual ("92.98" → "92.9%").
-// O motor Go envia delta_pct já como percentual sobre o líquido atual (ex: -10.5 = -10,5%).
-export function formatPct(value: string): string {
-  const num = parseFloat(value)
-  if (isNaN(num)) return "—"
-  return `${num.toFixed(1)}%`
-}
-
-// formatPctFraction converte fração decimal para percentual ("0.05" → "5.0%").
-// Usar para ISS rates e confidence scores que chegam como frações (0–1).
-export function formatPctFraction(value: string | number): string {
-  const num = typeof value === "number" ? value : parseFloat(value)
-  if (isNaN(num)) return "—"
-  return `${(num * 100).toFixed(1)}%`
-}
+export { formatBRL, formatPct, formatPctFraction } from "@/lib/format-money"
 
 // --- Histórico de simulações (persistência no Supabase via API Go) ---
 
@@ -200,9 +262,13 @@ export async function downloadSimulationReport(
 
 // --- Templates de Empresa ---
 
-export async function listCompanies(token: string, userId: string): Promise<CompanyTemplate[]> {
+export async function listCompanies(
+  token: string,
+  userId: string,
+  plan?: string,
+): Promise<CompanyTemplate[]> {
   const res = await fetch(`${API_BASE}/companies`, {
-    headers: authHeaders(token, userId),
+    headers: authHeaders(token, userId, plan ? tribiaPlanHeader(plan) : undefined),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -219,18 +285,26 @@ export async function createCompany(
   token: string,
   userId: string,
   payload: CompanyCreatePayload,
+  plan?: string,
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_BASE}/companies`, {
     method: "POST",
-    headers: authHeaders(token, userId, { "Content-Type": "application/json" }),
+    headers: authHeaders(token, userId, {
+      "Content-Type": "application/json",
+      ...tribiaPlanHeader(plan ?? "free"),
+    }),
     body: JSON.stringify({
       ...payload,
       default_services: payload.default_services,
     }),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao criar empresa")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    if (res.status === 403 && raw && typeof raw === "object" && "code" in raw) {
+      throw parsePlgErrorPayload(res.status, raw)
+    }
+    const err = raw as { error?: string }
+    throw new Error(err.error ?? "Erro ao criar empresa")
   }
   return res.json()
 }

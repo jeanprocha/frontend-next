@@ -2,15 +2,22 @@
 
 import { useAuth } from "@clerk/nextjs"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { classifyBatch, saveSimulationRecord, simulate } from "@/lib/api"
+import {
+  classifyBatch,
+  saveSimulationRecord,
+  simulate,
+  type ClassifySimulatePlgOpts,
+} from "@/lib/api"
 import {
   useTaxStore,
   type CompanyRegimeOption,
   isImobiliarioRegime,
 } from "@/store/useTaxStore"
 import { aggregateRagMetadata } from "@/lib/rag-metadata"
-import { normalizeText } from "@/lib/strategy-tags-match"
+import { dedupeStrategyTagsByPattern, normalizeText } from "@/lib/strategy-tags-match"
+import { emitStrategyTagConfirmed } from "@/lib/strategy-tags-telemetry"
 import type { FormExpense, FormService, StrategyTag, StrategyTagsListResponse } from "@/types/api"
+import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 
 // Payload recebido via mutate() — não acoplado ao Zustand internamente,
 // o que torna o hook testável e reutilizável em outros contextos.
@@ -108,6 +115,7 @@ function mergeDiscoveredStrategyTags(
 export function useSimulationMutation() {
   const { setResults: setFormResults } = useTaxStore()
   const { userId, getToken } = useAuth()
+  const plgTier = useTribiaPlgTier()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -120,6 +128,12 @@ export function useSimulationMutation() {
       companyRegime = "regular",
       imobiliarioRedutorAjusteBrl,
     }: SimulationPayload) => {
+      const token = await getToken()
+      const plgAuth: ClassifySimulatePlgOpts | null =
+        token && userId
+          ? { token, userId, plan: plgTier }
+          : null
+
       const ctxForClassify = classificationContextForAI(companyContext, companyRegime)
       // Passo 1: IA classifica serviços e despesas em paralelo via RAG + LLM (LC 68/2024).
       // Serviços → extrai regime_type (determina alíquota efetiva CBS/IBS no motor Go).
@@ -131,6 +145,8 @@ export function useSimulationMutation() {
             description: s.description,
             context: ctxForClassify,
           })),
+          5,
+          plgAuth,
         ),
         classifyBatch(
           expenses.map((e) => ({
@@ -138,6 +154,8 @@ export function useSimulationMutation() {
             description: e.description,
             context: ctxForClassify,
           })),
+          5,
+          plgAuth,
         ),
       ])
 
@@ -161,32 +179,35 @@ export function useSimulationMutation() {
               color_scheme: d.color_scheme || "emerald",
             })
           }
-          return { tags: next }
+          return { tags: dedupeStrategyTagsByPattern(next) }
         })
       }
 
       // Passo 2: motor Go calcula impacto com regime_type por serviço e créditos corretos
       const redutorTrim = imobiliarioRedutorAjusteBrl?.trim() ?? ""
-      const simResult = await simulate({
-        year,
-        ...(companyRegime !== "regular" ? { company_regime: companyRegime } : {}),
-        company_context: companyContext,
-        ...(isImobiliarioRegime(companyRegime) && redutorTrim !== ""
-          ? { imobiliario_redutor_ajuste_brl: redutorTrim }
-          : {}),
-        services: services.map((s) => ({
-          description: s.description,
-          amount: s.amount,
-          iss_rate: s.iss_rate,
-          regime_type: svcClassMap.get(s.id)?.regime_type ?? "padrao",
-        })),
-        expenses: expenses.map((e) => ({
-          description: e.description,
-          amount: e.amount,
-          is_eligible: expClassMap.get(e.id)?.is_eligible ?? false,
-          regime_type: expClassMap.get(e.id)?.regime_type ?? "padrao",
-        })),
-      })
+      const simResult = await simulate(
+        {
+          year,
+          ...(companyRegime !== "regular" ? { company_regime: companyRegime } : {}),
+          company_context: companyContext,
+          ...(isImobiliarioRegime(companyRegime) && redutorTrim !== ""
+            ? { imobiliario_redutor_ajuste_brl: redutorTrim }
+            : {}),
+          services: services.map((s) => ({
+            description: s.description,
+            amount: s.amount,
+            iss_rate: s.iss_rate,
+            regime_type: svcClassMap.get(s.id)?.regime_type ?? "padrao",
+          })),
+          expenses: expenses.map((e) => ({
+            description: e.description,
+            amount: e.amount,
+            is_eligible: expClassMap.get(e.id)?.is_eligible ?? false,
+            regime_type: expClassMap.get(e.id)?.regime_type ?? "padrao",
+          })),
+        },
+        plgAuth,
+      )
 
       const ai_metadata = aggregateRagMetadata(
         svcClassResult.results,
@@ -222,19 +243,25 @@ export function useSimulationMutation() {
           data.discoveredStrategyTags.map((d) => normalizeText(d.pattern)),
         )
         setStrategyTagsDiscoveryMessage(
-          "IA identificou um novo padrão fiscal e atualizou a base global.",
+          "Novo padrão integrado ao vocabulário TribIA para consultas futuras.",
         )
+        for (const d of data.discoveredStrategyTags) {
+          emitStrategyTagConfirmed({
+            pattern_key: normalizeText(d.pattern),
+            label_key: normalizeText(d.label).slice(0, 64),
+          })
+        }
       }
 
       if (!userId) return
 
       try {
-        const token = await getToken()
-        if (!token) {
+        const sessionToken = await getToken()
+        if (!sessionToken) {
           console.error("[TribIA] Sem token de sessão para gravar histórico.")
           return
         }
-        await saveSimulationRecord(token, userId, {
+        await saveSimulationRecord(sessionToken, userId, {
           company_context: variables.companyContext,
           company_regime: variables.companyRegime ?? "regular",
           year: variables.year,
@@ -261,6 +288,7 @@ export function useSimulationMutation() {
         await queryClient.invalidateQueries({
           queryKey: ["simulation-records", userId],
         })
+        await queryClient.invalidateQueries({ queryKey: ["plg-quota", userId] })
       } catch (e) {
         console.error("[TribIA] Falha ao persistir histórico no servidor:", e)
       }

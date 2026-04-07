@@ -1,8 +1,9 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@clerk/nextjs"
+import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 import { useQuery } from "@tanstack/react-query"
 import {
   Building2,
@@ -11,6 +12,8 @@ import {
   Library,
   Plus,
   Presentation,
+  Search,
+  SunMoon,
   Zap,
 } from "lucide-react"
 
@@ -25,18 +28,31 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
+import { Kbd } from "@/components/ui/kbd"
+import {
+  commandPaletteGlobalHints,
+  LEADER_G_MS,
+  modKeyLabel,
+  NAV_LINK_LABELS,
+  PALETTE_GO_SIMULATOR_LABEL,
+  SHORTCUT_KEYS,
+  simulateShortcutLabel,
+} from "@/constants/shortcuts"
 import { listCompanies } from "@/lib/api"
 import { getDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
-import { isApplePlatform, modKeyLabel } from "@/lib/platform"
+import { isApplePlatform } from "@/lib/platform"
+import { toggleColorTheme } from "@/lib/theme-preference"
 import { createBlankExpenseLine, createBlankServiceLine } from "@/lib/simulation-line-helpers"
 import { useTaxStore } from "@/store/useTaxStore"
 
+/** Evita roubar teclas com foco em campo de formulário (plano-mãe §2.1). */
 function isEditableTarget(el: EventTarget | null): boolean {
   if (!el || !(el instanceof HTMLElement)) return false
+  if (el.closest("[data-command-palette-ignore-hotkeys]")) return true
   const tag = el.tagName
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true
   if (el.isContentEditable) return true
-  if (el.closest("[data-command-palette-ignore-hotkeys]")) return true
+  if (el.closest('[contenteditable="true"]')) return true
   return Boolean(el.closest("[cmdk-input-wrapper]"))
 }
 
@@ -46,17 +62,23 @@ function isDialogOpen(): boolean {
 
 export function CommandMenu() {
   const [open, setOpen] = useState(false)
+  const [leaderGArmed, setLeaderGArmed] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { userId, getToken } = useAuth()
+  const plgTier = useTribiaPlgTier()
   const mod = modKeyLabel()
+  const leaderGRef = useRef<{
+    armed: boolean
+    timer: ReturnType<typeof setTimeout> | null
+  }>({ armed: false, timer: null })
 
   const { data: companies } = useQuery({
-    queryKey: ["companies", userId],
+    queryKey: ["companies", userId, plgTier],
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")
-      return listCompanies(token, userId)
+      return listCompanies(token, userId, plgTier)
     },
     enabled: Boolean(userId),
     staleTime: 60_000,
@@ -112,18 +134,99 @@ export function CommandMenu() {
     [companies, pathname, router, close],
   )
 
-  const onDashboard = pathname === "/dashboard"
+  const focusHistorySearch = useCallback(() => {
+    getDashboardCommandBridge().focusHistorySearch?.()
+    close()
+  }, [close])
+
+  const openNewCompanyForm = useCallback(() => {
+    getDashboardCommandBridge().openCompaniesNewForm?.()
+    close()
+  }, [close])
+
+  const toggleTheme = useCallback(() => {
+    toggleColorTheme()
+    close()
+  }, [close])
+
+  const onDashboard =
+    pathname === "/dashboard" || pathname === "/dashboard/"
+  const onHistory = pathname.startsWith("/dashboard/history")
+  const onCompanies = pathname.startsWith("/dashboard/companies")
+
+  const disarmLeaderG = useCallback(() => {
+    const r = leaderGRef.current
+    r.armed = false
+    if (r.timer) {
+      clearTimeout(r.timer)
+      r.timer = null
+    }
+    setLeaderGArmed(false)
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      const modK = e.key === "k" && (e.metaKey || e.ctrlKey)
+
+      if (open) {
+        if (modK) {
+          e.preventDefault()
+          disarmLeaderG()
+          setOpen((v) => !v)
+        } else {
+          disarmLeaderG()
+        }
+        return
+      }
+
+      if (isDialogOpen()) {
+        disarmLeaderG()
+        return
+      }
+
+      if (isEditableTarget(e.target)) {
+        disarmLeaderG()
+        return
+      }
+
+      if (modK) {
         e.preventDefault()
+        disarmLeaderG()
         setOpen((v) => !v)
         return
       }
-      if (open) return
-      if (isDialogOpen()) return
-      if (isEditableTarget(e.target)) return
+
+      const r = leaderGRef.current
+      if (r.armed) {
+        if (
+          (e.key === "h" || e.key === "H") &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey
+        ) {
+          e.preventDefault()
+          disarmLeaderG()
+          router.push("/dashboard/history")
+          return
+        }
+        disarmLeaderG()
+      }
+
+      if (
+        (e.key === "g" || e.key === "G") &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
+        e.preventDefault()
+        disarmLeaderG()
+        r.armed = true
+        setLeaderGArmed(true)
+        r.timer = setTimeout(() => {
+          disarmLeaderG()
+        }, LEADER_G_MS)
+        return
+      }
 
       const b = getDashboardCommandBridge()
       const apple = isApplePlatform()
@@ -135,7 +238,8 @@ export function CommandMenu() {
         return
       }
 
-      const simInput = onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
+      const simInput =
+        onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
       if (simInput) {
         if (e.key === "a" || e.key === "A") {
           if (!e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -153,7 +257,12 @@ export function CommandMenu() {
         }
       }
 
-      if ((e.key === "b" || e.key === "B") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (
+        (e.key === "b" || e.key === "B") &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
         if (b.toggleBoardReady) {
           e.preventDefault()
           b.toggleBoardReady()
@@ -162,15 +271,36 @@ export function CommandMenu() {
     }
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
-  }, [open, onDashboard, addService, addExpense])
+  }, [
+    open,
+    onDashboard,
+    addService,
+    addExpense,
+    router,
+    disarmLeaderG,
+  ])
 
   const b = getDashboardCommandBridge()
-  const canSimActions = onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
+  const canSimActions =
+    onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
   const canRun = Boolean(b.runSimulation)
   const canBoard = Boolean(b.toggleBoardReady)
   const canPrint = b.hasFormResults && !b.isLoadingSimulation
+  const canFocusHistorySearch = Boolean(b.focusHistorySearch)
+  const canOpenCompanyForm = Boolean(b.openCompaniesNewForm)
+
+  const showQuickActions =
+    canSimActions ||
+    (onHistory && canFocusHistorySearch) ||
+    (onCompanies && canOpenCompanyForm)
 
   return (
+    <>
+      <p className="sr-only" aria-live="polite">
+        {leaderGArmed
+          ? `Atalho activo: prima ${SHORTCUT_KEYS.followHistory} para abrir o histórico.`
+          : ""}
+      </p>
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
@@ -182,18 +312,81 @@ export function CommandMenu() {
         <CommandList>
           <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
 
+          {showQuickActions && (
+            <CommandGroup heading="Ações rápidas (esta página)">
+              {onHistory && canFocusHistorySearch && (
+                <CommandItem
+                  value="histórico pesquisar filtrar simulações"
+                  onSelect={focusHistorySearch}
+                >
+                  <Search className="size-4 text-muted-foreground" />
+                  <span>Focar pesquisa no histórico</span>
+                </CommandItem>
+              )}
+              {onCompanies && canOpenCompanyForm && (
+                <CommandItem
+                  value="empresa nova cadastro"
+                  onSelect={openNewCompanyForm}
+                >
+                  <Plus className="size-4 text-emerald-600" />
+                  <span>Nova empresa</span>
+                </CommandItem>
+              )}
+              {canSimActions && (
+                <>
+                  <CommandItem
+                    value="adicionar serviço receita linha"
+                    onSelect={addService}
+                  >
+                    <Plus className="size-4" />
+                    <span>Adicionar serviço / receita</span>
+                    <CommandShortcut>{SHORTCUT_KEYS.addService}</CommandShortcut>
+                  </CommandItem>
+                  <CommandItem
+                    value="adicionar despesa linha"
+                    onSelect={addExpense}
+                  >
+                    <Plus className="size-4" />
+                    <span>Adicionar despesa</span>
+                    <CommandShortcut>{SHORTCUT_KEYS.addExpense}</CommandShortcut>
+                  </CommandItem>
+                  <CommandItem
+                    value="executar simulação ia motor"
+                    onSelect={runSimulation}
+                    disabled={!canRun}
+                  >
+                    <Zap className="size-4 text-emerald-600" />
+                    <span>Executar simulação (IA + motor)</span>
+                    <CommandShortcut>{simulateShortcutLabel()}</CommandShortcut>
+                  </CommandItem>
+                </>
+              )}
+            </CommandGroup>
+          )}
+
+          {showQuickActions && <CommandSeparator />}
+
           <CommandGroup heading="Navegação">
-            <CommandItem value="dashboard simulador" onSelect={() => go("/dashboard")}>
+            <CommandItem
+              value={`ir simulador dashboard ${NAV_LINK_LABELS.simulator}`}
+              onSelect={() => go("/dashboard")}
+            >
               <LayoutDashboard className="size-4 text-muted-foreground" />
-              <span>Ir ao simulador</span>
+              <span>{PALETTE_GO_SIMULATOR_LABEL}</span>
             </CommandItem>
-            <CommandItem value="histórico simulações" onSelect={() => go("/dashboard/history")}>
-              <Library className="size-4 text-muted-foreground" />
-              <span>Histórico de simulações</span>
-            </CommandItem>
-            <CommandItem value="empresas cadastro" onSelect={() => go("/dashboard/companies")}>
+            <CommandItem
+              value={`empresas cadastro ${NAV_LINK_LABELS.companies}`}
+              onSelect={() => go("/dashboard/companies")}
+            >
               <Building2 className="size-4 text-muted-foreground" />
-              <span>Empresas cadastradas</span>
+              <span>{NAV_LINK_LABELS.companies}</span>
+            </CommandItem>
+            <CommandItem
+              value={`histórico simulações ${NAV_LINK_LABELS.history}`}
+              onSelect={() => go("/dashboard/history")}
+            >
+              <Library className="size-4 text-muted-foreground" />
+              <span>{NAV_LINK_LABELS.history}</span>
             </CommandItem>
           </CommandGroup>
 
@@ -215,54 +408,56 @@ export function CommandMenu() {
             </>
           )}
 
-          {canSimActions && (
-            <>
-              <CommandSeparator />
-              <CommandGroup heading="Simulação (formulário)">
-                <CommandItem value="executar simulação ia" onSelect={runSimulation} disabled={!canRun}>
-                  <Zap className="size-4 text-emerald-600" />
-                  <span>Executar simulação (IA + motor)</span>
-                  <CommandShortcut>{mod}+Enter</CommandShortcut>
-                </CommandItem>
-                <CommandItem value="adicionar serviço receita" onSelect={addService}>
-                  <Plus className="size-4" />
-                  <span>Adicionar serviço / receita</span>
-                  <CommandShortcut>A</CommandShortcut>
-                </CommandItem>
-                <CommandItem value="adicionar despesa" onSelect={addExpense}>
-                  <Plus className="size-4" />
-                  <span>Adicionar despesa</span>
-                  <CommandShortcut>D</CommandShortcut>
-                </CommandItem>
-              </CommandGroup>
-            </>
-          )}
+          <CommandSeparator />
+          <CommandGroup heading="Preferências">
+            {canBoard && (
+              <CommandItem value="modo apresentação board" onSelect={toggleBoard}>
+                <Presentation className="size-4" />
+                <span>Modo apresentação</span>
+                <CommandShortcut>{SHORTCUT_KEYS.board}</CommandShortcut>
+              </CommandItem>
+            )}
+            <CommandItem value="alternar tema claro escuro" onSelect={toggleTheme}>
+              <SunMoon className="size-4 text-muted-foreground" />
+              <span>Alternar tema (claro / escuro)</span>
+            </CommandItem>
+          </CommandGroup>
 
-          {(canBoard || canPrint) && (
+          {canPrint && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Resultados">
-                {canBoard && (
-                  <CommandItem value="modo apresentação board" onSelect={toggleBoard}>
-                    <Presentation className="size-4" />
-                    <span>Modo apresentação</span>
-                    <CommandShortcut>B</CommandShortcut>
-                  </CommandItem>
-                )}
-                {canPrint && (
-                  <CommandItem value="imprimir relatório pdf" onSelect={runPrint}>
-                    <Download className="size-4" />
-                    <span>Imprimir / PDF (navegador)</span>
-                  </CommandItem>
-                )}
+              <CommandGroup heading="Documento">
+                <CommandItem value="imprimir relatório pdf" onSelect={runPrint}>
+                  <Download className="size-4" />
+                  <span>Imprimir / PDF (navegador)</span>
+                </CommandItem>
               </CommandGroup>
             </>
           )}
         </CommandList>
-        <p className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
-          Dica: {mod}+K abre este menu · {mod}+Enter simula · A / D linhas · B apresentação (com resultado)
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <Kbd>↑</Kbd>
+            <Kbd>↓</Kbd>
+            <span>navegar</span>
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Kbd>Enter</Kbd>
+            <span>selecionar</span>
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Kbd>Esc</Kbd>
+            <span>fechar</span>
+          </span>
+          <span className="inline-flex items-center gap-1 opacity-90">
+            <Kbd>{mod}</Kbd>
+            <Kbd>{SHORTCUT_KEYS.paletteOpen}</Kbd>
+            <span>comandos</span>
+          </span>
+          <span className="text-muted-foreground/80">{commandPaletteGlobalHints(canBoard)}</span>
+        </div>
       </Command>
     </CommandDialog>
+    </>
   )
 }

@@ -1,11 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
 import { cn } from "@/lib/utils"
 
 const glossary: Record<string, string> = {
@@ -24,19 +20,19 @@ export function TermTooltip({
   children?: ReactNode
   triggerClassName?: string
 }) {
+  const body = glossary[term] ?? children
   return (
-    <Tooltip>
-      <TooltipTrigger
-        className={cn(
-          "cursor-help border-b border-dashed border-muted-foreground/50 text-inherit",
-          triggerClassName,
-        )}
-      >
-        {term}
-      </TooltipTrigger>
-      <TooltipContent className="max-w-64 text-xs leading-relaxed">
-        {glossary[term] ?? children}
-      </TooltipContent>
-    </Tooltip>
+    <GlossaryHelpTrigger
+      ariaLabel={`Definição: ${term}`}
+      content={body}
+      contentClassName="max-w-64 text-xs leading-relaxed"
+      className={cn(
+        "cursor-help border-b border-dashed border-muted-foreground/50 text-inherit",
+        triggerClassName,
+      )}
+      preferSheetOnTouch={false}
+    >
+      {term}
+    </GlossaryHelpTrigger>
   )
 }

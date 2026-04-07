@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
+import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 import { listCompanies } from "@/lib/api"
 import type { FormExpense, FormService } from "@/types/api"
 import { ContextHub } from "@/components/tax/context-hub"
@@ -21,6 +22,7 @@ import { TransactionRow } from "@/components/tax/transaction-row"
 import { EmptyStateCard } from "@/components/tax/empty-state-card"
 import { TermTooltip } from "@/components/tax/term-tooltip"
 import { createBlankExpenseLine, createBlankServiceLine, makeLineId } from "@/lib/simulation-line-helpers"
+import { SHORTCUT_KEYS } from "@/constants/shortcuts"
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -35,15 +37,6 @@ interface SimulationFormProps {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const DEFAULT_SERVICES: FormService[] = [
-  { id: makeLineId(), description: "Consultoria de Software", amount: "10000.00", iss_rate: "0.05" },
-]
-
-const DEFAULT_EXPENSES: FormExpense[] = [
-  { id: makeLineId(), description: "AWS", amount: "3000.00" },
-  { id: makeLineId(), description: "GitHub Copilot", amount: "500.00" },
-]
 
 const cardShell =
   "rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-border/60 dark:bg-card/80"
@@ -91,12 +84,13 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
   } = useTaxStore()
 
   const { userId, getToken } = useAuth()
+  const plgTier = useTribiaPlgTier()
   const { data: companies, isPending: companiesLoading } = useQuery({
-    queryKey: ["companies", userId],
+    queryKey: ["companies", userId, plgTier],
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")
-      return listCompanies(token, userId)
+      return listCompanies(token, userId, plgTier)
     },
     enabled: !!userId,
     staleTime: 60_000,
@@ -109,13 +103,6 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
     if (company) applyCompanyTemplate(company)
     e.target.value = ""
   }
-
-  useEffect(() => {
-    if (!hydrated) return
-    if (storedServices.length === 0) setServices(DEFAULT_SERVICES)
-    if (storedExpenses.length === 0) setExpenses(DEFAULT_EXPENSES)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated])
 
   const services = storedServices
   const expenses = storedExpenses
@@ -216,7 +203,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                     </span>
                   </span>
                   {validServices.length > 0 && (
-                    <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                    <Badge variant="secondary" className="h-4 px-1.5 text-xs font-normal">
                       {validServices.length}
                     </Badge>
                   )}
@@ -225,7 +212,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                   <Button type="button" variant="outline" size="sm" onClick={addService} className="h-7 gap-1 text-xs">
                     <Plus className="size-3" />
                     Adicionar
-                    <Kbd className="ml-0.5 opacity-90">A</Kbd>
+                    <Kbd className="ml-0.5 opacity-90">{SHORTCUT_KEYS.addService}</Kbd>
                   </Button>
                 )}
               </div>
@@ -271,7 +258,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                     </span>
                   </span>
                   {validExpenses.length > 0 && (
-                    <Badge variant="secondary" className="h-4 w-fit px-1.5 text-[10px] font-normal">
+                    <Badge variant="secondary" className="h-4 w-fit px-1.5 text-xs font-normal">
                       {validExpenses.length}
                     </Badge>
                   )}
@@ -280,11 +267,11 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                   <Button type="button" variant="outline" size="sm" onClick={addExpense} className="h-7 gap-1 text-xs">
                     <Plus className="size-3" />
                     Adicionar
-                    <Kbd className="ml-0.5 opacity-90">D</Kbd>
+                    <Kbd className="ml-0.5 opacity-90">{SHORTCUT_KEYS.addExpense}</Kbd>
                   </Button>
                 )}
               </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground">
                 A IA classifica automaticamente a elegibilidade de cada despesa para crédito de{" "}
                 <TermTooltip term="IBS">—</TermTooltip>/<TermTooltip term="CBS">—</TermTooltip>.
               </p>
@@ -324,6 +311,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
             validExpensesCount={validExpenses.length}
             loading={loading}
             canSubmit={validServices.length > 0}
+            educationalMode={validServices.length === 0}
           />
         </div>
       </div>

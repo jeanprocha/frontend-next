@@ -1,12 +1,13 @@
 import { STRATEGY_KEYWORDS } from "@/constants/strategy-mapping"
 import type { StrategyTag } from "@/types/api"
 
-/** Normaliza para matching estável (minúsculas + remove acentos comuns). */
+/** Normaliza para matching estável (minúsculas, sem acentos, espaços colapsados). Paridade com Go strategytags.NormalizePattern. */
 export function normalizeText(s: string): string {
-  return s
+  const t = s
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
+  return t.replace(/\s+/g, " ").trim()
 }
 
 const schemeToColor: Record<string, string> = {
@@ -45,4 +46,42 @@ export function getFallbackStrategyTags(): StrategyTag[] {
     }
   }
   return out
+}
+
+/** Remove duplicados por pattern normalizado (primeira ocorrência vence). */
+export function dedupeStrategyTagsByPattern(tags: StrategyTag[]): StrategyTag[] {
+  const seen = new Set<string>()
+  const out: StrategyTag[] = []
+  for (const t of tags) {
+    const k = normalizeText(t.pattern)
+    if (!k || seen.has(k)) continue
+    seen.add(k)
+    out.push(t)
+  }
+  return out
+}
+
+export interface ActiveStrategyRow {
+  tag: StrategyTag
+  isNew: boolean
+}
+
+/** Tags cujo pattern aparece no texto (uma linha por label); isNew = descoberta de sessão. */
+export function matchActiveStrategyTags(
+  text: string,
+  tags: StrategyTag[],
+  highlightPatterns: readonly string[],
+): ActiveStrategyRow[] {
+  const normInput = normalizeText(text)
+  const highlightSet = new Set(highlightPatterns.map((p) => normalizeText(p)))
+  const seenLabels = new Set<string>()
+  const rows: ActiveStrategyRow[] = []
+  for (const t of tags) {
+    const pn = normalizeText(t.pattern)
+    if (!pn || !normInput.includes(pn)) continue
+    if (seenLabels.has(t.label)) continue
+    seenLabels.add(t.label)
+    rows.push({ tag: t, isNew: highlightSet.has(pn) })
+  }
+  return rows
 }
