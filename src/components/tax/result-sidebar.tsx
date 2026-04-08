@@ -29,8 +29,23 @@ interface ResultSidebarProps {
   educationalMode?: boolean
 }
 
-function formatAmountNoSymbol(n: number) {
-  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/** Um único Intl para BRL: hero (sem símbolo no bloco grande) e linhas do corpo ficam alinhados. */
+const BRL = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+})
+
+function formatBRL(n: number): string {
+  return BRL.format(n)
+}
+
+/** Parte numérica (vírgula decimal, milhares), sem símbolo — mesmo motor que `formatBRL`. */
+function formatBRLWithoutSymbol(n: number): string {
+  return BRL.formatToParts(n)
+    .filter((p) => p.type !== "currency")
+    .map((p) => p.value)
+    .join("")
+    .trimStart()
 }
 
 const PIPELINE_STEPS = [
@@ -95,10 +110,10 @@ export function ResultSidebar({
       {/* Glow atrás do card: blur só aqui; conteúdo permanece nítido em z-10 */}
       <div
         className={cn(
-          "pointer-events-none absolute -inset-4 z-0 rounded-[2.5rem] bg-emerald-500/15 blur-[40px] transition-all duration-1000",
-          "dark:bg-emerald-500/12",
-          "group-hover/sidebar:bg-emerald-500/25 group-hover/sidebar:blur-[60px]",
-          "dark:group-hover/sidebar:bg-emerald-500/18 dark:group-hover/sidebar:blur-[60px]",
+          "pointer-events-none absolute -inset-4 z-0 rounded-[2.5rem] bg-emerald-500/11 blur-[32px] transition-all duration-1000",
+          "dark:bg-emerald-500/9",
+          "group-hover/sidebar:bg-emerald-500/18 group-hover/sidebar:blur-[52px]",
+          "dark:group-hover/sidebar:bg-emerald-500/14 dark:group-hover/sidebar:blur-[52px]",
           loading
             ? "motion-safe:animate-soft-pulse motion-reduce:animate-none motion-reduce:opacity-[0.22]"
             : "opacity-40 motion-reduce:opacity-35",
@@ -108,12 +123,12 @@ export function ResultSidebar({
 
       <div
         className={cn(
-          "relative z-10 overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white shadow-2xl shadow-slate-200/40 backdrop-blur-md transition-all",
-          "dark:border-slate-700/60 dark:bg-slate-950/40 dark:shadow-black/40",
+          "relative z-10 overflow-hidden rounded-[2rem] border border-border/60 bg-white shadow-2xl shadow-slate-200/40 backdrop-blur-md transition-all",
+          "dark:border-border/60 dark:bg-slate-950/40 dark:shadow-black/40",
         )}
       >
         {/* Header impacto */}
-        <div className="relative overflow-hidden bg-slate-950 p-6 text-white">
+        <div className="relative overflow-hidden bg-tribia-navy-hero p-6 text-white">
           <div
             className="pointer-events-none absolute inset-0 z-0 opacity-[0.14]"
             style={{
@@ -122,7 +137,7 @@ export function ResultSidebar({
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute top-0 right-0 z-[1] h-32 w-32 bg-emerald-500/15 blur-[40px] dark:bg-emerald-500/10"
+            className="pointer-events-none absolute top-0 right-0 z-[1] h-32 w-32 bg-emerald-500/11 blur-[32px] dark:bg-emerald-500/8"
             aria-hidden
           />
           <div className="relative z-10 mb-4 flex items-center justify-between gap-3">
@@ -148,14 +163,14 @@ export function ResultSidebar({
           <div className="relative z-10 flex flex-wrap items-baseline gap-2">
             <span className="text-xl font-medium text-slate-500">R$</span>
             <span className="text-4xl font-black tracking-tighter tabular-nums text-white sm:text-5xl">
-              {loading ? "—" : showHeroAmount ? formatAmountNoSymbol(totalReceita) : "—"}
+              {loading ? "—" : showHeroAmount ? formatBRLWithoutSymbol(totalReceita) : "—"}
             </span>
           </div>
           <p className="relative z-10 mt-1 text-sm font-medium uppercase tracking-widest text-slate-400">
             Receita declarada no formulário
           </p>
 
-          <div className="relative z-10 mt-3 border-b border-slate-800 pb-2">
+          <div className="relative z-10 mt-3 border-b border-white/10 pb-2">
             <span className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
               Ano base {year} ·{" "}
               <TermTooltip term="CBS" triggerClassName="border-slate-500/60 text-slate-300" />
@@ -166,7 +181,7 @@ export function ResultSidebar({
         </div>
 
         {/* Corpo glass */}
-        <div className="space-y-5 border-t border-slate-800/40 bg-white/90 p-6 dark:border-slate-700/50 dark:bg-slate-900/50">
+        <div className="space-y-5 border-t border-border bg-white/90 p-6 dark:border-border dark:bg-slate-900/50">
           {showEducational ? (
             <div className="space-y-4">
               <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -207,9 +222,7 @@ export function ResultSidebar({
                     Receita bruta
                   </span>
                   <span className="font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                    {totalReceita > 0
-                      ? totalReceita.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                      : "—"}
+                    {totalReceita > 0 ? formatBRL(totalReceita) : "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
@@ -218,9 +231,7 @@ export function ResultSidebar({
                     Despesas informadas
                   </span>
                   <span className="font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-                    {totalDespesas > 0
-                      ? totalDespesas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                      : "—"}
+                    {totalDespesas > 0 ? formatBRL(totalDespesas) : "—"}
                   </span>
                 </div>
                 <Separator className="bg-slate-200 dark:bg-slate-700" />

@@ -101,6 +101,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-tribia-canvas: var(--tribia-canvas);
+  --color-tribia-navy-hero: var(--tribia-navy-hero);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -155,6 +157,11 @@
   --sidebar-accent-foreground: oklch(0.13 0.028 264);
   --sidebar-border: oklch(0.91 0.006 247);
   --sidebar-ring: oklch(0.60 0.17 162);
+
+  /* TribIA — superfície do canvas do simulador (main), ligeiramente distinta do header */
+  --tribia-canvas: oklch(0.97 0.008 247);
+  /* Painéis sempre navy (ex.: faixa hero da sidebar de resultado) — não usar bg-primary no dark */
+  --tribia-navy-hero: oklch(0.13 0.028 264);
 }
 
 .dark {
@@ -195,6 +202,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.65 0.18 162);
+
+  --tribia-canvas: oklch(0.12 0.02 264);
+  --tribia-navy-hero: oklch(0.13 0.028 264);
 }
 
 @layer base {
@@ -260,44 +270,45 @@
 }
 
 /* Assinaturas por estágio: opacidade + tamanho do elipse (herdam no .dashboard-pipeline-glow) */
+/* Opacidades ~15% abaixo do original — squint pass: menos competição com sidebar/cards */
 main[data-pipeline-stage="context"] {
-  --tribia-glow-opacity: 0.055;
+  --tribia-glow-opacity: 0.047;
   --tribia-glow-w: 32%;
   --tribia-glow-h: 28%;
 }
 
 main[data-pipeline-stage="classification"] {
-  --tribia-glow-opacity: 0.075;
+  --tribia-glow-opacity: 0.064;
   --tribia-glow-w: 40%;
   --tribia-glow-h: 35%;
 }
 
 main[data-pipeline-stage="simulation"] {
-  --tribia-glow-opacity: 0.078;
+  --tribia-glow-opacity: 0.066;
   --tribia-glow-w: 42%;
   --tribia-glow-h: 37%;
 }
 
 main[data-pipeline-stage="verdict"] {
-  --tribia-glow-opacity: 0.09;
+  --tribia-glow-opacity: 0.077;
   --tribia-glow-w: 48%;
   --tribia-glow-h: 40%;
 }
 
 .dark main[data-pipeline-stage="context"] {
-  --tribia-glow-opacity: 0.045;
+  --tribia-glow-opacity: 0.038;
 }
 
 .dark main[data-pipeline-stage="classification"] {
-  --tribia-glow-opacity: 0.06;
+  --tribia-glow-opacity: 0.051;
 }
 
 .dark main[data-pipeline-stage="simulation"] {
-  --tribia-glow-opacity: 0.062;
+  --tribia-glow-opacity: 0.053;
 }
 
 .dark main[data-pipeline-stage="verdict"] {
-  --tribia-glow-opacity: 0.072;
+  --tribia-glow-opacity: 0.061;
 }
 
 .dashboard-pipeline-glow {

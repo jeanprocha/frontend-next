@@ -340,7 +340,7 @@ export default function DashboardPage() {
   return (
     <main
       className={cn(
-        "relative min-h-screen bg-slate-50/50 transition-colors duration-500",
+        "relative min-h-screen bg-tribia-canvas transition-colors duration-500",
         "board-ready:bg-white",
       )}
       data-pipeline-stage={pipelineStage}
