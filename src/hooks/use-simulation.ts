@@ -220,6 +220,8 @@ export function useSimulationMutation() {
         expenses,
         discoveredStrategyTags,
         ai_metadata,
+        serviceClassifications: svcClassResult.results,
+        expenseClassifications: expClassResult.results,
       }
     },
     onSuccess: async (data, variables) => {
@@ -229,6 +231,7 @@ export function useSimulationMutation() {
         classifications: data.classifications,
         expenses: data.expenses,
         ai_metadata: data.ai_metadata ?? null,
+        service_classifications: data.serviceClassifications,
         meta: {
           createdAt: new Date().toISOString(),
           companyContext: variables.companyContext,
@@ -284,6 +287,14 @@ export function useSimulationMutation() {
               false,
           })),
           classifications: data.classifications,
+          classifications_snapshot: {
+            snapshot_version: 1,
+            service_classifications: data.serviceClassifications,
+            expense_classifications: data.expenseClassifications,
+            ai_metadata: data.ai_metadata ?? undefined,
+            discovered_tags:
+              data.discoveredStrategyTags.length > 0 ? data.discoveredStrategyTags : undefined,
+          },
         })
         await queryClient.invalidateQueries({
           queryKey: ["simulation-records", userId],

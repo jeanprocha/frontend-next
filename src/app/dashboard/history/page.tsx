@@ -20,13 +20,12 @@ import { TransitionSparkline } from "@/components/tax/transition-sparkline"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 import { cn } from "@/lib/utils"
-import { aggregateRagMetadata } from "@/lib/rag-metadata"
+import { simulationDetailToPersisted } from "@/lib/history-hydrate"
 import { ShellBreadcrumb } from "@/components/shell/shell-breadcrumb"
 import { shellPageClass } from "@/lib/shell-layout"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { PlgUpgradeDialog } from "@/components/tribia/plg-upgrade-dialog"
 import { useTaxStore } from "@/store/useTaxStore"
-import type { ClassificationItem, FormExpense } from "@/types/api"
 
 function formatDate(iso: string): string {
   try {
@@ -166,29 +165,20 @@ export default function HistoryPage() {
         amount: s.amount,
         iss_rate: s.iss_rate,
       })))
-      const classifications: ClassificationItem[] = d.classifications.map((c) => ({
-        ...c,
-        evidence: c.evidence ?? [],
-      }))
-      const expenses: FormExpense[] = d.expenses.map((e) => ({
-        id: e.id,
-        description: e.description,
-        amount: e.amount,
-      }))
-      setExpenses(expenses)
-      const ai_metadata = aggregateRagMetadata([], classifications)
-      setFormResults({
-        mode: "form",
-        simulation: d.simulation,
-        classifications,
-        expenses,
-        ai_metadata: ai_metadata ?? null,
-        meta: {
+      setExpenses(
+        d.expenses.map((e) => ({
+          id: e.id,
+          description: e.description,
+          amount: e.amount,
+        })),
+      )
+      setFormResults(
+        simulationDetailToPersisted(d, {
           createdAt,
           companyContext: companyContext ?? "",
           year,
-        },
-      })
+        }),
+      )
       router.push("/dashboard")
     } catch (e) {
       console.error("[TribIA] Erro ao carregar simulação:", e)

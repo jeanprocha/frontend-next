@@ -131,6 +131,13 @@ export function TribiaTopNav() {
                       >
                         {NAV_LINK_LABELS.history}
                       </Link>
+                      <Link
+                        href="/privacidade"
+                        className={cn(navLinkClass(false), "w-full justify-start")}
+                        onClick={() => setMobileNavOpen(false)}
+                      >
+                        Privacidade e dados
+                      </Link>
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -148,6 +155,12 @@ export function TribiaTopNav() {
         <span className="hidden sm:inline-flex shrink-0 items-center rounded-full border border-border/80 bg-muted/80 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
           CBS · IBS · IS
         </span>
+        <Link
+          href="/privacidade"
+          className="hidden shrink-0 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:inline"
+        >
+          Privacidade e dados
+        </Link>
         <TribiaPlanBadge />
 
         {!isLoaded ? (

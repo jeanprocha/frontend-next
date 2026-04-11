@@ -1,5 +1,6 @@
 import { aggregateRagMetadata } from "@/lib/rag-metadata"
 import type {
+  ClassificationHistorySnapshot,
   ClassificationItem,
   FormExpense,
   FormService,
@@ -41,26 +42,60 @@ export function detailServicesToFormServices(
   }))
 }
 
+function snapshotFromDetail(d: SimulationRecordDetailResponse): ClassificationHistorySnapshot | null {
+  const raw = d.classifications_snapshot
+  if (raw == null || typeof raw !== "object") return null
+  return raw as ClassificationHistorySnapshot
+}
+
 export function simulationDetailToPersisted(
   d: SimulationRecordDetailResponse,
   meta: ResultMeta,
 ): PersistedResults {
-  const classifications: ClassificationItem[] = d.classifications.map((c) => ({
-    ...c,
-    evidence: c.evidence ?? [],
-  }))
+  const snap = snapshotFromDetail(d)
+
+  const classifications: ClassificationItem[] = (() => {
+    if (snap?.expense_classifications && snap.expense_classifications.length > 0) {
+      return snap.expense_classifications.map((c) => ({
+        ...c,
+        evidence: c.evidence ?? [],
+      }))
+    }
+    return d.classifications.map((c) => ({
+      ...c,
+      evidence: c.evidence ?? [],
+    }))
+  })()
+
   const expenses: FormExpense[] = d.expenses.map((e) => ({
     id: e.id,
     description: e.description,
     amount: e.amount,
   }))
-  const ai_metadata = aggregateRagMetadata([], classifications)
+
+  const ai_metadata = (() => {
+    if (snap?.ai_metadata != null) {
+      return snap.ai_metadata
+    }
+    const svc = snap?.service_classifications ?? []
+    return aggregateRagMetadata(svc, classifications) ?? null
+  })()
+
+  const service_classifications: ClassificationItem[] | undefined = (() => {
+    const svcs = snap?.service_classifications
+    if (svcs && svcs.length > 0) {
+      return svcs.map((c) => ({ ...c, evidence: c.evidence ?? [] }))
+    }
+    return undefined
+  })()
+
   return {
     mode: "form",
     simulation: d.simulation,
     classifications,
     expenses,
-    ai_metadata: ai_metadata ?? null,
+    ai_metadata,
+    service_classifications,
     meta,
   }
 }

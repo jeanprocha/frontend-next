@@ -34,7 +34,7 @@ const COPY: Record<
   generic: {
     title: "TribIA Pro — mais profundidade para o seu fluxo",
     body:
-      "Simulações ilimitadas, Raio-X completo na LC 68/2024, histórico rico com time-traveler e exportação profissional — pensado para quem vive o simulador no dia a dia.",
+      "Do retrato isolado ao filme completo da reforma (2026–2033): série temporal, gestão de picos, comparativo A/B, Raio-X na LC 68/2024, histórico rico e Board-Ready — para consultoria e leitura CFO-adjacente, não só uma simulação pontual.",
   },
 }
 

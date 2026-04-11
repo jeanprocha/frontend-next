@@ -18,6 +18,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { formatBRL } from "@/lib/api"
+import { TransitionSparkline } from "@/components/tax/transition-sparkline"
+import { parseApiDecimalForChart } from "@/lib/money-decimal"
+import { clampTransitionYear } from "@/lib/transition-focus"
 import type { SimulationResponse } from "@/types/api"
 
 const OLD_COLOR = "#64748b"
@@ -43,11 +46,6 @@ interface ChartRowAb {
   inflection: boolean
 }
 
-function parseMoney(s: string): number {
-  const n = parseFloat(s)
-  return Number.isFinite(n) ? n : 0
-}
-
 function buildRows(
   series: NonNullable<SimulationResponse["transition_series"]>,
   mode: DisplayMode,
@@ -55,8 +53,8 @@ function buildRows(
 ): ChartRow[] {
   let inflectionYear: number | null = null
   for (const p of series) {
-    const oldN = parseMoney(p.old_tax_net)
-    const newN = parseMoney(p.new_tax_net)
+    const oldN = parseApiDecimalForChart(p.old_tax_net)
+    const newN = parseApiDecimalForChart(p.new_tax_net)
     if (newN < oldN) {
       inflectionYear = p.year
       break
@@ -64,8 +62,8 @@ function buildRows(
   }
 
   return series.map((p) => {
-    let legado = parseMoney(p.old_tax_net)
-    let novo = parseMoney(p.new_tax_net)
+    let legado = parseApiDecimalForChart(p.old_tax_net)
+    let novo = parseApiDecimalForChart(p.new_tax_net)
     if (mode === "pct" && revenue > 0) {
       legado = (legado / revenue) * 100
       novo = (novo / revenue) * 100
@@ -100,8 +98,8 @@ function buildAbRows(
   for (const y of sorted) {
     const c = curMap.get(y)
     if (!c) continue
-    const oldN = parseMoney(c.old_tax_net)
-    const newN = parseMoney(c.new_tax_net)
+    const oldN = parseApiDecimalForChart(c.old_tax_net)
+    const newN = parseApiDecimalForChart(c.new_tax_net)
     if (newN < oldN) {
       inflectionYear = y
       break
@@ -111,9 +109,9 @@ function buildAbRows(
   return sorted.map((year) => {
     const c = curMap.get(year)
     const b = baseMap.get(year)
-    let legado = c ? parseMoney(c.old_tax_net) : 0
-    let novoB = c ? parseMoney(c.new_tax_net) : 0
-    let novoA = b ? parseMoney(b.new_tax_net) : 0
+    let legado = c ? parseApiDecimalForChart(c.old_tax_net) : 0
+    let novoB = c ? parseApiDecimalForChart(c.new_tax_net) : 0
+    let novoA = b ? parseApiDecimalForChart(b.new_tax_net) : 0
     if (mode === "pct" && revenue > 0) {
       legado = (legado / revenue) * 100
       novoB = (novoB / revenue) * 100
@@ -180,16 +178,30 @@ interface TransitionChartProps {
   result: SimulationResponse
   /** Cenário A (referência): compara CBS/IBS projetado (new) vs cenário B = result */
   abBaselineResult?: SimulationResponse
+  /** Free: sparkline; Pro: gráfico completo */
+  chartMode?: "full" | "sparkline"
+  /** Pro: linha vertical no ano de leitura */
+  focusYear?: number
+  /** Pro: alterar ano de foco (selector no cabeçalho) */
+  onFocusYearChange?: (year: number) => void
 }
 
-export function TransitionChart({ result, abBaselineResult }: TransitionChartProps) {
+const FOCUS_YEARS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033] as const
+
+export function TransitionChart({
+  result,
+  abBaselineResult,
+  chartMode = "full",
+  focusYear,
+  onFocusYearChange,
+}: TransitionChartProps) {
   const series = result.transition_series
   const baseSeries = abBaselineResult?.transition_series
   const abMode = Boolean(abBaselineResult && baseSeries?.length && series?.length)
   const [mode, setMode] = useState<DisplayMode>("brl")
 
   const revenue = useMemo(() => {
-    const r = parseFloat(result.revenue_total ?? "0")
+    const r = parseApiDecimalForChart(result.revenue_total ?? "0")
     return Number.isFinite(r) && r > 0 ? r : 0
   }, [result.revenue_total])
 
@@ -209,6 +221,33 @@ export function TransitionChart({ result, abBaselineResult }: TransitionChartPro
   }, [])
 
   if (!series?.length) return null
+
+  const fy = focusYear != null ? clampTransitionYear(focusYear) : undefined
+
+  if (chartMode === "sparkline" && !abMode) {
+    return (
+      <Card className="border-slate-200/80 dark:border-slate-700/80">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">Transição temporal (pré-visualização)</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xl leading-snug">
+            Trajectória da carga CBS/IBS projectada (2026–2033). Plano Pro: gráfico completo, ano de foco e
+            memória de cálculo.
+          </p>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <TransitionSparkline
+              series={series}
+              width={320}
+              height={48}
+              withFill
+              aria-label="Pré-visualização da trajectória CBS/IBS por ano"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="border-slate-200/80 dark:border-slate-700/80">
@@ -233,6 +272,25 @@ export function TransitionChart({ result, abBaselineResult }: TransitionChartPro
                   <span className="inline-block h-0.5 w-4 bg-emerald-500" />
                   Cenário B (atual)
                 </span>
+              </div>
+            )}
+            {onFocusYearChange && fy != null && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label htmlFor="transition-focus-year" className="text-xs font-medium text-muted-foreground">
+                  Ano de foco
+                </label>
+                <select
+                  id="transition-focus-year"
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium shadow-sm"
+                  value={fy}
+                  onChange={(e) => onFocusYearChange(Number(e.target.value))}
+                >
+                  {FOCUS_YEARS.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
@@ -314,6 +372,20 @@ export function TransitionChart({ result, abBaselineResult }: TransitionChartPro
                   fontSize: 10,
                 }}
               />
+              {fy != null && (
+                <ReferenceLine
+                  x={fy}
+                  stroke="var(--color-emerald-600)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.85}
+                  label={{
+                    value: "Foco",
+                    position: "top",
+                    fill: "var(--color-emerald-600)",
+                    fontSize: 10,
+                  }}
+                />
+              )}
               <Area
                 type="monotone"
                 dataKey="legado"
@@ -383,6 +455,20 @@ export function TransitionChart({ result, abBaselineResult }: TransitionChartPro
                   fontSize: 10,
                 }}
               />
+              {fy != null && (
+                <ReferenceLine
+                  x={fy}
+                  stroke="var(--color-emerald-600)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.85}
+                  label={{
+                    value: "Foco",
+                    position: "top",
+                    fill: "var(--color-emerald-600)",
+                    fontSize: 10,
+                  }}
+                />
+              )}
               <Area
                 type="monotone"
                 dataKey="legado"

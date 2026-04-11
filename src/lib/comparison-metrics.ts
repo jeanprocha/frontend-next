@@ -1,16 +1,16 @@
+import Decimal from "decimal.js"
 import type { SimulationResponse, TransitionSeriesPoint } from "@/types/api"
-
-function parseMoney(s: string): number {
-  const n = parseFloat(s)
-  return Number.isFinite(n) ? n : 0
-}
+import { parseApiDecimal } from "@/lib/money-decimal"
 
 /**
  * Diferença de carga líquida projetada (CBS/IBS): cenário B − cenário A.
  * Negativo = B paga menos que A (economia vs referência).
  */
 export function projectedNetTaxDiff(baseline: SimulationResponse, current: SimulationResponse): number {
-  return parseMoney(current.projected.net_tax) - parseMoney(baseline.projected.net_tax)
+  const b = parseApiDecimal(current.projected.net_tax)
+  const a = parseApiDecimal(baseline.projected.net_tax)
+  if (!b || !a) return Number.NaN
+  return b.sub(a).toNumber()
 }
 
 /**
@@ -25,15 +25,18 @@ export function accumulatedNewTaxDiff(
   for (const p of baselineSeries) {
     byYear.set(p.year, p.new_tax_net)
   }
-  let sum = 0
+  let sum = new Decimal(0)
   let count = 0
   for (const p of currentSeries) {
     const a = byYear.get(p.year)
     if (a === undefined) continue
-    sum += parseMoney(p.new_tax_net) - parseMoney(a)
+    const pb = parseApiDecimal(p.new_tax_net)
+    const pa = parseApiDecimal(a)
+    if (!pb || !pa) continue
+    sum = sum.add(pb.sub(pa))
     count++
   }
-  return count > 0 ? sum : null
+  return count > 0 ? sum.toNumber() : null
 }
 
 export function formatRegimeLabel(regime: string | undefined): string {

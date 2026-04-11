@@ -376,6 +376,12 @@ function Footer() {
             <Link href="/dashboard" className="transition-colors hover:text-foreground">
               Dashboard
             </Link>
+            <Link
+              href="/privacidade"
+              className="transition-colors hover:text-foreground"
+            >
+              Privacidade e dados
+            </Link>
             <a
               href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp68.htm"
               target="_blank"

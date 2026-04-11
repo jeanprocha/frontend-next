@@ -29,12 +29,30 @@ Novos componentes não devem “corrigir” tamanho com `text-[13px]` salvo exce
 
 ## Profundidade (estratégia única)
 
-**Regra:** separação de áreas com **bordas de baixa opacidade** + **sombras muito suaves** em cards de trabalho; **um único momento “premium”** (sidebar de resultado, CTA) pode usar sombra mais presente e glow **desaturado**.
+**Regra:** separação de áreas com **bordas legíveis no squint test** (sem harsh lines) + **sombras muito suaves** em cartões de trabalho; **um único momento “premium”** por dobra (veredito Hero, sidebar de resultado) com **um degrau a mais** que o resto.
 
-- **Padrão (formulários, hubs, cards de conteúdo):** `border-border` ou `border-border/60`, sombra leve ou `shadow-[0_8px_30px_rgb(0,0,0,0.04)]`.
-- **Exceção (sidebar de resultado):** `shadow-2xl` + halo esmeralda atrás — é o ancorador visual do “veredito”; não replicar esse peso em cada card da página.
+### Escala de elevação (Cockpit de autoridade)
+
+| Nível | Superfície | Borda / sombra | Onde |
+|-------|------------|----------------|------|
+| **Canvas** | `--tribia-canvas` (afundado vs. `--card`) | — | `<main>` do dashboard (`bg-tribia-canvas`) |
+| **Trabalho** | `bg-card` | `border-border/80` + sombra `0_8px_30px` leve | Esteira, `SummaryCards`, blocos técnicos na tab Go |
+| **Veredito Hero** | `.tribia-surface-verdict` | `border-emerald-500/30`, `ring-1 ring-border/45`, `shadow-lg` | `ComparisonVerdictCard` (Sessão 1 / comparação A/B) |
+
+**Utilitários** (`globals.css`): `.tribia-surface-work` (cartão de trabalho padrão), `.tribia-surface-verdict` (ancorador da página — acima do work).
+
+- **Padrão (formulários, hubs, esteira):** preferir `.tribia-surface-work` ou equivalente `border-border/80` + `bg-card` + sombra documentada.
+- **Exceção (sidebar de resultado):** `shadow-2xl` + halo esmeralda atrás — continua reservado à sidebar; não replicar em cada card.
 
 **Anti-padrão:** misturar halos animados + gradiente forte + sombra pesada em **vários** blocos na mesma viewport — ver ajuste “squint” em `globals.css` (opacidade do pipeline glow).
+
+### Cinco pilares do território visual (produto)
+
+1. **Autoridade fiscal** — tipografia serif (`.font-board-report`) em trechos legais / board-ready.  
+2. **Rastro auditável** — esteira de quatro passos (jornada numerada).  
+3. **Determinismo (Go)** — tab Motor Go: `font-mono`, precisão decimal, sem “opinião” no lugar do cálculo.  
+4. **Interpretação (IA)** — tab Classificação: diagnósticos por linha, custo morto ilustrativo.  
+5. **Convivência temporal** — timeline e série 2026–2033 na rampa de transição.
 
 ---
 
@@ -54,7 +72,7 @@ Preferir tokens antes de classes Tailwind arbitrárias:
 
 | Padrão antigo (frequente) | Direção |
 |---------------------------|---------|
-| `border-slate-200/60`, `dark:border-slate-700/60` | `border-border/60` ou `border-border` |
+| `border-slate-200/60`, `dark:border-slate-700/60` | `border-border/80` (trabalho) ou `border-border` |
 | `bg-slate-50/50` no canvas do dashboard | `bg-tribia-canvas` |
 | Cabeçalho escuro fixo “marca TribIA” | `bg-tribia-navy-hero` (não `bg-primary` no dark — primary inverte) |
 | Destaque de foco em hub | `border-accent/*` ou `ring-accent` |
@@ -115,3 +133,4 @@ Preferir tokens antes de classes Tailwind arbitrárias:
 | Data | Nota |
 |------|------|
 | 2026-04 | Criação: tokens `tribia-canvas`, `tribia-navy-hero`; redução fina do pipeline glow e do halo da sidebar (squint pass). |
+| 2026-04-09 | Cockpit de autoridade: `--tribia-canvas` e `--border` afinados (light/dark); utilitários `tribia-surface-work` / `tribia-surface-verdict`; esteira e SummaryCards com silhueta `border-border/80`. |

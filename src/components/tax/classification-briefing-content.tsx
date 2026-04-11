@@ -1,9 +1,21 @@
 "use client"
 
+import { useState } from "react"
 import { BookMarked } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { BriefingSectionTitle } from "@/components/tax/briefing-section-title"
-import { formatArticleLabel } from "@/lib/rag-metadata"
+import { LegalEvidenceHighlighter } from "@/components/tax/legal-evidence-highlighter"
+import {
+  confidenceTierBadgeClassName,
+  confidenceTierFromScore01,
+  confidenceTierShortLabel,
+  isTenuousRagNexus,
+  maxEvidenceSimilarity,
+  TENUOUS_RAG_NEXUS_MESSAGE,
+} from "@/lib/confidence-tiers"
+import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"
+import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem } from "@/types/api"
 
@@ -23,9 +35,13 @@ export function ClassificationBriefingContent({
   /** Quando false, omitir nota final (ex.: antes de «Texto legal integral» no mesmo modal). */
   withClosingNote?: boolean
 }) {
+  const rayxFull = useRayxFullAccess()
   const evidence = c.evidence ?? []
   const riskRaw = c.risk_level?.trim() || "—"
   const riskBadge = /risco/i.test(riskRaw) ? riskRaw : `Risco ${riskRaw}`
+  const lineTier = confidenceTierFromScore01(c.confidence)
+  const tenuousNexus = isTenuousRagNexus(maxEvidenceSimilarity(c))
+  const [evidenceTextOpen, setEvidenceTextOpen] = useState<Record<string, boolean>>({})
 
   return (
     <>
@@ -43,10 +59,23 @@ export function ClassificationBriefingContent({
         <Badge className="border-transparent bg-foreground font-medium text-background hover:bg-foreground/90 dark:hover:bg-foreground/90">
           {riskBadge}
         </Badge>
-        <Badge variant="outline" className="font-medium tabular-nums text-foreground">
-          Confiança {pct(c.confidence)}
+        <Badge
+          variant="outline"
+          className={cn(
+            "font-medium tabular-nums",
+            confidenceTierBadgeClassName(lineTier),
+          )}
+          title="Semáforo do classificador: sólido acima de 85%; revisar entre 60% e 85%; atípico abaixo de 60%."
+        >
+          Confiança {pct(c.confidence)} · {confidenceTierShortLabel(lineTier)}
         </Badge>
       </div>
+
+      {tenuousNexus ? (
+        <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:text-amber-100">
+          {TENUOUS_RAG_NEXUS_MESSAGE}
+        </div>
+      ) : null}
 
       <div className="space-y-6 pt-4">
         <div>
@@ -63,41 +92,78 @@ export function ClassificationBriefingContent({
 
         <section>
           <BriefingSectionTitle>Base legal</BriefingSectionTitle>
-          <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-sm leading-relaxed">
+          <div className="rounded-lg bg-muted/20 text-sm leading-relaxed">
             <p className="text-foreground/90">
               {c.legal_base?.trim() || "Sem citação normativa consolidada neste item."}
             </p>
             {evidence.length > 0 ? (
               <ul className="mt-3 list-none space-y-2.5 pl-0">
-                {evidence.slice(0, 8).map((evItem) => (
-                  <li
-                    key={evItem.article_id}
-                    className="flex flex-col gap-1 border-l-2 border-emerald-500/45 pl-2.5"
-                  >
-                    <span className="inline-flex w-fit items-center gap-1 rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs font-semibold text-emerald-950 dark:text-emerald-100">
-                      <BookMarked className="size-3 shrink-0 opacity-80" aria-hidden />
-                      {formatArticleLabel(evItem.article_id)}
-                    </span>
-                    {Number.isFinite(evItem.similarity) ? (
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        Similaridade {Math.round((evItem.similarity as number) * 100)}%
+                {evidence.slice(0, 8).map((evItem, evIndex) => {
+                  const evKey = `${evItem.article_id}-${evIndex}`
+                  const textOpen = Boolean(evidenceTextOpen[evKey])
+                  return (
+                    <li
+                      key={evKey}
+                      className={cn(
+                        "flex flex-col gap-1.5 rounded-md border border-border/50 border-l-[3px] border-l-emerald-500/50 bg-background/40 py-2 pl-2.5 pr-2",
+                      )}
+                    >
+                      <span className="inline-flex w-fit max-w-full items-center gap-1 rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs font-semibold text-emerald-950 dark:text-emerald-100">
+                        <BookMarked className="size-3 shrink-0 opacity-80" aria-hidden />
+                        <span className="break-words text-left leading-snug">
+                          {formatLegalCitationFromMetadata(evItem.metadata) || formatArticleLabel(evItem.article_id)}
+                        </span>
                       </span>
-                    ) : null}
-                    {evItem.content ? (
-                      <span className="line-clamp-4 text-xs leading-relaxed text-muted-foreground">
-                        {evItem.content}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
+                      {Number.isFinite(evItem.similarity) || evItem.content ? (
+                        <div className="flex min-h-7 items-center gap-2">
+                          {Number.isFinite(evItem.similarity) ? (
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              Similaridade {Math.round((evItem.similarity as number) * 100)}%
+                            </span>
+                          ) : null}
+                          {evItem.content ? (
+                            <>
+                              <div className="min-w-0 flex-1" aria-hidden />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 shrink-0 px-2 text-xs font-medium text-primary hover:text-primary"
+                                aria-expanded={textOpen}
+                                onClick={() =>
+                                  setEvidenceTextOpen((prev) => ({ ...prev, [evKey]: !prev[evKey] }))
+                                }
+                              >
+                                {textOpen ? "Ocultar texto" : "Ver texto"}
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {evItem.content && textOpen ? (
+                        <span
+                          className={cn(
+                            "block text-xs text-muted-foreground",
+                            rayxFull
+                              ? "max-h-[min(42vh,22rem)] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]"
+                              : "max-h-[min(28vh,16rem)] overflow-y-auto overscroll-contain pr-1 [scrollbar-gutter:stable]",
+                          )}
+                        >
+                          <LegalEvidenceHighlighter
+                            text={evItem.content}
+                            snippets={evItem.relevant_snippets}
+                            tentative={evItem.relevant_snippets_tentative}
+                            enabled={rayxFull}
+                            className="text-xs text-muted-foreground"
+                          />
+                        </span>
+                      ) : null}
+                    </li>
+                  )
+                })}
               </ul>
             ) : null}
           </div>
-        </section>
-
-        <section>
-          <BriefingSectionTitle>Análise de risco</BriefingSectionTitle>
-          <p className="text-sm capitalize text-foreground/90">{riskRaw}</p>
         </section>
       </div>
 

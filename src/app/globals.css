@@ -18,6 +18,14 @@
   font-family: var(--font-board-serif), ui-serif, Georgia, "Times New Roman", serif;
 }
 
+/* Raio-X Full — texto legal integral (LC 68): leitura institucional tipo Vade Mecum */
+.font-law-integral {
+  font-family: var(--font-board-serif), ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  letter-spacing: 0.012em;
+}
+
 /* Modo apresentação: sem glow de pipeline no canvas */
 .board-ready .dashboard-pipeline-glow {
   opacity: 0 !important;
@@ -103,6 +111,8 @@
   --color-card: var(--card);
   --color-tribia-canvas: var(--tribia-canvas);
   --color-tribia-navy-hero: var(--tribia-navy-hero);
+  --color-tribia-verdict-increase-fg: var(--tribia-verdict-increase-fg);
+  --color-tribia-verdict-economy-fg: var(--tribia-verdict-economy-fg);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -136,7 +146,7 @@
   --muted-foreground: oklch(0.50 0.012 247);
 
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.006 247);           /* Slate-200 */
+  --border: oklch(0.88 0.008 247);           /* ligeiramente mais escuro que Slate-200 — silhueta de cartões */
   --input: oklch(0.91 0.006 247);
   --ring: oklch(0.60 0.17 162);              /* Emerald — foco */
 
@@ -158,10 +168,19 @@
   --sidebar-border: oklch(0.91 0.006 247);
   --sidebar-ring: oklch(0.60 0.17 162);
 
-  /* TribIA — superfície do canvas do simulador (main), ligeiramente distinta do header */
-  --tribia-canvas: oklch(0.97 0.008 247);
+  /* TribIA — superfície do canvas do simulador (main): afundada vs. --card para squint test */
+  --tribia-canvas: oklch(0.962 0.009 247);
   /* Painéis sempre navy (ex.: faixa hero da sidebar de resultado) — não usar bg-primary no dark */
   --tribia-navy-hero: oklch(0.13 0.028 264);
+
+  /*
+   * Veredito financeiro — aumento de carga (Institucional Moderno, system.md):
+   * Slate-Red técnico = vermelho dessaturado que transmite ponto de atenção em
+   * auditoria fiscal, não erro crítico de sistema. Evita "vermelho pânico" neon.
+   * Pro/Premium: --tribia-verdict-increase-fg (sóbrio) vs Free: usa red-700 Tailwind.
+   */
+  --tribia-verdict-increase-fg: oklch(0.33 0.10 22);    /* ~red-900 dessaturado */
+  --tribia-verdict-economy-fg: oklch(0.47 0.14 162);    /* ~emerald-600 */
 }
 
 .dark {
@@ -184,7 +203,7 @@
   --muted-foreground: oklch(0.65 0.01 247);
 
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 8%);
+  --border: oklch(1 0 0 / 11%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.65 0.18 162);
 
@@ -203,8 +222,13 @@
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.65 0.18 162);
 
-  --tribia-canvas: oklch(0.12 0.02 264);
+  /* Canvas ligeiramente mais fundo que o card (0.16) para ler camadas */
+  --tribia-canvas: oklch(0.105 0.022 264);
   --tribia-navy-hero: oklch(0.13 0.028 264);
+
+  /* Veredito — versões dark: emerald mais brilhante e red menos saturado */
+  --tribia-verdict-increase-fg: oklch(0.60 0.10 22);    /* ~red-400 dessaturado dark */
+  --tribia-verdict-economy-fg: oklch(0.72 0.16 162);    /* ~emerald-400 dark */
 }
 
 @layer base {
@@ -215,7 +239,7 @@
     @apply bg-background text-foreground;
   }
   /**
-   * Escala global do root: ~+18,75% face ao tamanho por defeito do browser (ex. 16px → ~19px por 1rem).
+   * Escala global do root: 110% = +10% face ao tamanho por defeito do browser (ex. 16px → 17,6px por 1rem).
    * Tamanhos de texto Tailwind (`text-sm`, `text-base`, …) e espaçamentos em `rem` acompanham na mesma proporção.
    */
   html {
@@ -235,6 +259,36 @@
     @media print {
       break-before: page;
     }
+  }
+
+  /** Cartão elevado — Institucional Moderno (par light/dark; sem @apply cruzado no Tailwind v4). */
+  .tribia-shadow-elevated {
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.04);
+  }
+  :is(.dark *) .tribia-shadow-elevated {
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.22);
+  }
+
+  /** Context Hub: foco discreto emerald (whisper-quiet). */
+  .tribia-shadow-context-focus:focus-within {
+    box-shadow: 0 8px 36px rgb(16 185 129 / 0.12);
+  }
+
+  /**
+   * Cockpit de autoridade — camadas (interface-design):
+   * cartão de trabalho vs. canvas; sem sombra dramática.
+   */
+  .tribia-surface-work {
+    @apply rounded-lg border border-border/80 bg-card;
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.04);
+  }
+  :is(.dark *) .tribia-surface-work {
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.22);
+  }
+
+  /** Veredito Hero (Sessão 1): um degrau acima do surface-work */
+  .tribia-surface-verdict {
+    @apply border border-emerald-500/30 bg-card shadow-lg ring-1 ring-border/45 dark:border-emerald-500/35 dark:bg-card dark:ring-border/35;
   }
 }
 
@@ -397,5 +451,19 @@ main[data-pipeline-stage="verdict"] {
   /* Evitar halos emerald decorativos em painéis que usam blur (fora de data-slot card) */
   .blur-3xl {
     display: none !important;
+  }
+
+  /* Esteira em tabs (Sessão 1): rasto completo no PDF — todas as secções em sequência */
+  .tribia-audit-tabs [data-slot="tabs-list"] {
+    display: none !important;
+  }
+
+  .tribia-audit-tabs [role="tabpanel"][hidden] {
+    display: block !important;
+    position: static !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 }

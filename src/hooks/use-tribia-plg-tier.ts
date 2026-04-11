@@ -19,6 +19,12 @@ export function useRayxFullAccess(): boolean {
   return useTribiaPlanContext().capabilities.rayxFull
 }
 
+/** Ancoragem PDF (PRO): Raio-X completo ou Board-Ready desbloqueado. */
+export function usePdfLegislationProAccess(): boolean {
+  const c = useTribiaPlanContext().capabilities
+  return c.rayxFull || c.boardReadyUnlocked
+}
+
 export function useTribiaBranding(): {
   brandingLogoUrl: string | null
   brandingOrgName: string | null

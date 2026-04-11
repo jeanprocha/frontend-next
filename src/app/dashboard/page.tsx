@@ -1,17 +1,16 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef, type CSSProperties } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo, type CSSProperties } from "react"
+import { useAuth } from "@clerk/nextjs"
 import Link from "next/link"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import { History, Lock, Monitor, Presentation } from "lucide-react"
+import { History, Monitor } from "lucide-react"
+import { BOARD_READY_SESSION_KEY } from "@/hooks/use-board-ready"
 import { SimulationForm } from "@/components/tax/simulation-form"
 import { AnalystBriefingSheet } from "@/components/tax/analyst-briefing-sheet"
-import { SummaryCards } from "@/components/tax/summary-cards"
-import { TribiaInsights } from "@/components/tax/tribia-insights"
-import { TransitionChart } from "@/components/tax/transition-chart"
-import { SankeyFlow } from "@/components/tax/sankey-flow"
-import { CreditLeakageAlert } from "@/components/tax/credit-leakage-alert"
-import { RagAuditCard } from "@/components/tax/rag-audit-card"
+import { TransitionPrintTable } from "@/components/tax/transition-print-table"
+import { SimulationEsteiraSection } from "@/components/tax/simulation-esteira-section"
+import { SimulationRecalcBridge } from "@/components/tax/simulation-recalc-bridge"
 import { ExpenseTable } from "@/components/tax/expense-table"
 import {
   PipelineStageAnnouncer,
@@ -28,6 +27,9 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore, type PersistedResults } from "@/store/useTaxStore"
 import { useSimulationMutation } from "@/hooks/use-simulation"
+import { useSimulationRecalc } from "@/hooks/use-simulation-recalc"
+import { errorDetailsFromUnknown } from "@/lib/api"
+import { RequestIdSupportRow } from "@/components/ui/request-id-support"
 import { useComparison } from "@/hooks/use-comparison"
 import { useBoardReady } from "@/hooks/use-board-ready"
 import {
@@ -69,6 +71,7 @@ import {
   parseCompanyRegimeFromDetail,
   simulationDetailToPersisted,
 } from "@/lib/history-hydrate"
+import { simulationAtFocusYear } from "@/lib/transition-focus"
 import { ShellBreadcrumb } from "@/components/shell/shell-breadcrumb"
 import { SHELL_INNER_CLASS } from "@/lib/shell-layout"
 import { FISCAL_LAW_CHANGELOG } from "@/lib/fiscal-law-changelog"
@@ -89,15 +92,40 @@ interface CsvResults {
 
 type InputMode = "form" | "csv"
 
+// ─── Helpers de derivação de labels (carimbo de sessão) ──────────────────────
+
+/**
+ * Extrai um «nome» legível do company_context.
+ * Hierarquia:
+ *  1. Texto antes do primeiro separador longo (— | - | :) se isso reduzir ruído.
+ *  2. Primeira linha do contexto.
+ *  3. Fallback institucional.
+ * Puro, sem efeitos colaterais — seguro para useMemo.
+ */
+function deriveSessionCompanyLabel(context: string | null | undefined): string {
+  const trimmed = (context ?? "").trim()
+  if (!trimmed) return "Contexto não definido"
+  const firstLine = trimmed.split(/\r?\n/)[0] ?? ""
+  // Heurística: extrair antes de — ou - ou : quando o resultado for mais curto e limpo.
+  const match = firstLine.match(/^([^—\-:]{4,60})(?:\s*[—\-:])/)
+  const candidate = match?.[1]?.trim()
+  if (candidate && candidate.length < firstLine.length) return candidate
+  return firstLine
+}
+
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { isSignedIn, isLoaded: authLoaded } = useAuth()
   const { isBoardReady, setIsBoardReady, toggleBoardReady } = useBoardReady()
   const plgTier = useTribiaPlgTier()
   const plgCap = usePlgCapabilities()
+  const [focusYear, setFocusYear] = useState(2026)
   const { brandingLogoUrl, brandingOrgName } = useTribiaBranding()
   const boardReadyUnlocked = plgCap.boardReadyUnlocked
   const [boardTeaseOpen, setBoardTeaseOpen] = useState(false)
+  /** Cross-fade ao alternar Board-Ready: sinaliza opacity-0 no contentor de resultados. */
+  const [boardFading, setBoardFading] = useState(false)
   const [compareUpgradeOpen, setCompareUpgradeOpen] = useState(false)
   const [inputMode, setInputMode] = useState<InputMode>("form")
   const [csvUploadPhase, setCsvUploadPhase] =
@@ -111,6 +139,7 @@ export default function DashboardPage() {
     results: formResults,
     setResults: setFormResults,
     companyRegime,
+    companyContext,
     imobiliarioRedutorAjusteBrl,
     services,
     expenses,
@@ -136,11 +165,58 @@ export default function DashboardPage() {
   const mutationResetRef = useRef(mutation.reset)
   mutationResetRef.current = mutation.reset
   const loading = mutation.isPending
-  const error = mutation.error?.message ?? null
+
+  // ── 3.4.1 Override manual ────────────────────────────────────────────────
+  const {
+    recalculate: recalcImpact,
+    isRecalculating,
+  } = useSimulationRecalc()
+  const {
+    pendingSimulationSync,
+    applyExpenseClassificationOverride,
+    removeExpenseClassificationOverride,
+  } = useTaxStore()
+  const mutationErrDetail = useMemo(
+    () => errorDetailsFromUnknown(mutation.error),
+    [mutation.error],
+  )
+  const error =
+    mutation.error != null ? mutationErrDetail.message : null
+  const mutationRequestId =
+    mutation.error != null ? mutationErrDetail.requestId : undefined
 
   // Vista unificada: CSV tem prioridade enquanto ativo, senão mostra form
   const results: PersistedResults | CsvResults | null =
     csvResults ?? formResults ?? null
+
+  const cardSimulation = useMemo(() => {
+    if (results?.mode !== "form") return null
+    if (!plgCap.transitionFocusYear) return results.simulation
+    return simulationAtFocusYear(results.simulation, focusYear)
+  }, [results, focusYear, plgCap.transitionFocusYear])
+
+  // ── Labels do carimbo de autoridade (item 1.2.1) ─────────────────────────
+  // Strings primitivas memoizadas: React.memo no carimbo não re-renderiza durante scroll.
+  const sessionCompanyLabel = useMemo(() => {
+    if (results?.mode !== "form") return ""
+    return deriveSessionCompanyLabel(formResults?.meta?.companyContext ?? companyContext)
+  }, [results?.mode, formResults?.meta?.companyContext, companyContext])
+
+  const sessionScenarioLabel = useMemo(() => {
+    if (results?.mode !== "form") return ""
+    const year = formResults?.meta?.year ?? (results.simulation.year)
+    if (isComparing) return `Comparação A/B — cenário actual · ${year}`
+    return `Simulação base · ${year}`
+  }, [results?.mode, results, formResults?.meta?.year, isComparing])
+
+  useEffect(() => {
+    if (results?.mode === "form") {
+      setFocusYear(results.simulation.year)
+    }
+  }, [
+    results?.mode,
+    results && results.mode === "form" ? results.simulation.year : undefined,
+  ])
 
   // ── Fluxo Formulário ─────────────────────────────────────────────────────
   // handleFormSubmit agora delega o trabalho pesado ao hook de mutação.
@@ -186,6 +262,7 @@ export default function DashboardPage() {
   // ── Reset ────────────────────────────────────────────────────────────────
   function reset() {
     setIsBoardReady(false)
+    setBoardFading(false)
     setCsvResults(null)
     setCsvError(null)
     setFormResults(null)
@@ -221,6 +298,23 @@ export default function DashboardPage() {
   const boardReadyActive =
     isBoardReady && results?.mode === "form"
 
+  // ── Hidratação Board-Ready a partir de sessionStorage (só no cliente) ─────
+  // Executada uma única vez após montagem — valor inicial do store é sempre `false`
+  // (SSR-safe). Activa o modo só se o utilizador tiver resultados + tier desbloqueado.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(BOARD_READY_SESSION_KEY)
+      if (saved === "1" && plgCap.boardReadyUnlocked && results?.mode === "form") {
+        setIsBoardReady(true)
+      }
+    } catch {
+      // sessionStorage bloqueado (modo privado / sandbox)
+    }
+    // Intencionalmente sem dependências: executa só no mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Guardas: desactivar Board-Ready quando condições mudam ────────────────
   useEffect(() => {
     if (!results || results.mode !== "form") {
       setIsBoardReady(false)
@@ -278,19 +372,35 @@ export default function DashboardPage() {
     setFormResults,
   ])
 
+  const shouldReduceMotion = useReducedMotion() ?? false
+
   const handlePresentationMode = useCallback(() => {
     if (boardReadyUnlocked) {
-      toggleBoardReady()
+      if (!shouldReduceMotion && results) {
+        // Cross-fade: fade-out → aplica novo modo → fade-in.
+        // font-family não é interpolável — a troca Geist↔Serif acontece discretamente;
+        // o fade em opacidade mascara o "pulo" visual sem jank.
+        setBoardFading(true)
+        window.setTimeout(() => {
+          toggleBoardReady()
+        }, 200)
+        window.setTimeout(() => {
+          setBoardFading(false)
+        }, 400)
+      } else {
+        toggleBoardReady()
+      }
     } else {
       setBoardTeaseOpen(true)
     }
-  }, [boardReadyUnlocked, toggleBoardReady])
-
-  const shouldReduceMotion = useReducedMotion() ?? false
+  }, [boardReadyUnlocked, toggleBoardReady, shouldReduceMotion, results])
   const phase = loading ? "loading" : results ? "results" : "input"
 
   const showCreditsRagLegend =
     results?.mode === "form" && Boolean(results.ai_metadata)
+
+  /** Tabela de créditos na página só em modo CSV (em form a tabela fica na esteira). */
+  const creditsTableInPage = results?.mode === "csv"
 
   const runSimulationFromBridge = useCallback(() => {
     const {
@@ -384,6 +494,8 @@ export default function DashboardPage() {
               whiteLabel={plgCap.whiteLabelExport}
               clientBrandName={brandingOrgName}
               clientLogoUrl={brandingLogoUrl}
+              simulationContextLine={sessionCompanyLabel || undefined}
+              scenarioLine={sessionScenarioLabel || undefined}
             />
             <BoardReadyHeader
               companyContext={
@@ -395,6 +507,7 @@ export default function DashboardPage() {
               clientBrandName={brandingOrgName}
               clientLogoUrl={brandingLogoUrl}
             />
+            <TransitionPrintTable simulation={results.simulation} />
           </>
         )}
 
@@ -471,39 +584,18 @@ export default function DashboardPage() {
               >
                 ← {results.mode === "form" ? "Nova simulação" : "Novo arquivo"}
               </Button>
-              {results.mode === "form" && (
+              {/* Saída de emergência: só visível em Board-Ready (a sticky está oculta).
+                  O CTA principal vive agora na SimulationResultsDossierStickyChrome. */}
+              {results.mode === "form" && boardReadyActive && (
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={handlePresentationMode}
-                  className={cn(
-                    "no-print print:hidden gap-1.5",
-                    !boardReadyUnlocked && "tribia-touch-target min-h-11 sm:min-h-9",
-                  )}
-                  aria-pressed={boardReadyUnlocked ? isBoardReady : undefined}
-                  aria-label={
-                    boardReadyUnlocked
-                      ? undefined
-                      : "Modo apresentação — disponível no plano Pro"
-                  }
+                  className="no-print print:hidden gap-1.5 border-border/60 hover:border-emerald-500/40"
                 >
-                  {boardReadyUnlocked && isBoardReady ? (
-                    <>
-                      <Monitor className="h-4 w-4" aria-hidden />
-                      Modo edição
-                    </>
-                  ) : boardReadyUnlocked ? (
-                    <>
-                      <Presentation className="h-4 w-4" aria-hidden />
-                      Modo apresentação
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-4 w-4" aria-hidden />
-                      Modo apresentação
-                    </>
-                  )}
+                  <Monitor className="h-4 w-4 shrink-0" aria-hidden />
+                  Modo edição
                 </Button>
               )}
               {boardReadyActive && <PrintButton />}
@@ -536,6 +628,9 @@ export default function DashboardPage() {
         {displayError && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
             <strong>Erro:</strong> {displayError}
+            {mutationRequestId && !csvError ? (
+              <RequestIdSupportRow requestId={mutationRequestId} />
+            ) : null}
           </div>
         )}
 
@@ -576,7 +671,7 @@ export default function DashboardPage() {
               className="space-y-6"
             >
               {inputMode === "form" && (
-                <div className="space-y-4">
+                <div id="tribia-sim-input" className="scroll-mt-24 space-y-4">
                   {isComparing && !formResults && !csvResults && (
                     <div
                       className="rounded-xl border border-emerald-500/30 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-500/25 dark:bg-emerald-950/30 dark:text-emerald-100"
@@ -647,14 +742,20 @@ export default function DashboardPage() {
               initial={shouldReduceMotion ? "visible" : "hidden"}
               animate="visible"
               exit="exit"
-              className="space-y-6"
+              className={cn(
+                "flex flex-col gap-6",
+                // Cross-fade Board-Ready: opacity-0 durante transição de modo.
+                // font-family não é interpolável — o fade mascara o "pulo" Geist↔Serif.
+                boardFading && "opacity-0",
+                !shouldReduceMotion && "motion-safe:transition-opacity motion-safe:duration-[280ms]",
+              )}
             >
               {results.mode === "form" && (
                 <motion.div
                   variants={FADE_IN_VARIANTS}
                   initial={shouldReduceMotion ? "visible" : "hidden"}
                   animate="visible"
-                  className="flex flex-col gap-6"
+                  className="flex flex-col gap-6 order-1 board-ready:order-2"
                 >
                   {isComparing && comparisonBaseline && (
                     <ScenarioComparisonBar
@@ -669,55 +770,6 @@ export default function DashboardPage() {
                       className="board-ready:hidden no-print print:hidden"
                     />
                   )}
-                  {(boardReadyActive || plgTier === "premium") &&
-                    formResults &&
-                    !isComparing && (
-                      <div
-                        className={cn(
-                          "print:order-first",
-                          boardReadyActive
-                            ? "order-2 board-ready:order-first"
-                            : "order-first",
-                        )}
-                      >
-                        <ComparisonVerdictCard
-                          mode="single"
-                          plgTier={plgTier}
-                          currentSimulation={formResults.simulation}
-                          strategyInsight={formResults.simulation.strategy_insight}
-                          ragSources={formResults.ai_metadata?.sources_analyzed ?? null}
-                        />
-                      </div>
-                    )}
-                  <div className="order-1 space-y-6 board-ready:order-2 print:order-2">
-                    <div>
-                      <h2
-                        className={cn(
-                          "text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wide",
-                          boardReadyActive &&
-                            "font-board-report text-lg normal-case text-foreground",
-                        )}
-                      >
-                        Comparativo Tributário — {results.simulation.year}
-                      </h2>
-                      <SummaryCards
-                        result={results.simulation}
-                        compareBaseline={
-                          isComparing && comparisonBaseline
-                            ? comparisonBaseline.simulation
-                            : undefined
-                        }
-                      />
-                      <div className="mt-4">
-                        <RagAuditCard
-                          aiMetadata={results.mode === "form" ? results.ai_metadata : undefined}
-                        />
-                      </div>
-                      <div className="mt-4">
-                        <TribiaInsights result={results.simulation} />
-                      </div>
-                    </div>
-                  </div>
                   {isComparing && comparisonBaseline && formResults && (
                     <div className="order-2 board-ready:order-first print:order-first">
                       <ComparisonVerdictCard
@@ -737,42 +789,85 @@ export default function DashboardPage() {
                       />
                     </div>
                   )}
-                </motion.div>
-              )}
-
-              {results.mode === "form" && (
-                <motion.div
-                  variants={FADE_IN_VARIANTS}
-                  initial={shouldReduceMotion ? "visible" : "hidden"}
-                  animate="visible"
-                  className="grid min-h-[480px] grid-cols-1 gap-6 lg:grid-cols-2 board-ready:grid-cols-1 board-ready:gap-10"
-                >
-                  <TransitionChart
-                    result={results.simulation}
-                    abBaselineResult={
-                      isComparing && comparisonBaseline
-                        ? comparisonBaseline.simulation
-                        : undefined
-                    }
-                  />
-                  <div className="min-w-0 print:hidden">
-                    <SankeyFlow
-                      simulation={results.simulation}
-                      expenses={results.expenses}
-                      services={services}
-                    />
-                  </div>
-                </motion.div>
-              )}
-
-              {results.mode === "form" && (
-                <motion.div
-                  variants={FADE_IN_VARIANTS}
-                  initial={shouldReduceMotion ? "visible" : "hidden"}
-                  animate="visible"
-                  className="print:hidden"
-                >
-                  <CreditLeakageAlert result={results.simulation} />
+                  {formResults && (
+                    <>
+                      {/*
+                       * 3.4.2 — Bridge reactiva store → motor Go.
+                       * Observa overrideRecalcTick e dispara recalculateDebounced()
+                       * (800ms) em modo automático — sem output visual (returns null).
+                       * Auto-recalc suspenso em Board-Ready; CTA «Sincronizar Parecer»
+                       * assume o controlo no toolbar slot (system.md modo apresentação).
+                       */}
+                      <SimulationRecalcBridge />
+                    <div className="order-3 print:order-last board-ready:order-2">
+                      <SimulationEsteiraSection
+                        showSessionOneHero={
+                          Boolean(authLoaded && isSignedIn && !isComparing)
+                        }
+                        showExecutiveVerdict={!isComparing}
+                        insightResult={cardSimulation ?? formResults.simulation}
+                        insightSimulationRunYear={
+                          results.mode === "form"
+                            ? (results.meta?.year ?? results.simulation.year)
+                            : undefined
+                        }
+                        insightOmitWhenVereditoCovers={
+                          authLoaded && isSignedIn && !isComparing && Boolean(formResults)
+                        }
+                        summaryResult={cardSimulation ?? formResults.simulation}
+                        summaryCompareBaseline={
+                          isComparing && comparisonBaseline
+                            ? comparisonBaseline.simulation
+                            : undefined
+                        }
+                        summaryOverlapAnatomy={plgCap.transitionFocusYear}
+                        summarySimulationRunYear={
+                          results.mode === "form"
+                            ? (results.meta?.year ?? results.simulation.year)
+                            : undefined
+                        }
+                        summaryHideDeltaCard={!isComparing}
+                        simulation={cardSimulation ?? formResults.simulation}
+                        aiMetadata={formResults.ai_metadata}
+                        classifications={formResults.classifications}
+                        services={services}
+                        expenses={expenses}
+                        companyContext={
+                          formResults.meta?.companyContext ?? companyContext ?? ""
+                        }
+                        focusYear={focusYear}
+                        seriesEnriched={
+                          formResults.simulation.transition_series_enriched === true
+                        }
+                        showTransitionAuditFactors={plgCap.transitionAuditFactors}
+                        presentationMode={boardReadyActive}
+                        sessionCompanyLabel={sessionCompanyLabel}
+                        sessionScenarioLabel={sessionScenarioLabel}
+                        boardReadyUnlocked={boardReadyUnlocked}
+                        onPresentationToggle={handlePresentationMode}
+                        onPresentationTease={() => setBoardTeaseOpen(true)}
+                        isComparing={isComparing}
+                        pendingSimulationSync={pendingSimulationSync}
+                        isRecalculating={isRecalculating}
+                        onApplyOverride={applyExpenseClassificationOverride}
+                        onRemoveOverride={removeExpenseClassificationOverride}
+                        onRequestRecalc={recalcImpact}
+                        transitionUi={{
+                          chartResult: formResults.simulation,
+                          abBaselineResult:
+                            isComparing && comparisonBaseline
+                              ? comparisonBaseline.simulation
+                              : undefined,
+                          transitionFocusYear: plgCap.transitionFocusYear,
+                          transitionFullChart: plgCap.transitionFullChart,
+                          transitionAuditFactors: plgCap.transitionAuditFactors,
+                          transitionDynamicInsights: plgCap.transitionDynamicInsights,
+                          onFocusYearChange: setFocusYear,
+                        }}
+                      />
+                    </div>
+                    </>
+                  )}
                 </motion.div>
               )}
 
@@ -781,6 +876,7 @@ export default function DashboardPage() {
                   variants={FADE_IN_VARIANTS}
                   initial={shouldReduceMotion ? "visible" : "hidden"}
                   animate="visible"
+                  className="order-5"
                 >
                   <h2
                     className={cn(
@@ -798,56 +894,60 @@ export default function DashboardPage() {
                 </motion.div>
               )}
 
-              <motion.div
-                variants={FADE_IN_VARIANTS}
-                initial={shouldReduceMotion ? "visible" : "hidden"}
-                animate="visible"
-                className="rounded-xl border bg-white shadow-sm overflow-hidden board-ready:shadow-none print:shadow-none"
-              >
-                <div className="px-5 py-4 border-b bg-muted/30 board-ready:bg-transparent print:bg-transparent">
-                  <h2
-                    className={cn(
-                      "text-sm font-semibold",
-                      boardReadyActive && "font-board-report text-base",
-                    )}
-                  >
-                    <span className="board-ready:hidden print:hidden">
-                      Análise de Créditos — IA
-                    </span>
-                    <span className="hidden board-ready:inline print:inline">
-                      Fundamentação de créditos — LC 68/2024
-                    </span>
-                  </h2>
-                  {showCreditsRagLegend && (
-                    <p
-                      id="tribia-credits-rag-legend"
-                      className="text-xs text-muted-foreground mt-1 leading-relaxed"
+              {creditsTableInPage && (
+                <motion.div
+                  variants={FADE_IN_VARIANTS}
+                  initial={shouldReduceMotion ? "visible" : "hidden"}
+                  animate="visible"
+                  id="tribia-journey-creditos"
+                  className="order-4 scroll-mt-24 overflow-hidden rounded-xl border bg-white shadow-sm board-ready:shadow-none print:shadow-none"
+                >
+                  <div className="border-b bg-muted/30 px-5 py-4 board-ready:bg-transparent print:bg-transparent">
+                    <h2
+                      className={cn(
+                        "text-sm font-semibold",
+                        boardReadyActive && "font-board-report text-base",
+                      )}
                     >
-                      O índice de auditoria acima reflete a conformidade global; os detalhes por linha indicam a
-                      fundamentação na LC 68/2024.
+                      <span className="board-ready:hidden print:hidden">Análise de Créditos — IA</span>
+                      <span className="hidden board-ready:inline print:inline">
+                        Fundamentação de créditos — LC 68/2024
+                      </span>
+                    </h2>
+                    {showCreditsRagLegend && (
+                      <p
+                        id="tribia-credits-rag-legend"
+                        className="mt-1 text-xs leading-relaxed text-muted-foreground"
+                      >
+                        O índice de auditoria acima sintetiza a conformidade global; cada linha abaixo mostra a
+                        fundamentação na LC 68/2024.
+                      </p>
+                    )}
+                    <p className="mt-0.5 text-xs text-muted-foreground board-ready:hidden">
+                      Borda à esquerda: verde elegível, âmbar atenção (inelegível ou vazamento de crédito), ardósia
+                      neutro. &quot;Ver lei&quot; abre a Cédula de auditoria (diagnóstico, evidências e dispositivo
+                      legal LC 68/2024).
                     </p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-0.5 board-ready:hidden">
-                    Borda à esquerda: verde elegível, âmbar atenção (inelegível ou vazamento de crédito), ardósia neutro.
-                    Ícone IA abre resumo; descrição abre briefing; &quot;Ver lei&quot; mostra artigos LC 68/2024.
-                  </p>
-                </div>
-                <ExpenseTable
-                  expenses={results.expenses}
-                  classifications={results.classifications}
-                  creditLeaks={results.mode === "form" ? results.simulation.credit_leaks : undefined}
-                  presentationMode={boardReadyActive}
-                  ariaDescribedBy={showCreditsRagLegend ? "tribia-credits-rag-legend" : undefined}
-                />
-              </motion.div>
+                  </div>
+                  <ExpenseTable
+                    expenses={results.expenses}
+                    classifications={results.classifications}
+                    creditLeaks={undefined}
+                    presentationMode={boardReadyActive}
+                    ariaDescribedBy={showCreditsRagLegend ? "tribia-credits-rag-legend" : undefined}
+                  />
+                </motion.div>
+              )}
 
               {results.mode === "form" && (
-                <PrintReportFooter
-                  plgTier={plgTier}
-                  whiteLabel={plgCap.whiteLabelExport}
-                  isComparing={isComparing}
-                  lawVersion={FISCAL_LAW_CHANGELOG.version}
-                />
+                <div className="order-6">
+                  <PrintReportFooter
+                    plgTier={plgTier}
+                    whiteLabel={plgCap.whiteLabelExport}
+                    isComparing={isComparing}
+                    lawVersion={FISCAL_LAW_CHANGELOG.version}
+                  />
+                </div>
               )}
             </motion.div>
           )}

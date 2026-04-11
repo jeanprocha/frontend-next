@@ -15,6 +15,14 @@ export interface TribiaPlgCapabilities {
   complianceRadar: boolean
   /** Watermark explícito Free em modo apresentação e impressão */
   freeWatermark: boolean
+  /** Gráfico de transição completo (Pro); Free usa sparkline */
+  transitionFullChart: boolean
+  /** Selector 2026–2033 sincronizado com cards (Pro) */
+  transitionFocusYear: boolean
+  /** Painel de fatores / memória de cálculo (Pro) */
+  transitionAuditFactors: boolean
+  /** Texto comparativo ano vs marcos (Pro) */
+  transitionDynamicInsights: boolean
 }
 
 export function getPlgCapabilities(tier: TribiaPlgTier): TribiaPlgCapabilities {
@@ -30,5 +38,9 @@ export function getPlgCapabilities(tier: TribiaPlgTier): TribiaPlgCapabilities {
     collectiveIntel: isPremium,
     complianceRadar: isPremium,
     freeWatermark: tier === "free",
+    transitionFullChart: isPro,
+    transitionFocusYear: isPro,
+    transitionAuditFactors: isPro,
+    transitionDynamicInsights: isPro,
   }
 }

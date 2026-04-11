@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@clerk/nextjs"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Building2, Plus, Receipt, Trash2, X } from "lucide-react"
-import { createCompany, deleteCompany, listCompanies } from "@/lib/api"
+import {
+  createCompany,
+  deleteCompany,
+  errorDetailsFromUnknown,
+  listCompanies,
+} from "@/lib/api"
+import { RequestIdSupportRow } from "@/components/ui/request-id-support"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { useTaxStore } from "@/store/useTaxStore"
@@ -75,6 +81,10 @@ function NewCompanyForm({ onClose }: { onClose: () => void }) {
   function updateService(id: string, field: keyof DraftService, value: string) {
     setServices((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)))
   }
+
+  const createErr = mutation.isError
+    ? errorDetailsFromUnknown(mutation.error)
+    : null
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -189,10 +199,16 @@ function NewCompanyForm({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      {mutation.isError && (
-        <p className="text-xs text-destructive">
-          {(mutation.error as Error).message ?? "Erro ao criar empresa."}
-        </p>
+      {createErr && (
+        <div className="text-xs text-destructive space-y-1">
+          <p>{createErr.message || "Erro ao criar empresa."}</p>
+          {createErr.requestId ? (
+            <RequestIdSupportRow
+              requestId={createErr.requestId}
+              className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1.5 text-[0.7rem] text-muted-foreground"
+            />
+          ) : null}
+        </div>
       )}
 
       <div className="flex justify-end gap-2 pt-1">

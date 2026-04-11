@@ -1,16 +1,15 @@
 "use client"
 
-import { useState, type KeyboardEvent } from "react"
+import { useState } from "react"
+import { Info } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ExpenseEvidenceColumns } from "@/components/tax/expense-evidence-columns"
-import {
-  LineBriefingEvidencePanel,
-  LineLawEvidencePanel,
-} from "@/components/tax/line-evidence-popover-body"
+import { LineUnifiedEvidencePanel } from "@/components/tax/line-evidence-popover-body"
 import { formatBRL } from "@/lib/api"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
-import { useTaxStore } from "@/store/useTaxStore"
+import { expenseInLeakList } from "@/lib/credit-leak-match"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem, CreditLeak, FormExpense } from "@/types/api"
 
@@ -43,11 +42,6 @@ const regimeVariant: Record<string, "default" | "secondary" | "outline"> = {
   padrao: "outline",
 }
 
-function expenseInLeakList(leaks: CreditLeak[] | undefined, description: string): boolean {
-  if (!leaks?.length) return false
-  const d = description.trim()
-  return leaks.some((l) => (l.description ?? "").trim() === d)
-}
 
 function regimeBadgeClass(regimeType: string): string {
   const v = regimeVariant[regimeType] ?? "outline"
@@ -91,9 +85,7 @@ export function ExpenseTable({
   const [touchEvidence, setTouchEvidence] = useState<{
     rowKey: string
     c: ClassificationItem
-    panel: "ia" | "lei"
   } | null>(null)
-  const openBriefing = useTaxStore((s) => s.openAnalystBriefingFromClassification)
 
   const rows = expenses.map((exp) => ({
     ...exp,
@@ -115,17 +107,31 @@ export function ExpenseTable({
               <th className="px-4 py-3 text-left font-medium">Descrição</th>
               <th className="px-4 py-3 text-right font-medium">Valor</th>
               <th className="px-4 py-3 text-center font-medium">Elegibilidade</th>
-              <th className="px-4 py-3 text-center font-medium">Regime CBS/IBS</th>
+              <th className="px-4 py-3 text-center align-middle font-medium">
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <span className="leading-none">Regime CBS/IBS</span>
+                  <Tooltip>
+                    <TooltipTrigger
+                      type="button"
+                      className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm p-0 leading-none text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label="O que é o regime CBS/IBS por linha"
+                    >
+                      <Info className="size-3.5" aria-hidden />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[min(22rem,calc(100vw-2rem))] text-left text-xs leading-relaxed">
+                      <p>
+                        O valor por linha vem da classificação (LC 68/2024, Art. 131):{" "}
+                        <span className="font-medium text-background">Padrão</span>,{" "}
+                        <span className="font-medium text-background">Reduzido 60%</span> ou{" "}
+                        <span className="font-medium text-background">Alíquota Zero</span>. Só aparecem os dois últimos
+                        quando a IA e os trechos da lei recuperados sustentam — por exemplo, com regime da empresa
+                        «Diferenciado 60%» ou «Cesta básica / alíquota zero» e despesas coerentes com esse perfil.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </span>
+              </th>
               <th className="px-4 py-3 text-center font-medium">Risco</th>
-              <th className="px-4 py-3 text-center font-medium">Confiança</th>
-              {!presentationMode && (
-                <th
-                  className="w-12 px-2 py-3 text-center text-xs font-semibold uppercase tracking-tight text-muted-foreground"
-                  title="Detalhes da classificação (toque ou clique no ícone)"
-                >
-                  IA
-                </th>
-              )}
               {!presentationMode && (
                 <th className="px-4 py-3 text-right font-medium">Base Legal</th>
               )}
@@ -151,27 +157,7 @@ export function ExpenseTable({
                   key={row.id}
                   className="group border-b last:border-0 transition-colors hover:bg-muted/30"
                 >
-                  <td
-                    className={cn(
-                      "border-l-4 py-3 pl-3 pr-4 font-medium",
-                      borderAccent,
-                      c && !hasErr && "cursor-pointer hover:underline decoration-dotted underline-offset-4",
-                    )}
-                    {...(c && !hasErr
-                      ? {
-                          role: "button" as const,
-                          tabIndex: 0,
-                          title: "Abrir briefing de auditoria",
-                          onClick: () => openBriefing(c),
-                          onKeyDown: (e: KeyboardEvent<HTMLTableCellElement>) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault()
-                              openBriefing(c)
-                            }
-                          },
-                        }
-                      : {})}
-                  >
+                  <td className={cn("border-l-4 py-3 pl-3 pr-4 font-medium", borderAccent)}>
                     {row.description}
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-foreground">
@@ -218,40 +204,26 @@ export function ExpenseTable({
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center text-sm font-semibold tabular-nums text-foreground">
-                    {hasErr
-                      ? "—"
-                      : noRagEvidence
-                        ? <span className="text-muted-foreground text-xs font-normal">N/A</span>
-                        : c
-                          ? `${Math.round(c.confidence * 100)}%`
-                          : "—"}
-                  </td>
                   {!presentationMode && c && !hasErr ? (
                     <ExpenseEvidenceColumns
                       rowKey={row.id}
                       c={c}
                       touchMeeting={touchMeeting}
-                      onTouchOpen={(panel) => setTouchEvidence({ rowKey: row.id, c, panel })}
+                      onTouchOpen={() => setTouchEvidence({ rowKey: row.id, c })}
                     />
                   ) : !presentationMode ? (
-                    <>
-                      <td className="px-1 py-2 text-center align-middle">
-                        <span className="text-muted-foreground/30">—</span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {hasErr ? (
-                          <span
-                            className="text-xs text-destructive line-clamp-2 max-w-[14rem] ml-auto block text-right"
-                            title={errMsg}
-                          >
-                            {errMsg}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">sem dados</span>
-                        )}
-                      </td>
-                    </>
+                    <td className="px-4 py-3 text-right">
+                      {hasErr ? (
+                        <span
+                          className="text-xs text-destructive line-clamp-2 max-w-[14rem] ml-auto block text-right"
+                          title={errMsg}
+                        >
+                          {errMsg}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">sem dados</span>
+                      )}
+                    </td>
                   ) : null}
                 </tr>
               )
@@ -273,11 +245,7 @@ export function ExpenseTable({
             showCloseButton
           >
             {touchEvidence ? (
-              touchEvidence.panel === "ia" ? (
-                <LineBriefingEvidencePanel c={touchEvidence.c} rowKey={touchEvidence.rowKey} />
-              ) : (
-                <LineLawEvidencePanel c={touchEvidence.c} rowKey={touchEvidence.rowKey} />
-              )
+              <LineUnifiedEvidencePanel c={touchEvidence.c} rowKey={touchEvidence.rowKey} />
             ) : null}
           </SheetContent>
         </Sheet>

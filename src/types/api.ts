@@ -7,11 +7,28 @@ export interface TaxBreakdown {
   net_tax: string
 }
 
+/** Insumos de transição por ano (espelho do motor Go / auditoria PRO). */
+export interface TransitionYearFactors {
+  year: number
+  pis_cofins_factor: string
+  cbs_rate: string
+  ibs_rate: string
+  combined_projected_rate?: string
+  iss_municipal_factor?: string
+  iss_model?: string
+}
+
 export interface TransitionSeriesPoint {
   year: number
   old_tax_net: string
   new_tax_net: string
   total_tax_net: string
+  /** Presentes nas respostas novas do motor; permitem foco temporal sem novo POST. */
+  current?: TaxBreakdown
+  projected?: TaxBreakdown
+  delta?: string
+  delta_pct?: string
+  factors?: TransitionYearFactors
 }
 
 /** Vazamento ilustrativo: despesa inelegível e crédito CBS/IBS não apropriado (calculado no backend). */
@@ -39,6 +56,13 @@ export interface SimulationResponse {
   revenue_total?: string
   /** Trajetória 2026–2033 (legado vs CBS/IBS no modelo TribIA). */
   transition_series?: TransitionSeriesPoint[]
+  /**
+   * true quando GET histórico reconstituiu fatores/breakdown mínimo no servidor (registo antigo).
+   * Breakdown completo de bruto/créditos fica no snapshot ao gravar uma nova simulação.
+   */
+  transition_series_enriched?: boolean
+  /** Modo de convivência no motor: duas simulações completas comparáveis por ano (ex.: dual_comparative_v1). */
+  overlap_model?: string
   /** Despesas inelegíveis com crédito hipotético perdido (ilustrativo). */
   credit_leaks?: CreditLeak[]
 }
@@ -79,10 +103,32 @@ export interface SimulationRequest {
   expenses: ExpenseInput[]
 }
 
+/** Metadados hierárquicos do chunk (LC 68/2024), espelhando o backend Go. */
+export interface LawChunkMetadata {
+  source?: string
+  type?: string
+  article_id?: string
+  article_label?: string
+  paragraph?: string
+  inciso?: string
+  alinea?: string
+  span_note?: string
+  structure_version?: string
+  part?: string
+  total_parts?: string
+  [key: string]: string | undefined
+}
+
 export interface EvidenceArticle {
   article_id: string
   content: string
   similarity: number
+  /** Metadados determinísticos da ingestão (artigo, parágrafo, inciso, alínea). */
+  metadata?: LawChunkMetadata
+  /** Substrings validadas no servidor para realce PRO (âncoras fortes). */
+  relevant_snippets?: string[]
+  /** Substrings com nexo mais fraco; UI pode realçar com estilo distinto. */
+  relevant_snippets_tentative?: string[]
 }
 
 /** Resposta de GET /law/articles/{id} — artigo LC 68 remontado a partir dos chunks. */
@@ -93,16 +139,45 @@ export interface LawArticleResponse {
   source: string
 }
 
+/** GET /law/articles/{id}/pdf-anchor — Pro/Premium, autenticado. */
+export interface LawPdfAnchorResponse {
+  pdf_url: string
+  page: number
+  pdf_coord_y: string
+  convention: string
+  lei_version?: string
+  prf_file?: string
+}
+
 /** Índices em pontos de código Unicode no texto do contexto enviado ao classificador (início inclusivo, fim exclusivo). */
 export interface MatchedSpan {
   start: number
   end: number
 }
 
+/**
+ * Substituição manual (Human-in-the-loop) da classificação IA.
+ *
+ * Invariante: os campos `is_eligible` / `regime_type` na raiz do ClassificationItem
+ * representam SEMPRE a sugestão original da IA após o batch — nunca sobrescritos.
+ * A decisão efetiva para o motor Go é lida via getEffectiveExpenseSimulationFields().
+ */
+export interface ConsultantClassificationOverride {
+  /** Decisão efetiva que será enviada ao motor Go. */
+  is_eligible: boolean
+  /** "padrao" | "diferenciado_60" | "reduzido_zero" */
+  regime_type: string
+  /** Opcional — aparece no tooltip como "Nota do Especialista". */
+  justification?: string
+  /** ISO 8601 — evento de auditoria; imutável após salvar. */
+  overridden_at: string
+}
+
 export interface ClassificationItem {
   /** Eco do batch (id da linha no formulário); evita colisão com descrições duplicadas. */
   client_id?: string
   description: string
+  /** Sugestão da IA — NUNCA alterar após o batch. Usar getEffectiveExpenseSimulationFields(). */
   is_eligible: boolean
   confidence: number
   justification: string
@@ -110,11 +185,19 @@ export interface ClassificationItem {
   risk_level: string
   // regime_type: regime tributário do item conforme Art. 131 LC 68/2024.
   // "padrao" | "diferenciado_60" (saúde, educação) | "reduzido_zero" (cesta básica)
+  /** Sugestão da IA — NUNCA alterar após o batch. Usar getEffectiveExpenseSimulationFields(). */
   regime_type: string
   evidence: EvidenceArticle[]
   /** Âncora no contexto da empresa (runas); omitido se a LLM não devolver ou validação falhar. */
   matched_span?: MatchedSpan
   error?: string
+  /**
+   * Substituição manual pelo consultor (Human-in-the-loop).
+   * Campo client-side: nunca serializado para o backend; serve apenas para
+   * reidratação local do estado durante a sessão de auditoria.
+   * Quando presente, prevalece sobre is_eligible/regime_type para o motor Go.
+   */
+  consultant_override?: ConsultantClassificationOverride
 }
 
 /** Linha de GET /strategy-tags ou descoberta pós-classificação. */
@@ -179,6 +262,15 @@ export interface SimulationResult {
 
 // --- Histórico (GET/POST /simulation-records) ---
 
+/** Snapshot rico para reidratar o dashboard como na 1.ª execução (evidências RAG, ai_metadata). */
+export interface ClassificationHistorySnapshot {
+  snapshot_version?: number
+  service_classifications?: ClassificationItem[]
+  expense_classifications?: ClassificationItem[]
+  ai_metadata?: AiMetadata
+  discovered_tags?: StrategyTag[]
+}
+
 export interface SimulationRecordSummary {
   id: string
   created_at: string
@@ -201,6 +293,8 @@ export interface SimulationRecordCreatePayload {
   services: ServiceInput[]
   expenses: ExpenseInput[]
   classifications: ClassificationItem[]
+  /** UI fiel: serviços + despesas + ai_metadata; opcional para compatibilidade com registos antigos. */
+  classifications_snapshot?: ClassificationHistorySnapshot
 }
 
 export interface SimulationRecordCreateResponse {
@@ -230,6 +324,8 @@ export interface SimulationRecordDetailResponse {
   services: FormServiceDTO[]
   expenses: FormExpenseDTO[]
   classifications: ClassificationItem[]
+  /** Presente em registos novos; contém ai_metadata e classificações de serviço para reidratação. */
+  classifications_snapshot?: ClassificationHistorySnapshot | null
 }
 
 // --- Templates de Empresa ---

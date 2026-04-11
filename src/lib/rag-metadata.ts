@@ -1,4 +1,20 @@
-import type { AiMetadata, AiMetadataBreakdown, ClassificationItem } from "@/types/api"
+import type { AiMetadata, AiMetadataBreakdown, ClassificationItem, LawChunkMetadata } from "@/types/api"
+
+/**
+ * Citação determinística a partir dos metadados do chunk (alinhada ao servidor Go).
+ */
+export function formatLegalCitationFromMetadata(meta: LawChunkMetadata | undefined): string {
+  if (!meta) return ""
+  const span = meta.span_note?.trim()
+  const al = (meta.article_label || meta.article_id || "").trim()
+  if (!al) return ""
+  if (span) return `${al} (${span})`
+  const parts: string[] = [al]
+  if (meta.paragraph?.trim()) parts.push(meta.paragraph.trim())
+  if (meta.inciso?.trim()) parts.push(`inciso ${meta.inciso.trim()}`)
+  if (meta.alinea?.trim()) parts.push(`alínea ${meta.alinea.trim()})`)
+  return parts.join(", ")
+}
 
 /**
  * Rótulo legível a partir de article_id de chunk (ex.: lc68_0052_art_52_p2 → Art. 52 · LC 68/2024).
@@ -85,25 +101,25 @@ export function aggregateRagMetadata(
       W_COV * breakdown.evidence_coverage,
   )
 
-  const sourceIds = new Set<string>()
+  const sourceLabels = new Set<string>()
   for (const r of rows) {
     if (r.error?.trim()) continue
     for (const ev of r.evidence ?? []) {
+      const cite = formatLegalCitationFromMetadata(ev.metadata)
+      if (cite) {
+        sourceLabels.add(cite)
+        continue
+      }
       const aid = ev.article_id?.trim()
-      if (aid) sourceIds.add(aid)
+      if (aid) sourceLabels.add(formatArticleLabel(aid))
     }
   }
 
-  const sources_analyzed = [...sourceIds]
-    .map(formatArticleLabel)
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, "pt-BR"))
-
-  const uniqueLabels = [...new Set(sources_analyzed)]
+  const sources_analyzed = [...sourceLabels].filter(Boolean).sort((a, b) => a.localeCompare(b, "pt-BR"))
 
   return {
     confidence_score: combined,
-    sources_analyzed: uniqueLabels,
+    sources_analyzed,
     breakdown,
   }
 }

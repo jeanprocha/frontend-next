@@ -58,9 +58,9 @@ export function ContextHub() {
       />
     <div
       className={cn(
-        "rounded-2xl border border-border/60 bg-white/80 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+        "rounded-2xl border border-border/60 bg-white/80 backdrop-blur-md tribia-shadow-elevated",
         "p-4 sm:p-5 transition-shadow",
-        "focus-within:shadow-[0_8px_36px_rgb(16,185,129,0.12)] focus-within:border-accent/50",
+        "tribia-shadow-context-focus focus-within:border-accent/50",
         "dark:border-border/60 dark:bg-card/80",
       )}
     >

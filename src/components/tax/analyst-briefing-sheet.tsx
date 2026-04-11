@@ -13,13 +13,14 @@ import { BriefingSectionTitle } from "@/components/tax/briefing-section-title"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
-import { ragScoreFormulaSummary } from "@/lib/rag-metadata"
+import { LegalEvidenceHighlighter } from "@/components/tax/legal-evidence-highlighter"
+import { formatLegalCitationFromMetadata, ragScoreFormulaSummary } from "@/lib/rag-metadata"
+import type { ClassificationItem } from "@/types/api"
 
 export function AnalystBriefingSheet() {
   const open = useTaxStore((s) => s.analystBriefingOpen)
   const kind = useTaxStore((s) => s.analystBriefingKind)
   const tag = useTaxStore((s) => s.analystBriefingTag)
-  const classification = useTaxStore((s) => s.analystBriefingClassification)
   const aiMeta = useTaxStore((s) => s.analystBriefingAiMeta)
   const close = useTaxStore((s) => s.closeAnalystBriefing)
   const fullRayx = useRayxFullAccess()
@@ -33,9 +34,7 @@ export function AnalystBriefingSheet() {
       ? "Indicador RAG agregado"
       : kind === "chip" && tag
         ? tag.label
-        : kind === "classification" && classification
-          ? classification.description
-          : "Briefing técnico"
+        : "Briefing técnico"
 
   const pct = (x: number) => `${Math.round(x * 100)}%`
 
@@ -56,42 +55,36 @@ export function AnalystBriefingSheet() {
             `confiança média do classificador ${pct(b.llm_confidence_mean)}; ` +
             `cobertura de evidências ${pct(b.evidence_coverage)} ` +
             `(${b.with_evidence_count} de ${b.classified_count} linhas classificadas com trechos recuperados). ` +
-            "Isto mede aderência da recuperação e coerência estatística das respostas, não certeza jurídica."
+            "Isto mede aderência da recuperação e coerência estatística das respostas, não certeza jurídica. " +
+            "O semáforo do gauge (verde acima de 85%, âmbar entre 60% e 85%, vermelho abaixo de 60%) é o Buffer de Confiança: transparência sobre incerteza, não infalibilidade da IA. " +
+            "No painel de auditoria RAG, a «Jornada da auditoria» liga dados, classificação, lei e cálculo — rastro de migalhas para uma tese auditável, não um número isolado."
           )
         })()
-      : kind === "classification" && classification
-        ? classification.justification
-        : kind === "chip" && tag
-          ? `O perfil estratégico «${tag.label}» corresponde a um padrão textual do contexto da empresa. ` +
-            "Esta classificação resulta do reconhecimento imediato no cliente combinado com o vocabulário atualizado pelo servidor após o processamento da simulação. " +
-            "Os chips materializam o vocabulário fiscal do TribIA; a citação integral de dispositivos da LC 68/2024 " +
-            "liga-se à classificação das despesas com recuperação RAG."
-          : "—"
+      : kind === "chip" && tag
+        ? `O perfil estratégico «${tag.label}» corresponde a um padrão textual do contexto da empresa. ` +
+          "Esta classificação resulta do reconhecimento imediato no cliente combinado com o vocabulário actualizado pelo servidor após o processamento da simulação. " +
+          "Os chips materializam o vocabulário fiscal do TribIA; a citação integral de dispositivos da LC 68/2024 " +
+          "liga-se à classificação das despesas com recuperação RAG."
+        : "—"
 
   const legalBase =
     kind === "macro" && aiMeta
       ? aiMeta.sources_analyzed.length > 0
         ? `Artigos e trechos referenciados no agregado: ${aiMeta.sources_analyzed.join("; ")}.`
         : "Nenhum rótulo de artigo consolidado; o score reflete apenas similaridade numérica dos chunks."
-      : kind === "classification" && classification
-        ? classification.legal_base.trim()
-        : kind === "chip"
-          ? "A base legal detalhada por artigo será exibida quando existir classificação em lote com evidências recuperadas."
-          : "—"
+      : kind === "chip"
+        ? "A base legal detalhada por artigo será exibida quando existir classificação em lote com evidências recuperadas."
+        : "—"
 
   const risk =
     kind === "macro"
       ? "Agregado — o risco por linha está na tabela de despesas."
-      : kind === "classification" && classification
-        ? classification.risk_level
-        : kind === "chip"
-          ? "Contexto (não aplicável à linha de despesa)"
-          : "—"
+      : kind === "chip"
+        ? "Contexto (não aplicável à linha de despesa)"
+        : "—"
 
-  const evidence =
-    kind === "classification" && classification && classification.evidence?.length
-      ? classification.evidence
-      : []
+  /** Evidências por artigo só na Cédula «Ver lei» da tabela; o sheet macro/chip não usa lista RAG por linha. */
+  const evidence: NonNullable<ClassificationItem["evidence"]> = []
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -134,8 +127,17 @@ export function AnalystBriefingSheet() {
                   <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground list-none pl-0">
                     {evidence.slice(0, 6).map((ev) => (
                       <li key={ev.article_id} className="border-l-2 border-border pl-2">
-                        <span className="font-mono text-xs text-foreground/80">{ev.article_id}</span>
-                        <span className="block line-clamp-2 mt-0.5">{ev.content}</span>
+                        <span className="font-mono text-xs text-foreground/80 break-words">
+                          {formatLegalCitationFromMetadata(ev.metadata) || ev.article_id}
+                        </span>
+                        <span className="block line-clamp-2 mt-0.5 text-sm">
+                          <LegalEvidenceHighlighter
+                            text={ev.content}
+                            snippets={ev.relevant_snippets}
+                            tentative={ev.relevant_snippets_tentative}
+                            enabled={fullRayx}
+                          />
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -166,11 +168,9 @@ export function AnalystBriefingSheet() {
         <div className="mt-auto border-t border-border/50 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
           {kind === "macro"
             ? "Indicador macro derivado das classificações e da recuperação RAG. Para evidência por despesa, use a tabela e o briefing por linha."
-            : kind === "classification"
-              ? "Raio-X: o realce no «Contexto da empresa» segue matched_span devolvido pelo motor de classificação (índices em pontos de código Unicode alinhados ao texto enviado à API)."
-              : kind === "chip"
-                ? "Raio-X: o realce aproxima o padrão da etiqueta ao texto por heurística no cliente; se não houver trecho destacado, o padrão não foi localizado de forma única neste contexto — confie no racional acima."
-                : "—"}
+            : kind === "chip"
+              ? "Raio-X: o realce aproxima o padrão da etiqueta ao texto por heurística no cliente; se não houver trecho destacado, o padrão não foi localizado de forma única neste contexto — confie no racional acima."
+              : "—"}
         </div>
       </SheetContent>
     </Sheet>

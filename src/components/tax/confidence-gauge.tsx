@@ -4,33 +4,43 @@ import { motion, useReducedMotion } from "motion/react"
 import { Info } from "lucide-react"
 import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
 import { cn } from "@/lib/utils"
+import {
+  confidenceTierFromScore01,
+  humanReviewHintFromAggregatedScore01,
+  type ConfidenceTier,
+} from "@/lib/confidence-tiers"
 
 /** Comprimento do arco semicircular r=40 (πr). */
 const ARC_LEN = Math.PI * 40
 
 const RAG_HELP_CONTENT = (
-  <p className="text-xs leading-snug">
-    Combina similaridade RAG, confiança do classificador e cobertura de linhas com evidência na LC
-    68/2024. Mede aderência da <strong>recuperação e coerência agregada</strong>, não certeza jurídica.
-    Use &quot;Como calculámos isto&quot; para o detalhe.
-  </p>
+  <div className="space-y-2 text-xs leading-snug">
+    <p>
+      <strong>IA explica</strong> o nexo legislativo (recuperação RAG); <strong>Go calcula</strong> impostos e deltas no
+      motor — este arco mede só a camada de recuperação e coerência agregada.
+    </p>
+    <p>
+      O valor combina similaridade RAG, confiança do classificador e cobertura de linhas com trechos na LC 68/2024. Não é
+      certeza jurídica nem probabilidade de acerto fiscal: trate como <strong>aderência à lei recuperada</strong>, com
+      espaço para <strong>interpretação por analogia</strong> ou <strong>baixa evidência directa</strong> quando o
+      semáforo não estiver verde.
+    </p>
+    <p>
+      Use &quot;Como calculámos isto&quot; no cartão de auditoria RAG para a fórmula. Em âmbar ou vermelho, o TribIA
+      assume <strong>rigor da incerteza</strong> — não esconde dúvida.
+    </p>
+  </div>
 )
 
-function tierStrokeClass(percentage: number): string {
-  if (percentage > 90) return ""
-  if (percentage > 70) {
-    return "stroke-amber-500 dark:stroke-amber-400"
-  }
+function tierStrokeClassFromTier(tier: ConfidenceTier): string {
+  if (tier === "green") return ""
+  if (tier === "yellow") return "stroke-amber-500 dark:stroke-amber-400"
   return "stroke-red-500 dark:stroke-red-400"
 }
 
-function tierTextClass(percentage: number): string {
-  if (percentage > 90) {
-    return "text-emerald-600 dark:text-emerald-300"
-  }
-  if (percentage > 70) {
-    return "text-amber-600 dark:text-amber-300"
-  }
+function tierTextClassFromTier(tier: ConfidenceTier): string {
+  if (tier === "green") return "text-emerald-600 dark:text-emerald-300"
+  if (tier === "yellow") return "text-amber-600 dark:text-amber-300"
   return "text-red-600 dark:text-red-300"
 }
 
@@ -56,8 +66,23 @@ export function ConfidenceGauge({
       ? null
       : Math.round(Math.min(1, Math.max(0, score)) * 100)
 
+  const tier: ConfidenceTier | null =
+    score != null && Number.isFinite(score)
+      ? confidenceTierFromScore01(score)
+      : null
+
   const targetOffset = pct != null ? ARC_LEN - (ARC_LEN * pct) / 100 : ARC_LEN
-  const useGradient = pct != null && pct > 90
+  const useGradient = tier === "green"
+  const humanReviewHint =
+    score != null && Number.isFinite(score) && !indeterminate ? (
+      (() => {
+        const text = humanReviewHintFromAggregatedScore01(score)
+        if (!text) return null
+        return (
+          <p className="mt-2 max-w-[240px] text-center text-[11px] leading-snug text-muted-foreground">{text}</p>
+        )
+      })()
+    ) : null
 
   const figure = (
     <div className="relative flex h-[72px] w-[100px] items-end justify-center">
@@ -68,9 +93,7 @@ export function ConfidenceGauge({
         className="overflow-visible"
         aria-hidden={indeterminate || pct == null}
         role={pct != null && !indeterminate ? "img" : undefined}
-        aria-label={
-          pct != null && !indeterminate ? `Relevância RAG ${pct} por cento` : undefined
-        }
+        aria-label={pct != null && !indeterminate ? `Relevância RAG ${pct} por cento` : undefined}
       >
         <defs>
           <linearGradient id="ragGaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -107,7 +130,7 @@ export function ConfidenceGauge({
                 : { duration: 2.2, repeat: Infinity, ease: "linear" }
             }
           />
-        ) : pct != null ? (
+        ) : pct != null && tier != null ? (
           <motion.path
             d="M 10 48 A 40 40 0 0 1 90 48"
             fill="none"
@@ -122,7 +145,7 @@ export function ConfidenceGauge({
                 ? { duration: 0 }
                 : { duration: 1.2, ease: [0.33, 1, 0.68, 1] }
             }
-            className={useGradient ? undefined : tierStrokeClass(pct)}
+            className={useGradient ? undefined : tierStrokeClassFromTier(tier)}
           />
         ) : null}
       </svg>
@@ -131,11 +154,11 @@ export function ConfidenceGauge({
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             …
           </span>
-        ) : pct != null ? (
+        ) : pct != null && tier != null ? (
           <span
             className={cn(
               "text-lg font-black tracking-tighter tabular-nums",
-              tierTextClass(pct),
+              tierTextClassFromTier(tier),
             )}
           >
             {pct}%
@@ -159,7 +182,7 @@ export function ConfidenceGauge({
         ariaLabel="O que significa este indicador"
         sheetTitle="Sobre a relevância RAG"
         content={RAG_HELP_CONTENT}
-        contentClassName="max-w-[min(100vw-2rem,280px)]"
+        contentClassName="max-w-[min(100vw-2rem,320px)]"
         className="text-muted-foreground hover:text-foreground"
       >
         <Info className="size-3.5 shrink-0" aria-hidden />
@@ -188,9 +211,16 @@ export function ConfidenceGauge({
           {figure}
         </button>
         {footer}
+        {humanReviewHint}
       </div>
     )
   }
 
-  return <div className={shellClass}>{figure}{footer}</div>
+  return (
+    <div className={shellClass}>
+      {figure}
+      {footer}
+      {humanReviewHint}
+    </div>
+  )
 }

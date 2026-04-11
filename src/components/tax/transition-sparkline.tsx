@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import { parseApiDecimalForChart } from "@/lib/money-decimal"
 import { cn } from "@/lib/utils"
 import type { TransitionSeriesPoint } from "@/types/api"
 
@@ -8,11 +9,6 @@ import type { TransitionSeriesPoint } from "@/types/api"
 const SERIES_STROKE = "#10b981"
 const MIN_YEAR = 2026
 const MAX_YEAR = 2033
-
-function parseMoney(s: string): number {
-  const n = parseFloat(s)
-  return Number.isFinite(n) ? n : 0
-}
 
 function filterSeries(points: TransitionSeriesPoint[]): TransitionSeriesPoint[] {
   return [...points]
@@ -46,7 +42,7 @@ export function TransitionSparkline({
     if (pts.length < 2) {
       return { pathD: "", areaD: "" }
     }
-    const values = pts.map((p) => parseMoney(p.new_tax_net))
+    const values = pts.map((p) => parseApiDecimalForChart(p.new_tax_net))
     let min = Math.min(...values)
     let max = Math.max(...values)
     if (min === max) {

@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type {
   AiMetadata,
   CompanyTemplate,
+  ConsultantClassificationOverride,
   FormService,
   FormExpense,
   ClassificationItem,
@@ -27,6 +28,12 @@ export interface PersistedResults {
   meta?: ResultMeta
   /** Agregado RAG (serviços + despesas); omitido em registos antigos / sem evidências. */
   ai_metadata?: AiMetadata | null
+  /**
+   * Classificações dos serviços (regime_type por serviço) — pré-requisito para
+   * recalcular a simulação após override sem novo batch de classificação IA.
+   * Ausente em registos antigos; fallback "padrao" no recálculo.
+   */
+  service_classifications?: ClassificationItem[]
 }
 
 export type CompanyRegimeOption =
@@ -55,6 +62,13 @@ interface TaxState {
   services: FormService[]
   expenses: FormExpense[]
   results: PersistedResults | null
+  /**
+   * Modo apresentação Board-Ready. Valor inicial sempre `false` (SSR-safe).
+   * A hidratação a partir de `sessionStorage` é feita apenas no cliente, em
+   * `useEffect` no hook `use-board-ready.ts`, com guardas de tier e resultado.
+   */
+  presentationMode: boolean
+  setPresentationMode: (v: boolean) => void
   /**
    * Par A/B vindo do histórico: o dashboard consome uma vez e limpa.
    * baseline = referência A; current = cenário B (hidrata formulário + resultados).
@@ -86,18 +100,50 @@ interface TaxState {
   clearStrategyTagsDiscoveryUi: () => void
   /** Briefing lateral (plano 06) + Raio-X no contexto. */
   analystBriefingOpen: boolean
-  analystBriefingKind: "chip" | "classification" | "macro" | null
+  analystBriefingKind: "chip" | "macro" | null
   analystBriefingTag: StrategyTag | null
-  analystBriefingClassification: ClassificationItem | null
   /** Briefing agregado (gauge macro / plano 07). */
   analystBriefingAiMeta: AiMetadata | null
   contextHighlightRuneRange: { start: number; end: number } | null
   openAnalystBriefingFromChip: (tag: StrategyTag) => void
-  openAnalystBriefingFromClassification: (c: ClassificationItem) => void
   openAnalystBriefingFromMacro: (meta: AiMetadata) => void
+  /** Raio-X: matched_span da linha, sem abrir o sheet (Cédula «Ver lei» na tabela). */
+  setContextHighlightFromClassification: (c: ClassificationItem | null) => void
   closeAnalystBriefing: () => void
   applyCompanyTemplate: (company: CompanyTemplate) => void
   reset: () => void
+
+  // ── 3.4.1 / 3.4.2 Override manual + recálculo reactivo ──────────────────
+  /**
+   * Verdadeiro quando o conjunto de overrides não foi ainda reflectido no
+   * `simulation` actual. Limpo após recálculo bem-sucedido via simulate-only.
+   */
+  pendingSimulationSync: boolean
+  /**
+   * Contador monotónico incrementado por cada apply/remove de override.
+   * A RecalcBridge observa este valor (useEffect dep) para disparar o debounce
+   * sem reagir a re-renders que não envolvam mudança real de classificação.
+   * Nunca decresce — só cresce durante a sessão.
+   */
+  overrideRecalcTick: number
+  /**
+   * Aplica um override ao ClassificationItem identificado por clientId.
+   * Merge imutável — nunca altera is_eligible/regime_type originais da IA.
+   * Após aplicar, marca pendingSimulationSync = true e incrementa overrideRecalcTick.
+   */
+  applyExpenseClassificationOverride: (
+    clientId: string,
+    override: ConsultantClassificationOverride,
+  ) => void
+  /**
+   * Remove override de uma linha (restaura sugestão IA).
+   * Sempre marca pendingSimulationSync = true — o motor Go deve reflectir
+   * o regresso à sugestão IA tanto quanto o avanço para override manual.
+   * Incrementa overrideRecalcTick para disparar a RecalcBridge.
+   */
+  removeExpenseClassificationOverride: (clientId: string) => void
+  /** Chamado pelo hook de recálculo após POST /simulations bem-sucedido. */
+  markSimulationSynced: (newSimulation: SimulationResponse) => void
 }
 
 // ─── Valores padrão ───────────────────────────────────────────────────────────
@@ -111,6 +157,7 @@ const DEFAULTS = {
   services: [] as FormService[],
   expenses: [] as FormExpense[],
   results: null as PersistedResults | null,
+  presentationMode: false,
   pendingHistoryComparison: null as {
     baseline: SimulationRecordDetailResponse
     current: SimulationRecordDetailResponse
@@ -118,11 +165,12 @@ const DEFAULTS = {
   strategyTagsDiscoveryMessage: null as string | null,
   strategyTagHighlightPatterns: [] as string[],
   analystBriefingOpen: false,
-  analystBriefingKind: null as "chip" | "classification" | "macro" | null,
+  analystBriefingKind: null as "chip" | "macro" | null,
   analystBriefingTag: null as StrategyTag | null,
-  analystBriefingClassification: null as ClassificationItem | null,
   analystBriefingAiMeta: null as AiMetadata | null,
   contextHighlightRuneRange: null as { start: number; end: number } | null,
+  pendingSimulationSync: false,
+  overrideRecalcTick: 0,
 }
 
 // ─── Store (sem persistência — estado vive apenas enquanto a aba está aberta) ──
@@ -137,6 +185,7 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
   setServices: (services) => set({ services }),
   setExpenses: (expenses) => set({ expenses }),
   setResults: (results) => set({ results }),
+  setPresentationMode: (presentationMode) => set({ presentationMode }),
   setPendingHistoryComparison: (pendingHistoryComparison) => set({ pendingHistoryComparison }),
 
   setStrategyTagsDiscoveryMessage: (strategyTagsDiscoveryMessage) => set({ strategyTagsDiscoveryMessage }),
@@ -156,26 +205,22 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
       analystBriefingOpen: true,
       analystBriefingKind: "chip",
       analystBriefingTag: tag,
-      analystBriefingClassification: null,
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: span,
     })
   },
 
-  openAnalystBriefingFromClassification: (c) => {
-    let span: { start: number; end: number } | null = null
+  setContextHighlightFromClassification: (c) => {
+    if (!c) {
+      set({ contextHighlightRuneRange: null })
+      return
+    }
     const ms = c.matched_span
+    let span: { start: number; end: number } | null = null
     if (ms && ms.end > ms.start && ms.start >= 0) {
       span = { start: ms.start, end: ms.end }
     }
-    set({
-      analystBriefingOpen: true,
-      analystBriefingKind: "classification",
-      analystBriefingTag: null,
-      analystBriefingClassification: c,
-      analystBriefingAiMeta: null,
-      contextHighlightRuneRange: span,
-    })
+    set({ contextHighlightRuneRange: span })
   },
 
   openAnalystBriefingFromMacro: (meta) =>
@@ -183,7 +228,6 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
       analystBriefingOpen: true,
       analystBriefingKind: "macro",
       analystBriefingTag: null,
-      analystBriefingClassification: null,
       analystBriefingAiMeta: meta,
       contextHighlightRuneRange: null,
     }),
@@ -193,7 +237,6 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
       analystBriefingOpen: false,
       analystBriefingKind: null,
       analystBriefingTag: null,
-      analystBriefingClassification: null,
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: null,
     }),
@@ -212,7 +255,6 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
       analystBriefingOpen: false,
       analystBriefingKind: null,
       analystBriefingTag: null,
-      analystBriefingClassification: null,
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: null,
     }),
@@ -220,14 +262,64 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
   reset: () =>
     set({
       ...DEFAULTS,
+      presentationMode: false,
       pendingHistoryComparison: null,
       strategyTagsDiscoveryMessage: null,
       strategyTagHighlightPatterns: [],
       analystBriefingOpen: false,
       analystBriefingKind: null,
       analystBriefingTag: null,
-      analystBriefingClassification: null,
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: null,
+      pendingSimulationSync: false,
+      overrideRecalcTick: 0,
     }),
+
+  // ── 3.4.1 / 3.4.2 Override manual + trigger reactivo ────────────────────
+
+  applyExpenseClassificationOverride: (clientId, override) => {
+    const { results, overrideRecalcTick } = get()
+    if (!results || results.mode !== "form") return
+    const updated = results.classifications.map((c) => {
+      const match =
+        (c.client_id && c.client_id === clientId) ||
+        (!c.client_id && c.description === clientId)
+      if (!match) return c
+      return { ...c, consultant_override: override }
+    })
+    set({
+      results: { ...results, classifications: updated },
+      pendingSimulationSync: true,
+      overrideRecalcTick: overrideRecalcTick + 1,
+    })
+  },
+
+  removeExpenseClassificationOverride: (clientId) => {
+    const { results, overrideRecalcTick } = get()
+    if (!results || results.mode !== "form") return
+    const updated = results.classifications.map((c) => {
+      const match =
+        (c.client_id && c.client_id === clientId) ||
+        (!c.client_id && c.description === clientId)
+      if (!match) return c
+      const { consultant_override: _removed, ...rest } = c
+      return rest as ClassificationItem
+    })
+    // Sempre pendente após remoção: o motor Go deve reflectir o regresso à
+    // sugestão IA — não é apenas "sem override = sem diferença".
+    set({
+      results: { ...results, classifications: updated },
+      pendingSimulationSync: true,
+      overrideRecalcTick: overrideRecalcTick + 1,
+    })
+  },
+
+  markSimulationSynced: (newSimulation) => {
+    const { results } = get()
+    if (!results || results.mode !== "form") return
+    set({
+      results: { ...results, simulation: newSimulation },
+      pendingSimulationSync: false,
+    })
+  },
 }))

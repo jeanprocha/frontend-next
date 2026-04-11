@@ -3,7 +3,9 @@
 import { useMemo } from "react"
 import { AlertCircle, ChevronDown, Lightbulb } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import Decimal from "decimal.js"
 import { formatBRL } from "@/lib/api"
+import { parseApiDecimal } from "@/lib/money-decimal"
 import { cn } from "@/lib/utils"
 import type { SimulationResponse } from "@/types/api"
 
@@ -16,9 +18,9 @@ export function CreditLeakageAlert({ result }: CreditLeakageAlertProps) {
 
   const totalLost = useMemo(() => {
     return leaks.reduce((acc, leak) => {
-      const n = parseFloat(leak.lost_credit || "0")
-      return acc + (Number.isFinite(n) ? n : 0)
-    }, 0)
+      const d = parseApiDecimal(leak.lost_credit)
+      return d ? acc.add(d) : acc
+    }, new Decimal(0))
   }, [leaks])
 
   if (leaks.length === 0) return null
@@ -39,7 +41,7 @@ export function CreditLeakageAlert({ result }: CreditLeakageAlertProps) {
           />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold">Vazamento de créditos (ilustrativo)</p>
+              <p className="text-sm font-semibold">Custo morto vs. crédito recuperável (ilustrativo)</p>
               <Badge
                 variant="outline"
                 className="border-[#d97706] bg-white/80 text-[#92400e] dark:border-amber-500 dark:bg-amber-950/50 dark:text-amber-100"
@@ -48,9 +50,11 @@ export function CreditLeakageAlert({ result }: CreditLeakageAlertProps) {
               </Badge>
             </div>
             <p className="mt-1 text-xs leading-relaxed opacity-90">
-              Há despesas classificadas como inelegíveis que, se elegíveis no modelo TribIA,
-              gerariam crédito de CBS/IBS na alíquota do regime indicado. Veja sugestões abaixo
-              (não substituem assessoria).
+              Em CBS/IBS com não-cumulatividade plena no modelo, fornecedores e insumos elegíveis geram{" "}
+              <span className="font-medium">custo recuperável</span> (crédito); aqui, linhas inelegíveis
+              representam <span className="font-medium">custo morto</span> adicional até rever nexo e documentação.
+              Priorize fornecedores em regime que permita repasse coerente de crédito no simulador. Sugestões abaixo
+              não substituem assessoria.
             </p>
           </div>
         </div>

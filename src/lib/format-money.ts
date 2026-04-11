@@ -93,6 +93,32 @@ export function formatPct(value: string): string {
   return `${sign}${whole.toString()}.${d.toString()}%`
 }
 
+/**
+ * Notação compacta CFO — ex.: R$ 1,2 Mi / R$ 2,5 Bi.
+ * Base: centavos BigInt — sem float/parseFloat na magnitude principal.
+ * Threshold: ≥ 1B → "Bi"; ≥ 1M → "Mi"; < 1M → formatBRL completo.
+ */
+export function formatBRLCompact(value: string): string {
+  const cents = decimalStringToCents(value)
+  if (cents === null) return "R$ —"
+  const neg = cents < 0n
+  const abs = neg ? -cents : cents
+  const sign = neg ? "−" : ""
+  const reaisAbs = abs / 100n
+
+  if (reaisAbs >= 1_000_000_000n) {
+    // décimos de bilhão (ex.: 1_230_000_000 → 12 → "1,2 Bi")
+    const tenths = reaisAbs / 100_000_000n
+    return `R$ ${sign}${(tenths / 10n).toString()},${(tenths % 10n).toString()} Bi`
+  }
+  if (reaisAbs >= 1_000_000n) {
+    // décimos de milhão (ex.: 1_200_000 → 12 → "1,2 Mi")
+    const tenths = reaisAbs / 100_000n
+    return `R$ ${sign}${(tenths / 10n).toString()},${(tenths % 10n).toString()} Mi`
+  }
+  return formatBRL(value)
+}
+
 /** Converte fração decimal (0–1) em décimos de ponto percentual (50 = 5,0%). */
 function fractionToTenthsPercent(raw: string): bigint | null {
   const s = sanitizeDecimalString(raw)

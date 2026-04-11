@@ -4,6 +4,7 @@ import type {
   CompanyCreatePayload,
   CompanyTemplate,
   LawArticleResponse,
+  LawPdfAnchorResponse,
   SimulationRecordCreatePayload,
   SimulationRecordCreateResponse,
   SimulationRecordDetailResponse,
@@ -13,6 +14,72 @@ import type {
 } from "@/types/api"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
+
+/** Erro de API com campos opcionais alinhados a `ErrorResponse` do backend Go (`request_id` para suporte). */
+export class ApiError extends Error {
+  readonly requestId?: string
+  readonly code?: string
+  readonly status?: number
+  readonly limit?: number
+  readonly used?: number
+  readonly plan?: string
+
+  constructor(
+    message: string,
+    opts?: {
+      requestId?: string
+      code?: string
+      status?: number
+      limit?: number
+      used?: number
+      plan?: string
+    },
+  ) {
+    super(message)
+    this.name = "ApiError"
+    this.requestId = opts?.requestId
+    this.code = opts?.code
+    this.status = opts?.status
+    this.limit = opts?.limit
+    this.used = opts?.used
+    this.plan = opts?.plan
+  }
+}
+
+function throwApiFailure(res: Response, raw: unknown, fallback: string): never {
+  const o = raw as {
+    error?: string
+    request_id?: string
+    code?: string
+    limit?: number
+    used?: number
+    plan?: string
+  }
+  const msg =
+    (typeof o?.error === "string" && o.error.trim()) || fallback
+  throw new ApiError(msg, {
+    requestId:
+      typeof o?.request_id === "string" && o.request_id.trim()
+        ? o.request_id.trim()
+        : undefined,
+    code: typeof o?.code === "string" ? o.code : undefined,
+    status: res.status,
+    limit: typeof o?.limit === "number" ? o.limit : undefined,
+    used: typeof o?.used === "number" ? o.used : undefined,
+    plan: typeof o?.plan === "string" ? o.plan : undefined,
+  })
+}
+
+/** Mensagem e `request_id` para UI (erros de mutação / fetch). */
+export function errorDetailsFromUnknown(e: unknown): {
+  message: string
+  requestId?: string
+} {
+  if (e instanceof ApiError)
+    return { message: e.message, requestId: e.requestId }
+  if (e instanceof Error) return { message: e.message }
+  return { message: String(e) }
+}
 
 /**
  * Headers para rotas protegidas. Com AUTH_SKIP=true no backend Go, o middleware exige
@@ -60,36 +127,35 @@ export async function fetchPlgQuota(
     }),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao carregar quota PLG")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao carregar quota PLG")
   }
   return res.json()
 }
 
-export interface ApiPlgError extends Error {
-  code?: string
-  limit?: number
-  used?: number
-  plan?: string
-}
-
-function parsePlgErrorPayload(status: number, body: unknown): Error {
+function parsePlgErrorPayload(status: number, body: unknown): ApiError {
   const o = body as {
     error?: string
+    request_id?: string
     code?: string
     limit?: number
     used?: number
     plan?: string
   }
   const msg =
-    o?.error ??
+    (typeof o?.error === "string" && o.error.trim()) ||
     (status === 403 ? "Limite do plano atingido" : "Erro na API")
-  const e = new Error(msg) as ApiPlgError
-  e.code = o?.code
-  e.limit = o?.limit
-  e.used = o?.used
-  e.plan = o?.plan
-  return e
+  return new ApiError(msg, {
+    requestId:
+      typeof o?.request_id === "string" && o.request_id.trim()
+        ? o.request_id.trim()
+        : undefined,
+    code: typeof o?.code === "string" ? o.code : undefined,
+    status,
+    limit: typeof o?.limit === "number" ? o.limit : undefined,
+    used: typeof o?.used === "number" ? o.used : undefined,
+    plan: typeof o?.plan === "string" ? o.plan : undefined,
+  })
 }
 
 export interface ClassifySimulatePlgOpts {
@@ -122,8 +188,7 @@ export async function classifyBatch(
     if (res.status === 403 && raw && typeof raw === "object" && "code" in raw) {
       throw parsePlgErrorPayload(res.status, raw)
     }
-    const err = raw as { error?: string }
-    throw new Error(err.error ?? "Erro ao classificar despesas")
+    throwApiFailure(res, raw, "Erro ao classificar despesas")
   }
 
   return res.json()
@@ -133,8 +198,8 @@ export async function classifyBatch(
 export async function fetchStrategyTags(): Promise<StrategyTagsListResponse> {
   const res = await fetch(`${API_BASE}/strategy-tags`, { method: "GET" })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error ?? "Erro ao carregar tags de estratégia")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao carregar tags de estratégia")
   }
   return res.json()
 }
@@ -165,8 +230,7 @@ export async function simulate(
     if (res.status === 403 && raw && typeof raw === "object" && "code" in raw) {
       throw parsePlgErrorPayload(res.status, raw)
     }
-    const err = raw as { error?: string }
-    throw new Error(err.error ?? "Erro ao calcular simulação")
+    throwApiFailure(res, raw, "Erro ao calcular simulação")
   }
 
   return res.json()
@@ -177,8 +241,29 @@ export async function fetchLawArticle(chunkArticleId: string): Promise<LawArticl
   const enc = encodeURIComponent(chunkArticleId)
   const res = await fetch(`${API_BASE}/law/articles/${enc}`)
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error ?? "Erro ao carregar artigo")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao carregar artigo")
+  }
+  return res.json()
+}
+
+/** Ancoragem ao PDF oficial (LC68). Requer plano Pro/Premium e chunk com pdf_page na ingestão. */
+export async function fetchLawPdfAnchor(
+  chunkArticleId: string,
+  token: string,
+  userId: string,
+  plan: string,
+): Promise<LawPdfAnchorResponse> {
+  const enc = encodeURIComponent(chunkArticleId)
+  const res = await fetch(`${API_BASE}/law/articles/${enc}/pdf-anchor`, {
+    headers: {
+      ...authHeaders(token, userId),
+      ...tribiaPlanHeader(plan),
+    },
+  })
+  if (!res.ok) {
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao carregar ancoragem PDF")
   }
   return res.json()
 }
@@ -198,8 +283,8 @@ export async function saveSimulationRecord(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao salvar histórico")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao salvar histórico")
   }
   return res.json()
 }
@@ -214,8 +299,8 @@ export async function listSimulationRecords(
     headers: authHeaders(token, userId),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao listar histórico")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao listar histórico")
   }
   return res.json()
 }
@@ -229,8 +314,8 @@ export async function getSimulationRecord(
     headers: authHeaders(token, userId),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao carregar simulação")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao carregar simulação")
   }
   return res.json()
 }
@@ -246,8 +331,8 @@ export async function downloadSimulationReport(
     { headers: authHeaders(token, userId) },
   )
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao baixar diagnóstico")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao baixar diagnóstico")
   }
   const blob = await res.blob()
   const url = window.URL.createObjectURL(blob)
@@ -271,8 +356,8 @@ export async function listCompanies(
     headers: authHeaders(token, userId, plan ? tribiaPlanHeader(plan) : undefined),
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao listar empresas")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao listar empresas")
   }
   const data = await res.json()
   return (data ?? []).map((c: CompanyTemplate) => ({
@@ -303,8 +388,7 @@ export async function createCompany(
     if (res.status === 403 && raw && typeof raw === "object" && "code" in raw) {
       throw parsePlgErrorPayload(res.status, raw)
     }
-    const err = raw as { error?: string }
-    throw new Error(err.error ?? "Erro ao criar empresa")
+    throwApiFailure(res, raw, "Erro ao criar empresa")
   }
   return res.json()
 }
@@ -319,7 +403,7 @@ export async function deleteCompany(
     headers: authHeaders(token, userId),
   })
   if (!res.ok && res.status !== 204) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error((err as { error?: string }).error ?? "Erro ao excluir empresa")
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao excluir empresa")
   }
 }
