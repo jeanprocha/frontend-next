@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
 // Rotas que exigem autenticação — qualquer sub-rota de /dashboard
+// (Dossiés públicos em /report/* permanecem acessíveis sem sessão; dados servidos via GET /public/simulation-records/{id} no engine.)
 const isProtected = createRouteMatcher(["/dashboard(.*)"])
 
 // Next.js 16+: `proxy.ts` — o bundler resolve `export const proxy` antes do `default`.

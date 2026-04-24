@@ -8,10 +8,12 @@ import { useQuery } from "@tanstack/react-query"
 import {
   Building2,
   Download,
+  GitCompare,
   LayoutDashboard,
   Library,
   Plus,
   Presentation,
+  ScanLine,
   Search,
   SunMoon,
   Zap,
@@ -31,6 +33,8 @@ import {
 import { Kbd } from "@/components/ui/kbd"
 import {
   commandPaletteGlobalHints,
+  comparisonAbShortcutLabel,
+  confirmAiDiagnosticShiftEnterLabel,
   LEADER_G_MS,
   modKeyLabel,
   NAV_LINK_LABELS,
@@ -144,6 +148,16 @@ export function CommandMenu() {
     close()
   }, [close])
 
+  const toggleComparisonAB = useCallback(() => {
+    getDashboardCommandBridge().toggleComparisonAB?.()
+    close()
+  }, [close])
+
+  const confirmAiDiagnostic = useCallback(() => {
+    getDashboardCommandBridge().confirmAiDiagnostic?.()
+    close()
+  }, [close])
+
   const toggleTheme = useCallback(() => {
     toggleColorTheme()
     close()
@@ -231,11 +245,47 @@ export function CommandMenu() {
       const b = getDashboardCommandBridge()
       const apple = isApplePlatform()
       const modDown = apple ? e.metaKey : e.ctrlKey
+      const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+      const proFormResults =
+        isProOrPremium &&
+        onDashboard &&
+        b.hasFormResults &&
+        !b.isSimulationInputPhase &&
+        !b.isLoadingSimulation
 
       if (e.key === "Enter" && modDown) {
+        if (e.shiftKey) {
+          if (proFormResults && b.confirmAiDiagnostic) {
+            e.preventDefault()
+            b.confirmAiDiagnostic()
+          }
+          return
+        }
         e.preventDefault()
         b.runSimulation?.()
         return
+      }
+
+      if (proFormResults) {
+        if ((e.key === "b" || e.key === "B") && modDown && e.shiftKey) {
+          if (b.toggleComparisonAB) {
+            e.preventDefault()
+            b.toggleComparisonAB()
+          }
+          return
+        }
+        if (
+          b.confirmAiDiagnostic &&
+          (e.key === "a" || e.key === "A") &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
+          !e.shiftKey
+        ) {
+          e.preventDefault()
+          b.confirmAiDiagnostic()
+          return
+        }
       }
 
       const simInput =
@@ -274,6 +324,7 @@ export function CommandMenu() {
   }, [
     open,
     onDashboard,
+    plgTier,
     addService,
     addExpense,
     router,
@@ -288,6 +339,17 @@ export function CommandMenu() {
   const canPrint = b.hasFormResults && !b.isLoadingSimulation
   const canFocusHistorySearch = Boolean(b.focusHistorySearch)
   const canOpenCompanyForm = Boolean(b.openCompaniesNewForm)
+
+  const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+  const proFormResultHotkeys =
+    isProOrPremium &&
+    onDashboard &&
+    b.hasFormResults &&
+    !b.isSimulationInputPhase &&
+    !b.isLoadingSimulation
+  const canToggleComparison = Boolean(b.toggleComparisonAB) && proFormResultHotkeys
+  const canConfirmAi = Boolean(b.confirmAiDiagnostic) && proFormResultHotkeys
+  const showScenarioGroup = canToggleComparison || canConfirmAi
 
   const showQuickActions =
     canSimActions ||
@@ -365,6 +427,42 @@ export function CommandMenu() {
           )}
 
           {showQuickActions && <CommandSeparator />}
+
+          {showScenarioGroup && (
+            <>
+              <CommandGroup heading="Cenário e Operação">
+                {canToggleComparison && (
+                  <CommandItem
+                    value="comparação a b ativar desativar cenário"
+                    onSelect={toggleComparisonAB}
+                  >
+                    <GitCompare className="size-4 text-emerald-600" />
+                    <span>
+                      {b.isComparingAB
+                        ? "Sair do modo comparação A/B"
+                        : "Comparação A/B (congelar cenário A)"}
+                    </span>
+                    <CommandShortcut>
+                      {comparisonAbShortcutLabel()}
+                    </CommandShortcut>
+                  </CommandItem>
+                )}
+                {canConfirmAi && (
+                  <CommandItem
+                    value="validar diagnóstico ia mesa sugestões originais"
+                    onSelect={confirmAiDiagnostic}
+                  >
+                    <ScanLine className="size-4 text-emerald-600" />
+                    <span>Validar diagnóstico da IA (restaurar sugestões)</span>
+                    <CommandShortcut>
+                      {`${confirmAiDiagnosticShiftEnterLabel()} · A`}
+                    </CommandShortcut>
+                  </CommandItem>
+                )}
+              </CommandGroup>
+              <CommandSeparator />
+            </>
+          )}
 
           <CommandGroup heading="Navegação">
             <CommandItem
@@ -454,7 +552,11 @@ export function CommandMenu() {
             <Kbd>{SHORTCUT_KEYS.paletteOpen}</Kbd>
             <span>comandos</span>
           </span>
-          <span className="text-muted-foreground/80">{commandPaletteGlobalHints(canBoard)}</span>
+          <span className="text-muted-foreground/80">
+            {commandPaletteGlobalHints(canBoard, {
+              proFormResultHotkeys: proFormResultHotkeys,
+            })}
+          </span>
         </div>
       </Command>
     </CommandDialog>

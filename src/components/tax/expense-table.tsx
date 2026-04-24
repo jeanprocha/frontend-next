@@ -10,9 +10,16 @@ import { LineUnifiedEvidencePanel } from "@/components/tax/line-evidence-popover
 import { formatBRL } from "@/lib/api"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
 import { expenseInLeakList } from "@/lib/credit-leak-match"
+import { classificationErrorCellText } from "@/lib/classification-error-display"
+import { getEffectiveExpenseSimulationFields } from "@/lib/classification-effective"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem, CreditLeak, FormExpense } from "@/types/api"
 
+/**
+ * Tabela de créditos. Elegibilidade e regime mostram a decisão **efectiva** para o
+ * motor (IA ou override) via getEffectiveExpenseSimulationFields — paridade com
+ * a ExpenseSemanticAuditTable e o POST de simulação.
+ */
 interface ExpenseTableProps {
   expenses: FormExpense[]
   classifications: ClassificationItem[]
@@ -144,11 +151,12 @@ export function ExpenseTable({
               const hasErr = Boolean(errMsg)
               const noRagEvidence = c && !hasErr && (!c.evidence || c.evidence.length === 0)
               const hasLeak = expenseInLeakList(creditLeaks, row.description)
+              const eff = c && !hasErr ? getEffectiveExpenseSimulationFields(c) : null
               const borderAccent = rowLeftBorderClass(
                 hasErr,
                 Boolean(c),
                 Boolean(noRagEvidence),
-                Boolean(c?.is_eligible),
+                Boolean(eff?.is_eligible),
                 hasLeak,
               )
 
@@ -168,9 +176,9 @@ export function ExpenseTable({
                       <Badge variant="outline" title={errMsg}>
                         Erro na classificação
                       </Badge>
-                    ) : c ? (
-                      <Badge variant={c.is_eligible ? "default" : "destructive"}>
-                        {c.is_eligible ? "Elegível" : "Não Elegível"}
+                    ) : c && eff ? (
+                      <Badge variant={eff.is_eligible ? "default" : "destructive"}>
+                        {eff.is_eligible ? "Elegível" : "Não Elegível"}
                       </Badge>
                     ) : (
                       <Badge variant="outline">—</Badge>
@@ -179,12 +187,12 @@ export function ExpenseTable({
                   <td className="px-4 py-3 text-center">
                     {hasErr ? (
                       <span className="text-muted-foreground">—</span>
-                    ) : c ? (
+                    ) : c && eff ? (
                       <Badge
-                        variant={regimeVariant[c.regime_type] ?? "outline"}
-                        className={regimeBadgeClass(c.regime_type)}
+                        variant={regimeVariant[eff.regime_type] ?? "outline"}
+                        className={regimeBadgeClass(eff.regime_type)}
                       >
-                        {regimeLabel[c.regime_type] ?? "Padrão"}
+                        {regimeLabel[eff.regime_type] ?? "Padrão"}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -215,10 +223,10 @@ export function ExpenseTable({
                     <td className="px-4 py-3 text-right">
                       {hasErr ? (
                         <span
-                          className="text-xs text-destructive line-clamp-2 max-w-[14rem] ml-auto block text-right"
+                          className="text-xs text-destructive line-clamp-3 max-w-[min(18rem,100%)] ml-auto block text-right"
                           title={errMsg}
                         >
-                          {errMsg}
+                          {classificationErrorCellText(errMsg ?? "")}
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-xs">sem dados</span>

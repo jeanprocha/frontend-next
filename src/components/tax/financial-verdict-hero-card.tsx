@@ -73,6 +73,11 @@ export interface FinancialVerdictHeroCardProps {
    * permanece legível durante a sincronização (system.md ambient transitions).
    */
   isRecalculating?: boolean
+  /**
+   * Classificações alteradas mas o POST ainda não devolveu (debounce ou fila) —
+   * rebaixa os valores como desatualizados; pulse só com isRecalculating.
+   */
+  pendingSimulationSync?: boolean
   className?: string
 }
 
@@ -152,6 +157,7 @@ export function FinancialVerdictHeroCard({
   simulation,
   presentationMode = false,
   isRecalculating = false,
+  pendingSimulationSync = false,
   className,
 }: FinancialVerdictHeroCardProps) {
   const plgTier = useTribiaPlgTier()
@@ -268,6 +274,7 @@ export function FinancialVerdictHeroCard({
             "text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground",
             presentationMode &&
               "font-board-report normal-case text-sm tracking-normal font-semibold text-foreground",
+            "tribia-print-narrative-serif",
           )}
         >
           Veredito Financeiro
@@ -307,13 +314,20 @@ export function FinancialVerdictHeroCard({
              *   - Nunca permanece; Timer de 400ms garante duração < 500ms.
              */}
             <div
-              aria-busy={isRecalculating}
+              aria-busy={isRecalculating || pendingSimulationSync}
               aria-live="polite"
-              aria-label={isRecalculating ? "A sincronizar com o motor Go…" : undefined}
+              aria-label={
+                isRecalculating
+                  ? "A sincronizar com o motor Go…"
+                  : pendingSimulationSync
+                    ? "Valores ainda a reflectir a última decisão de classificação"
+                    : undefined
+              }
               className={cn(
                 "space-y-2 rounded-lg transition-colors duration-300",
-                // Ambient dim — só nos valores, nunca no card inteiro.
-                isRecalculating && "opacity-50 motion-safe:animate-pulse",
+                // Ambient dim — números possivelmente defasados (pendente ou a calcular).
+                (isRecalculating || pendingSimulationSync) && "opacity-50",
+                isRecalculating && "motion-safe:animate-pulse",
                 // Flash Emerald — confirmação semântica após sync bem-sucedido.
                 // board-ready: suprimido para não poluir o relatório oficial.
                 flashValues && "bg-emerald-500/10 board-ready:bg-transparent print:bg-transparent",
@@ -347,6 +361,7 @@ export function FinancialVerdictHeroCard({
                   className={cn(
                     "text-sm tabular-nums text-muted-foreground",
                     presentationMode && "font-board-report",
+                    "tribia-print-narrative-serif",
                   )}
                 >
                   <span className={cn("font-semibold", deltaTextClass)}>

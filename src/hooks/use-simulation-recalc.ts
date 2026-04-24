@@ -110,7 +110,7 @@ export function useSimulationRecalc() {
       try {
         const token = await getToken()
         if (!token) return
-        await saveSimulationRecord(token, userId, {
+        const created = await saveSimulationRecord(token, userId, {
           company_context: companyContext,
           company_regime: companyRegime ?? "regular",
           year,
@@ -143,6 +143,13 @@ export function useSimulationRecalc() {
             ai_metadata: results.ai_metadata ?? undefined,
           },
         })
+        const cur = useTaxStore.getState().results
+        if (cur?.mode === "form" && cur.meta) {
+          useTaxStore.getState().setResults({
+            ...cur,
+            meta: { ...cur.meta, recordId: created.id },
+          })
+        }
       } catch {
         // Falha silenciosa no histórico não deve interromper o fluxo do consultor.
       }
@@ -171,9 +178,15 @@ export function useSimulationRecalc() {
     if (debounceRef.current) clearTimeout(debounceRef.current)
   }, [])
 
+  const recalculateAndWait = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    return mutation.mutateAsync()
+  }, [mutation])
+
   return {
     recalculate,
     recalculateDebounced,
+    recalculateAndWait,
     cancelDebounce,
     isRecalculating: mutation.isPending,
     recalcError: mutation.error,

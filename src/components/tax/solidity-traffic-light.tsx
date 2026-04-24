@@ -11,21 +11,17 @@
  *   - Proibido 0.85 / 0.60 hardcoded neste ficheiro.
  *
  * DESIGN (system.md — Institucional Moderno):
- *   - Três pílulas horizontais; inactivas em bg-muted (whisper-quiet).
- *   - Cores semânticas do produto: emerald (verde), amber (âmbar), red (risco).
- *   - Valor % em Sans operacional (tabular-nums, Geist).
+ *   - Uma faixa de progresso contínua (0–100%) alinhada ao score agregado;
+ *     a cor do preenchimento segue o tier (emerald / amber / red), não
+ *     semáforo de 3 pílulas (evita confusão «só 1/3 preenchido» vs «93%»).
+ *   - Valor % em Sans operacional (tabular-nums, Geist) + rótulo de tier.
  *   - Rótulo "Solidez da tese" em Sans; Serif APENAS com Board-Ready (font-board-report).
- *   - Nenhum glow ou sombra chamativa — o hero visual permanece o FinancialVerdictHeroCard.
  *
  * ACESSIBILIDADE:
- *   - Região `aria-live="polite"` para anunciar mudanças quando o score chegar
- *     de forma assíncrona (ex.: verdictThesisPending → score disponível).
- *   - Estado pending com aria-busy + texto descritivo para leitores de ecrã.
- *   - `role="img"` no conjunto de pílulas com aria-label completo (tier + %).
+ *   - `role="img"` na track com aria-label (tier + %). Região viva fica no pai.
  *
  * MEMOIZAÇÃO:
- *   - `useMemo` dependente do score normalizado: tier, classes das pílulas e
- *     texto de aria-label computados uma única vez por score.
+ *   - `useMemo` dependente do score: tier, pct, ariaLabel.
  */
 
 import { useMemo } from "react"
@@ -58,35 +54,16 @@ export interface SolidityTrafficLightProps {
 
 // ─── Helpers de estilo ────────────────────────────────────────────────────────
 
-interface PillConfig {
-  /** Tier que esta pílula representa. */
-  tier: ConfidenceTier
-  /** Classes Tailwind quando está INACTIVA. */
-  inactiveClass: string
-  /** Classes Tailwind quando está ACTIVA. */
-  activeClass: string
+function tierFillClass(tier: ConfidenceTier): string {
+  switch (tier) {
+    case "green":
+      return "bg-emerald-500/90 dark:bg-emerald-400/85"
+    case "yellow":
+      return "bg-amber-500/90 dark:bg-amber-400/85"
+    case "red":
+      return "bg-red-500/85 dark:bg-red-400/80"
+  }
 }
-
-const PILL_CONFIG: PillConfig[] = [
-  {
-    tier: "green",
-    inactiveClass: "bg-muted/50",
-    activeClass:
-      "bg-emerald-500/20 border border-emerald-500/50 dark:bg-emerald-500/15 dark:border-emerald-400/40",
-  },
-  {
-    tier: "yellow",
-    inactiveClass: "bg-muted/50",
-    activeClass:
-      "bg-amber-500/20 border border-amber-500/50 dark:bg-amber-500/15 dark:border-amber-400/40",
-  },
-  {
-    tier: "red",
-    inactiveClass: "bg-muted/50",
-    activeClass:
-      "bg-red-500/15 border border-red-500/40 dark:bg-red-500/12 dark:border-red-400/35",
-  },
-]
 
 function tierTextClass(tier: ConfidenceTier): string {
   switch (tier) {
@@ -113,12 +90,7 @@ export function SolidityTrafficLight({
     const pct = aggregatedScoreToPercent(score)
     const label = confidenceTierShortLabel(tier)
     const ariaLabel = `Solidez da tese: ${label}, ${pct} por cento`
-    const pillClasses = PILL_CONFIG.map((p) => ({
-      isActive: p.tier === tier,
-      activeClass: p.activeClass,
-      inactiveClass: p.inactiveClass,
-    }))
-    return { tier, pct, label, ariaLabel, pillClasses }
+    return { tier, pct, label, ariaLabel, fillClass: tierFillClass(tier) }
   }, [score])
 
   return (
@@ -145,38 +117,30 @@ export function SolidityTrafficLight({
           role="status"
           aria-label="A carregar indicador de solidez"
           aria-busy="true"
-          className="flex items-center gap-1.5"
+          className="flex min-w-0 items-center gap-3"
         >
-          <Skeleton className="h-2 w-16 rounded-full" />
-          <Skeleton className="h-2 w-10 rounded-full" />
-          <Skeleton className="h-2 w-8 rounded-full" />
+          <Skeleton className="h-2 w-full max-w-[14rem] flex-1 rounded-full" />
+          <Skeleton className="h-4 w-12 shrink-0 rounded" />
         </div>
       )}
 
       {/* Estado: score disponível */}
       {!pending && derived && (
-        <div className="flex items-center gap-2">
-          {/* Trio de pílulas */}
+        <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
           <div
             role="img"
             aria-label={derived.ariaLabel}
-            className="flex items-center gap-1"
+            className="h-2 min-w-0 flex-1 max-w-[14rem] rounded-full bg-muted/80 dark:bg-muted/50"
           >
-            {derived.pillClasses.map(({ isActive, activeClass, inactiveClass }, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "block h-1.5 rounded-full transition-colors",
-                  i === 0 ? "w-10" : i === 1 ? "w-7" : "w-5",
-                  isActive ? activeClass : inactiveClass,
-                )}
-                aria-hidden
-              />
-            ))}
+            <div
+              className={cn(
+                "h-full min-w-0 rounded-full transition-[width] duration-300 ease-out",
+                derived.fillClass,
+              )}
+              style={{ width: `${Math.min(100, Math.max(0, derived.pct))}%` }}
+            />
           </div>
-
-          {/* Score numérico + rótulo de tier */}
-          <div className="flex items-baseline gap-1.5">
+          <div className="flex shrink-0 items-baseline gap-1.5">
             <span
               className={cn(
                 "font-sans text-sm font-semibold tabular-nums",

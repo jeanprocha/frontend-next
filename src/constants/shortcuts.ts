@@ -5,15 +5,18 @@
  *
  * ## Matriz de conformidade (listener vs UI)
  *
- * | Acção        | Tecla        | Condição (resumo)                         | Listener           | UI |
- * |--------------|-------------|-------------------------------------------|--------------------|-----|
- * | Simular      | Mod+Enter   | `runSimulation` definido; alvo não editável | `command-menu.tsx` | `result-sidebar.tsx`, palette |
- * | Novo serviço | A           | Dashboard fase input; não editável        | `command-menu.tsx` | `simulation-form`, empty state, palette |
- * | Nova despesa | D           | Idem                                      | `command-menu.tsx` | Idem |
- * | Simulador    | Mod+K       | Pesquisar / seleccionar na palette (sem tecla dedicada) | — | `command-menu.tsx`, `tribia-top-nav.tsx` |
- * | Histórico    | G → H       | Não editável; sem dialog aberto           | `command-menu.tsx` | Rodapé palette |
- * | Apresentação | B           | `toggleBoardReady` definido               | `command-menu.tsx` | Palette |
- * | Comandos     | Mod+K       | Toggle: se palette aberta, sempre; se fechada, alvo não editável e sem outro dialog | `command-menu.tsx` | Rodapé palette |
+ * | Acção                    | Tecla              | Condição (resumo)                                      | Listener           | UI |
+ * |-------------------------|--------------------|--------------------------------------------------------|--------------------|-----|
+ * | Simular                 | Mod+Enter          | `runSimulation` definido; alvo não editável            | `command-menu.tsx` | `result-sidebar.tsx`, palette |
+ * | Novo serviço            | A                  | Dashboard fase input; não editável                    | `command-menu.tsx` | `simulation-form`, empty state, palette |
+ * | Nova despesa            | D                  | Idem                                                    | `command-menu.tsx` | Idem |
+ * | Simulador               | Mod+K              | Pesquisar / seleccionar na palette (sem tecla dedicada) | — | `command-menu.tsx`, `tribia-top-nav.tsx` |
+ * | Histórico               | G → H              | Não editável; sem dialog aberto                        | `command-menu.tsx` | Rodapé palette |
+ * | Apresentação            | B                  | `toggleBoardReady` definido                           | `command-menu.tsx` | Palette |
+ * | Comparação A/B (PRO)    | Mod+Shift+B        | `toggleComparisonAB`; resultados form; Pro/Premium     | `command-menu.tsx` | Palette grupo Cenário |
+ * | Validar diagnóstico IA  | Mod+Shift+Enter    | `confirmAiDiagnostic`; resultados form; Pro/Premium  | `command-menu.tsx` | Idem |
+ * | Validar diagnóstico IA  | A                  | Idem, vista resultados (não fase input)                 | `command-menu.tsx` | Idem |
+ * | Comandos                | Mod+K              | Toggle: se palette aberta, sempre; se fechada, alvo…    | `command-menu.tsx` | Rodapé palette |
  *
  * **Contenteditable de terceiros:** preferir `data-command-palette-ignore-hotkeys` no
  * contentor ou rever `isEditableTarget` em `command-menu.tsx` (`closest('[contenteditable="true"]')`).
@@ -45,6 +48,10 @@ export const SHORTCUT_KEYS = {
   leaderHistory: "G",
   followHistory: "H",
   simulateSubmit: "Enter",
+  /** PRO/Premium, resultados: alternar comparação A/B */
+  compareAb: "B",
+  /** PRO/Premium, resultados: modificador com compareAb */
+  compareAbModifier: "Shift",
 } as const
 
 /** Rótulo único para `CommandShortcut` / hints (ex.: `⌘+Enter`). */
@@ -52,16 +59,35 @@ export function simulateShortcutLabel(): string {
   return `${modKeyLabelFn()}+Enter`
 }
 
+/** Comparação A/B — requer Mod+Shift. */
+export function comparisonAbShortcutLabel(): string {
+  return `${modKeyLabelFn()}+Shift+${SHORTCUT_KEYS.compareAb}`
+}
+
+export function confirmAiDiagnosticShiftEnterLabel(): string {
+  return `${modKeyLabelFn()}+Shift+Enter`
+}
+
 /** Legenda da sequência de histórico (rodapé, docs, leitores de ecrã). */
 export function historySequenceHint(): string {
   return `${SHORTCUT_KEYS.leaderHistory} e depois ${SHORTCUT_KEYS.followHistory} — histórico`
 }
 
+export type CommandPaletteGlobalHintsOptions = {
+  /**
+   * PRO/Premium com resultados de formulário no dashboard — exibe dica A/B e validar IA.
+   */
+  proFormResultHotkeys?: boolean
+}
+
 /**
  * Fragmento do rodapé da palette: atalhos globais fora da palette aberta.
- * Ordem: simulação → linhas → histórico → (opcional) apresentação.
+ * Ordem: simulação → linhas → histórico → (opcional) apresentação → (opcional) PRO resultados.
  */
-export function commandPaletteGlobalHints(canBoard: boolean): string {
+export function commandPaletteGlobalHints(
+  canBoard: boolean,
+  options?: CommandPaletteGlobalHintsOptions,
+): string {
   const mod = modKeyLabelFn()
   const parts = [
     `${mod}+Enter simular`,
@@ -70,6 +96,11 @@ export function commandPaletteGlobalHints(canBoard: boolean): string {
   ]
   if (canBoard) {
     parts.push(`${SHORTCUT_KEYS.board} apresentação`)
+  }
+  if (options?.proFormResultHotkeys) {
+    parts.push(
+      `${comparisonAbShortcutLabel()} A/B · ${confirmAiDiagnosticShiftEnterLabel()}/${SHORTCUT_KEYS.addService} validar IA`,
+    )
   }
   return `· ${parts.join(" · ")}`
 }

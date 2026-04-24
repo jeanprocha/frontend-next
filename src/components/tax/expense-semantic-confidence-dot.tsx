@@ -28,6 +28,10 @@
  * PERFORMANCE:
  *   - Exportado com React.memo; props primitivas para comparação estável.
  *   - Manter apenas rendering condicional (tooltip + ícone) sem estado local.
+ *
+ * DOIS CANAIS (Passo 3):
+ *   - O dot reflecte sempre o confidence da IA (nexo semântico).
+ *   - hasConsultantOverride: ShieldCheck emerald ao lado — curadoria humana no cálculo.
  */
 
 import { memo } from "react"
@@ -56,6 +60,11 @@ export interface ExpenseSemanticConfidenceDotProps {
    * Não altera o tier: a cor do dot segue sempre `confidenceTierFromScore01(score)`.
    */
   error?: string | null
+  /**
+   * Quando a linha tem substituição manual, mostra um ShieldCheck (curadoria)
+   * além do dot — a cor do dot continua a seguir o confidence da IA.
+   */
+  hasConsultantOverride?: boolean
 }
 
 // ─── Helpers de estilo ────────────────────────────────────────────────────────
@@ -97,15 +106,26 @@ function ExpenseSemanticConfidenceDotInner({
   justification,
   presentationMode = false,
   error,
+  hasConsultantOverride = false,
 }: ExpenseSemanticConfidenceDotProps) {
   const score01 = parseConfidenceScore01(score)
 
   if (score01 === null) {
     return (
       <span
-        className="inline-flex items-center justify-center"
-        aria-label="Sem confiança de classificação"
+        className="inline-flex items-center justify-center gap-1"
+        aria-label={
+          hasConsultantOverride
+            ? "Sem score de confiança da IA — decisão do consultor aplicada ao cálculo"
+            : "Sem confiança de classificação"
+        }
       >
+        {hasConsultantOverride ? (
+          <ShieldCheck
+            className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+            aria-hidden
+          />
+        ) : null}
         <span className="text-xs text-muted-foreground" aria-hidden>
           —
         </span>
@@ -117,7 +137,10 @@ function ExpenseSemanticConfidenceDotInner({
   const pct = aggregatedScoreToPercent(score01)
   const tierLabel = confidenceTierShortLabel(tier)
   // Ex.: "Sólido — 92 por cento de confiança jurídica"
-  const ariaLabel = `${tierLabel} — ${pct} por cento de confiança jurídica`
+  const baseAria = `${tierLabel} — ${pct} por cento de confiança jurídica (análise IA)`
+  const ariaLabel = hasConsultantOverride
+    ? `${baseAria} · Decisão do consultor aplica-se ao cálculo do motor`
+    : baseAria
 
   const justTrimmed = justification?.trim() || null
   const errTrimmed = error?.trim() || null
@@ -128,7 +151,7 @@ function ExpenseSemanticConfidenceDotInner({
         type="button"
         aria-label={ariaLabel}
         className={cn(
-          "inline-flex items-center justify-center rounded-sm p-1",
+          "inline-flex items-center justify-center gap-1 rounded-sm p-1",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           // Board-Ready: whisper-quiet — prioridade ao dado financeiro (system.md).
           presentationMode ? "opacity-70" : "board-ready:opacity-70",
@@ -140,6 +163,12 @@ function ExpenseSemanticConfidenceDotInner({
             dotBgClass(tier),
           )}
         />
+        {hasConsultantOverride ? (
+          <ShieldCheck
+            className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+            aria-hidden
+          />
+        ) : null}
       </TooltipTrigger>
 
       <TooltipContent
@@ -172,6 +201,14 @@ function ExpenseSemanticConfidenceDotInner({
           {errTrimmed ? (
             <p className="text-xs italic leading-snug opacity-60">
               Erro de classificação — revise esta linha manualmente.
+            </p>
+          ) : null}
+
+          {hasConsultantOverride ? (
+            <p className="border-t border-border/50 pt-1.5 text-xs leading-snug text-emerald-700/90 dark:text-emerald-300/90">
+              A decisão do consultor (substituição manual) é a que prevalece no envio
+              ao motor de cálculo. O percentual acima reflecte a confiança da
+              análise automática, não o risco após a sua correcção.
             </p>
           ) : null}
         </div>

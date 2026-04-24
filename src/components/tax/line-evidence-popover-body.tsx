@@ -8,9 +8,12 @@ import { ClassificationBriefingContent } from "@/components/tax/classification-b
 import { BriefingSectionTitle } from "@/components/tax/briefing-section-title"
 import { LawArticleIntegral } from "@/components/tax/law-article-integral"
 import { LegalEvidenceHighlighter } from "@/components/tax/legal-evidence-highlighter"
+import { RayXAnchorCallout } from "@/components/tax/ray-x-anchor-callout"
 import { firstEvidenceWithContent, resolveLawArticleChunkId } from "@/lib/law-article-from-classification"
+import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"
 import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
 import { useTaxStore } from "@/store/useTaxStore"
+import { cn } from "@/lib/utils"
 import type { ClassificationItem } from "@/types/api"
 
 const footerNote =
@@ -94,7 +97,45 @@ function LawArticleSection({ c }: { c: ClassificationItem }) {
       ) : ev ? (
         <section>
           <BriefingSectionTitle>Trecho recuperado (RAG)</BriefingSectionTitle>
-          <div className="rounded-lg border border-border/60 bg-muted/15 px-3 py-2.5">
+          {(() => {
+            const trilha =
+              formatLegalCitationFromMetadata(ev.metadata, ev.legal_path) || formatArticleLabel(ev.article_id)
+            const chunkIdForPdf = ev.article_id?.trim() ?? ""
+            return (
+              <div className="mb-2 space-y-2 print:block">
+                <div className="print:block">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground print:block">
+                    Trilha normativa
+                  </p>
+                  <p
+                    className={cn(
+                      "mt-0.5 font-mono text-xs font-semibold leading-snug print:block",
+                      rayxFull
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-foreground/90",
+                    )}
+                  >
+                    {trilha}
+                  </p>
+                </div>
+                {chunkIdForPdf ? (
+                  <div className="rounded-lg border border-border/50 bg-muted/20 print:block">
+                    <RayXAnchorCallout
+                      chunkArticleId={chunkIdForPdf}
+                      compact
+                      leading={
+                        <p className="m-0 text-xs text-muted-foreground print:block">
+                          Abrir o PDF do DOU: salto <span className="font-mono">#page=…</span> a partir de{" "}
+                          <span className="font-mono break-all">{chunkIdForPdf}</span>.
+                        </p>
+                      }
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )
+          })()}
+          <div className="rounded-lg border border-border/60 bg-muted/15 px-3 py-2.5 print:block">
             <Button
               type="button"
               variant="ghost"
@@ -107,13 +148,14 @@ function LawArticleSection({ c }: { c: ClassificationItem }) {
             </Button>
             {ragOpen ? (
               <>
-                <div className="mt-2 border-t border-border/40 pt-3">
+                <div className="mt-2 border-t border-border/40 pt-3 print:block">
                   {rayxFull ? (
                     <LegalEvidenceHighlighter
                       text={ev.content}
                       snippets={ev.relevant_snippets}
                       tentative={ev.relevant_snippets_tentative}
                       enabled
+                      proHighlight
                       className={ragBodyTypography}
                     />
                   ) : (
@@ -122,7 +164,7 @@ function LawArticleSection({ c }: { c: ClassificationItem }) {
                     </div>
                   )}
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground print:block">
                   Sem identificador de chunk para remontar o artigo completo via API — mostramos o excerto devolvido pela
                   recuperação semântica desta linha.
                 </p>

@@ -264,7 +264,7 @@ export function useSimulationMutation() {
           console.error("[TribIA] Sem token de sessão para gravar histórico.")
           return
         }
-        await saveSimulationRecord(sessionToken, userId, {
+        const created = await saveSimulationRecord(sessionToken, userId, {
           company_context: variables.companyContext,
           company_regime: variables.companyRegime ?? "regular",
           year: variables.year,
@@ -296,6 +296,13 @@ export function useSimulationMutation() {
               data.discoveredStrategyTags.length > 0 ? data.discoveredStrategyTags : undefined,
           },
         })
+        const cur = useTaxStore.getState().results
+        if (cur?.mode === "form" && cur.meta) {
+          useTaxStore.getState().setResults({
+            ...cur,
+            meta: { ...cur.meta, recordId: created.id },
+          })
+        }
         await queryClient.invalidateQueries({
           queryKey: ["simulation-records", userId],
         })

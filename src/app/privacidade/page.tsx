@@ -45,10 +45,17 @@ export default function PrivacidadePage() {
 
       <section className="mt-8 space-y-3 text-sm leading-relaxed text-foreground">
         <h2 className="text-base font-semibold">IA e fornecedores</h2>
+        <p className="text-foreground/95 font-medium">
+          O TribIA trata o seu contexto de trabalho como confidencial: os seus dados
+          financeiros e as simulações que produzir na plataforma{" "}
+          <strong className="font-semibold">não são utilizados</strong> para treinar
+          modelos de IA do produto TribIA.
+        </p>
         <p className="text-muted-foreground">
-          A classificação assistida e o RAG sobre a legislação chamam APIs de fornecedores
-          (por exemplo OpenAI, Google) no âmbito do serviço. O TribIA não utiliza os seus
-          dados para treinar modelos próprios do produto.
+          A classificação assistida e o RAG sobre a legislação podem chamar APIs de
+          fornecedores (por exemplo OpenAI, Google) apenas no âmbito de cada pedido de
+          serviço. Essa promessa aplica-se em todos os planos, incluindo o ambiente
+          profissional (PRO e Premium) orientado a consultores e análise fiscal.
         </p>
         <p className="text-muted-foreground">
           Cada fornecedor tem políticas próprias sobre retenção, melhoria de serviço e

@@ -1,19 +1,56 @@
-import type { AiMetadata, AiMetadataBreakdown, ClassificationItem, LawChunkMetadata } from "@/types/api"
+import type {
+  AiMetadata,
+  AiMetadataBreakdown,
+  ClassificationItem,
+  LawChunkMetadata,
+  LegalPath,
+} from "@/types/api"
+
+const CITATION_SEP = " · "
 
 /**
- * Citação determinística a partir dos metadados do chunk (alinhada ao servidor Go).
+ * Citação a partir do objecto `legal_path` da API (prioritário face ao mapa `metadata`).
  */
-export function formatLegalCitationFromMetadata(meta: LawChunkMetadata | undefined): string {
+export function formatLegalPathCitation(path: LegalPath | undefined): string {
+  if (!path) return ""
+  const al = (path.article_label || "").trim()
+  const span = (path.span_note || "").trim()
+  if (span) {
+    if (al) return `${al}${CITATION_SEP}${span}`
+    return span
+  }
+  if (!al) return ""
+  const parts: string[] = [al]
+  if (path.paragraph?.trim()) parts.push(path.paragraph.trim())
+  if (path.inciso?.trim()) parts.push(`inciso ${path.inciso.trim()}`)
+  if (path.alinea?.trim()) parts.push(`alínea ${path.alinea.trim()})`)
+  return parts.join(CITATION_SEP)
+}
+
+function formatLegacyMetadataCitation(meta: LawChunkMetadata | undefined): string {
   if (!meta) return ""
   const span = meta.span_note?.trim()
   const al = (meta.article_label || meta.article_id || "").trim()
   if (!al) return ""
-  if (span) return `${al} (${span})`
+  if (span) return `${al}${CITATION_SEP}${span}`
   const parts: string[] = [al]
   if (meta.paragraph?.trim()) parts.push(meta.paragraph.trim())
   if (meta.inciso?.trim()) parts.push(`inciso ${meta.inciso.trim()}`)
   if (meta.alinea?.trim()) parts.push(`alínea ${meta.alinea.trim()})`)
-  return parts.join(", ")
+  return parts.join(CITATION_SEP)
+}
+
+/**
+ * Citação determinística: prioriza `legal_path` quando presente; caso contrário usa o mapa `metadata`
+ * (retrocompatível com registos antigos sem `legal_path`).
+ */
+export function formatLegalCitationFromMetadata(
+  meta: LawChunkMetadata | undefined,
+  legalPath?: LegalPath,
+): string {
+  const fromPath = formatLegalPathCitation(legalPath)
+  if (fromPath) return fromPath
+  return formatLegacyMetadataCitation(meta)
 }
 
 /**
@@ -105,7 +142,7 @@ export function aggregateRagMetadata(
   for (const r of rows) {
     if (r.error?.trim()) continue
     for (const ev of r.evidence ?? []) {
-      const cite = formatLegalCitationFromMetadata(ev.metadata)
+      const cite = formatLegalCitationFromMetadata(ev.metadata, ev.legal_path)
       if (cite) {
         sourceLabels.add(cite)
         continue

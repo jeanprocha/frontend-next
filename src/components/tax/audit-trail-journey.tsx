@@ -5,19 +5,13 @@ import { cn } from "@/lib/utils"
 
 export const AUDIT_TRAIL_STEPS: { label: string; detail: string; href: string }[] = [
   {
-    label: "Contexto",
-    detail: "Insumos, comparativo legado vs destino e mecânica do número.",
-    href: "#tribia-resultado-contexto",
-  },
-  {
     label: "Veredito Executivo",
     detail: "Impacto financeiro imediato: delta de carga e tese de decisão.",
     href: "#veredito-executivo",
   },
   {
     label: "Cronograma de Impacto",
-    detail:
-      "Aritmética determinística e série 2026–2033 pelo motor Go.",
+    detail: "Aritmética determinística e série 2026–2033 pelo motor Go.",
     href: "#tribia-journey-transicao",
   },
   {

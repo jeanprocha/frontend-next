@@ -149,6 +149,9 @@ export function PrintReportFooter({
           {law}
         </p>
         <p className="text-xs font-medium text-muted-foreground font-sans">{simLine}</p>
+        <p className="text-[11px] text-muted-foreground/85 font-sans leading-relaxed max-w-3xl mx-auto">
+          Auditoria legislativa assistida por IA (RAG)
+        </p>
         <p className="text-xs text-muted-foreground italic leading-relaxed max-w-3xl mx-auto font-board-report">
           Documento confidencial. Simulação baseada na LC 68/2024 e nos dados fornecidos. Não substitui parecer
           jurídico-contábil formal. Classificação assistida com recuperação legislativa e motor determinístico.

@@ -46,7 +46,6 @@ import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
 
 import { formatBRL } from "@/lib/api"
 import { findCreditLeakForRow } from "@/lib/credit-leak-match"
-import { parseConfidenceScore01 } from "@/lib/confidence-tiers"
 import {
   EXPENSE_OVERRIDE_OPTIONS,
   getAiSuggestedLabel,
@@ -555,7 +554,38 @@ const ClassificationOverrideCell = memo(
     prev.row.classification === next.row.classification &&
     prev.presentationMode === next.presentationMode &&
     prev.onApplyOverride === next.onApplyOverride &&
-    prev.onRemoveOverride === next.onRemoveOverride,
+    prev.  onRemoveOverride === next.onRemoveOverride,
+)
+
+/** Célula do gauge (IA) + canal manual — repinta só quando a classificação da linha muda. */
+const ClassificationSignalCell = memo(
+  function ClassificationSignalCell({
+    classification,
+    presentationMode,
+  }: {
+    classification: ClassificationItem | null
+    presentationMode: boolean
+  }) {
+    if (!classification) {
+      return <span className="text-xs text-muted-foreground">—</span>
+    }
+    const hasErr = Boolean(classification.error?.trim())
+    if (hasErr) {
+      return <span className="text-xs text-muted-foreground">—</span>
+    }
+    return (
+      <ExpenseSemanticConfidenceDot
+        score={classification.confidence}
+        justification={classification.justification}
+        error={classification.error}
+        presentationMode={presentationMode}
+        hasConsultantOverride={hasConsultantOverride(classification)}
+      />
+    )
+  },
+  (prev, next) =>
+    prev.classification === next.classification &&
+    prev.presentationMode === next.presentationMode,
 )
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -612,7 +642,9 @@ export function ExpenseSemanticAuditTable({
     >
       <table className="w-full text-sm">
         <caption className="sr-only">
-          Despesas e classificação semântica para rastreabilidade de auditoria.
+          Despesas e classificação semântica para rastreabilidade de auditoria. Coluna
+          Sinal: confiança da análise IA; ícone de escudo quando a linha foi curada
+          manualmente.
           {hasLeakData
             ? " Linhas com borda vermelha à esquerda indicam custo morto."
             : ""}
@@ -636,6 +668,12 @@ export function ExpenseSemanticAuditTable({
                   (clique para substituir)
                 </span>
               )}
+            </th>
+            <th
+              scope="col"
+              className="w-[1%] px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap"
+            >
+              Sinal
             </th>
             <th
               scope="col"
@@ -677,6 +715,13 @@ export function ExpenseSemanticAuditTable({
                     presentationMode={presentationMode}
                     onApplyOverride={onApplyOverride}
                     onRemoveOverride={onRemoveOverride}
+                  />
+                </td>
+
+                <td className="px-2 py-2 text-center">
+                  <ClassificationSignalCell
+                    classification={row.classification}
+                    presentationMode={presentationMode}
                   />
                 </td>
 

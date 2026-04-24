@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
 import { ArrowRightLeft, Scale, ShieldCheck } from "lucide-react"
-import type { AuditTabValue } from "@/components/tax/audit-confidence-tabs"
+import type { AuditTabValue } from "@/components/tax/simulation-esteira-types"
 import { ConfidenceGauge } from "@/components/tax/confidence-gauge"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -115,8 +115,7 @@ export function ComparisonVerdictCard({
 
   const showAbTable = isComparison && Boolean(baselineSimulation && currentSimulation)
 
-  // Usados no layout "default" (mode="single") — o cockpit single já não os exibe
-  // (o delta herói foi movido para FinancialVerdictHeroCard, item 2.1.1).
+  // Cockpit: faixa de delta no topo + Hero com o número; layout default: grelha de indicadores.
   const singleDelta = !isComparison ? simulationDeltaValue(currentSimulation) : 0
   const singleNeutral = !isComparison && (!Number.isFinite(singleDelta) || singleDelta === 0)
   const singleSaving = !isComparison && singleDelta < 0
@@ -124,8 +123,7 @@ export function ComparisonVerdictCard({
 
   const scrollToEsteira = () => {
     if (typeof document === "undefined") return
-    // Aponta para a secção de Auditoria no grid Top-Down.
-    document.getElementById("tribia-dossie-auditoria")?.scrollIntoView({
+    document.getElementById("tribia-esteira-de-confianca")?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     })
@@ -154,6 +152,40 @@ export function ComparisonVerdictCard({
           aria-hidden
         />
         <CardContent className="relative z-10 p-5 md:p-6 lg:p-7">
+          {/* Protagonista do delta no resumo — espelha o Hero (emerald-600 p/ economia) */}
+          <div
+            className="mb-6 border-b border-border/50 pb-5 print:mb-4 print:border-foreground/20"
+            aria-label="Variação da carga líquida CBS/IBS (projetado vs actual)"
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground font-sans print:text-foreground/80">
+              Impacto projectado (CBS/IBS)
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-baseline gap-2">
+              <span
+                className={cn(
+                  "font-sans text-3xl font-bold tabular-nums tracking-tight sm:text-4xl",
+                  singleNeutral && "text-muted-foreground",
+                  !singleNeutral && singleSaving && "text-emerald-600 dark:text-emerald-400",
+                  !singleNeutral && !singleSaving && "text-amber-600 dark:text-amber-400",
+                )}
+              >
+                {singleNeutral
+                  ? formatBRL("0")
+                  : `${singleSaving ? "−" : "+"}${formatBRL(singleAbsStr)}`}
+              </span>
+              {!singleNeutral && (
+                <Badge
+                  className={cn(
+                    "border-0 px-2 py-0.5 text-xs font-semibold font-sans",
+                    singleSaving && "bg-emerald-600 text-white hover:bg-emerald-600",
+                    !singleSaving && "bg-amber-600 text-white hover:bg-amber-600",
+                  )}
+                >
+                  {singleSaving ? "Economia projectada" : "Aumento de carga"}
+                </Badge>
+              )}
+            </div>
+          </div>
           <div
             className={cn(
               "grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.2fr)_minmax(0,0.95fr)] xl:gap-5 xl:items-start",
@@ -391,6 +423,7 @@ export function ComparisonVerdictCard({
         "tribia-surface-verdict relative overflow-hidden",
         "board-ready:border board-ready:border-foreground/20 board-ready:shadow-none board-ready:ring-0 board-ready:dark:shadow-none",
         "print:border print:border-foreground/25 print:shadow-none print:ring-0 tribia-print-flatten-shadow",
+        isComparison && "print:break-inside-avoid",
       )}
     >
       <div
@@ -398,7 +431,51 @@ export function ComparisonVerdictCard({
         aria-hidden
       />
       <CardContent className="relative z-10 space-y-6 p-6 md:p-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10 print:grid-cols-2">
+        {isComparison && (
+          <div
+            className="break-inside-avoid border-b border-border/50 pb-6 mb-2 print:mb-0 print:pb-5 print:border-foreground/20"
+            aria-label="Delta da carga líquida projetada entre cenário B e referência A"
+          >
+            <p className="font-board-report text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground print:text-foreground/80">
+              Delta B vs A
+            </p>
+            <p className="font-board-report mt-1.5 text-xs leading-snug text-muted-foreground max-w-prose">
+              Carga líquida CBS/IBS projetada: diferença do cenário B face à referência A
+            </p>
+            <div className="mt-4 flex flex-wrap items-baseline gap-2">
+              <span
+                className={cn(
+                  "font-sans text-3xl font-bold tabular-nums tracking-tight sm:text-4xl print:text-foreground",
+                  neutral && "text-muted-foreground",
+                  !neutral && savingVsA && "text-emerald-600 dark:text-emerald-400",
+                  !neutral && !savingVsA && "text-amber-600 dark:text-amber-400",
+                )}
+              >
+                {neutral
+                  ? formatBRL("0")
+                  : `${savingVsA ? "−" : "+"}${formatBRL(absProjStr)}`}
+              </span>
+              {!neutral && (
+                <Badge
+                  className={cn(
+                    "border-0 px-2 py-0.5 text-xs font-semibold font-sans print:border print:border-foreground print:bg-transparent print:text-foreground",
+                    savingVsA && "bg-emerald-600 text-white hover:bg-emerald-600",
+                    !savingVsA && "bg-amber-600 text-white hover:bg-amber-600",
+                  )}
+                >
+                  {savingVsA ? "Menor carga em B" : "Maior carga em B"}
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div
+          className={cn(
+            "grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10 print:grid-cols-2",
+            isComparison && "print:gap-6",
+          )}
+        >
           <div className="min-w-0 space-y-5">
             <div className="flex flex-wrap items-center gap-2">
               <div
@@ -514,40 +591,6 @@ export function ComparisonVerdictCard({
           <div className="min-w-0 space-y-4">
             {isComparison ? (
               <>
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 print:text-foreground">
-                    Indicadores — cenário B vs A
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1 mb-3">
-                    Diferença na carga líquida projetada (CBS/IBS)
-                  </p>
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span
-                      className={cn(
-                        "font-sans text-3xl font-bold tabular-nums tracking-tight sm:text-4xl print:text-foreground",
-                        neutral && "text-slate-700 dark:text-slate-200",
-                        !neutral && savingVsA && "text-emerald-600 dark:text-emerald-400 print:!text-foreground",
-                        !neutral && !savingVsA && "text-amber-600 dark:text-amber-400 print:!text-foreground",
-                      )}
-                    >
-                      {neutral
-                        ? formatBRL("0")
-                        : `${savingVsA ? "−" : "+"}${formatBRL(absProjStr)}`}
-                    </span>
-                    {!neutral && (
-                      <Badge
-                        className={cn(
-                          "border-0 px-2 py-0.5 text-xs font-semibold font-sans print:border print:border-foreground print:bg-transparent print:text-foreground",
-                          savingVsA && "bg-emerald-600 text-white hover:bg-emerald-600",
-                          !savingVsA && "bg-amber-600 text-white hover:bg-amber-600",
-                        )}
-                      >
-                        {savingVsA ? "Menor carga em B" : "Maior carga em B"}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
                 {accumulatedDiff !== null && Number.isFinite(accumulatedDiff) && (
                   <div className="rounded-2xl border border-border/80 bg-muted/25 p-4 dark:bg-muted/40 board-ready:rounded-lg board-ready:border-foreground/15 board-ready:bg-transparent print:rounded-lg print:border print:border-foreground/20 print:bg-transparent">
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-sans print:text-foreground">

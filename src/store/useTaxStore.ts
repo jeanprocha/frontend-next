@@ -12,12 +12,19 @@ import type {
 } from "@/types/api"
 import { findNormalizedPatternRuneSpan } from "@/lib/context-rune-span"
 
+// ─── Chaves de persistência (cliente) ───────────────────────────────────────
+
+/** `localStorage`: utilizador fechou o banner de privacidade PRO no dashboard. */
+export const PRIVACY_TRUST_BANNER_DISMISSED_KEY = "tribia-privacy-banner-dismissed"
+
 // ─── Tipos internos do store ─────────────────────────────────────────────────
 
 export interface ResultMeta {
   createdAt: string
   companyContext: string
   year: number
+  /** Registo no histórico (API) após gravação bem-sucedida; necessário para dossié /report/[id]. */
+  recordId?: string
 }
 
 export interface PersistedResults {
@@ -142,6 +149,11 @@ interface TaxState {
    * Incrementa overrideRecalcTick para disparar a RecalcBridge.
    */
   removeExpenseClassificationOverride: (clientId: string) => void
+  /**
+   * Remove todos os `consultant_override` das classificações (mesa de operações)
+   * e solicita recálculo — alinhar a simulação às sugestões originais da IA.
+   */
+  clearAllExpenseClassificationOverrides: () => void
   /** Chamado pelo hook de recálculo após POST /simulations bem-sucedido. */
   markSimulationSynced: (newSimulation: SimulationResponse) => void
 }
@@ -276,6 +288,10 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
     }),
 
   // ── 3.4.1 / 3.4.2 Override manual + trigger reactivo ────────────────────
+  //
+  // Merge imutável: cada linha alterada recebe um novo objecto; as restantes
+  // mantêm a mesma referência. O motor Go lê a decisão humana via
+  // getEffectiveExpenseSimulationFields() em use-simulation-recalc (POST simulate).
 
   applyExpenseClassificationOverride: (clientId, override) => {
     const { results, overrideRecalcTick } = get()
@@ -307,6 +323,23 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
     })
     // Sempre pendente após remoção: o motor Go deve reflectir o regresso à
     // sugestão IA — não é apenas "sem override = sem diferença".
+    set({
+      results: { ...results, classifications: updated },
+      pendingSimulationSync: true,
+      overrideRecalcTick: overrideRecalcTick + 1,
+    })
+  },
+
+  clearAllExpenseClassificationOverrides: () => {
+    const { results, overrideRecalcTick } = get()
+    if (!results || results.mode !== "form") return
+    const hasAny = results.classifications.some((c) => c.consultant_override)
+    if (!hasAny) return
+    const updated = results.classifications.map((c) => {
+      if (!c.consultant_override) return c
+      const { consultant_override: _removed, ...rest } = c
+      return rest as ClassificationItem
+    })
     set({
       results: { ...results, classifications: updated },
       pendingSimulationSync: true,

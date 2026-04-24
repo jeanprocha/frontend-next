@@ -17,6 +17,17 @@ export type DashboardCommandBridge = {
   focusHistorySearch: (() => void) | null
   /** Empresas: abrir fluxo “Nova empresa” */
   openCompaniesNewForm: (() => void) | null
+  /**
+   * PRO/Premium: alterna modo comparação A/B (congela A ou volta à vista única).
+   */
+  toggleComparisonAB: (() => void) | null
+  /**
+   * PRO/Premium: remove overrides manuais na mesa — volta a usar as sugestões da IA
+   * (pendingSimulationSync; RecalcBridge recalcula).
+   */
+  confirmAiDiagnostic: (() => void) | null
+  /** Só para rótulo da palette: modo A/B activo. */
+  isComparingAB: boolean
 }
 
 const defaultBridge: DashboardCommandBridge = {
@@ -27,6 +38,9 @@ const defaultBridge: DashboardCommandBridge = {
   isLoadingSimulation: false,
   focusHistorySearch: null,
   openCompaniesNewForm: null,
+  toggleComparisonAB: null,
+  confirmAiDiagnostic: null,
+  isComparingAB: false,
 }
 
 let bridge: DashboardCommandBridge = defaultBridge

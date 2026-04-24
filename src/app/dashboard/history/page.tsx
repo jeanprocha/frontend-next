@@ -5,13 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@clerk/nextjs"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowRightLeft, FileClock, FileDown, Loader2, Search } from "lucide-react"
-import {
-  downloadSimulationReport,
-  formatBRL,
-  getSimulationRecord,
-  listSimulationRecords,
-} from "@/lib/api"
+import { ArrowRightLeft, FileClock, Loader2, Search } from "lucide-react"
+import { formatBRL, getSimulationRecord, listSimulationRecords } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { HistoryRecordPreviewTrigger } from "@/components/tax/history-record-preview-trigger"
@@ -76,9 +71,7 @@ export default function HistoryPage() {
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [historyFilter, setHistoryFilter] = useState("")
   const [loadingId, setLoadingId] = useState<string | null>(null)
-  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [pdfError, setPdfError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [compareLoading, setCompareLoading] = useState(false)
   const [compareUpgradeOpen, setCompareUpgradeOpen] = useState(false)
@@ -185,20 +178,6 @@ export default function HistoryPage() {
       setLoadError("Não foi possível carregar esta simulação. Tente novamente.")
     } finally {
       setLoadingId(null)
-    }
-  }
-
-  async function handleDownloadPDF(id: string) {
-    setPdfError(null)
-    setPdfLoadingId(id)
-    try {
-      const token = await getToken()
-      if (!token || !userId) throw new Error("Não autenticado")
-      await downloadSimulationReport(token, userId, id)
-    } catch (e) {
-      setPdfError((e as Error).message)
-    } finally {
-      setPdfLoadingId(null)
     }
   }
 
@@ -323,12 +302,6 @@ export default function HistoryPage() {
             {loadError}
           </div>
         )}
-        {pdfError && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
-            {pdfError}
-          </div>
-        )}
-
         <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
           {isPending && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-16 justify-center">
@@ -510,22 +483,6 @@ export default function HistoryPage() {
                       onOpenInSimulator={openSim}
                       historyPro={historyPro}
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-auto min-h-14 w-10 shrink-0 self-stretch sm:self-center mr-2 tribia-touch-target"
-                      title="Baixar diagnóstico (PDF)"
-                      aria-label="Baixar diagnóstico em PDF"
-                      disabled={isThisLoading || pdfLoadingId === row.id}
-                      onClick={() => void handleDownloadPDF(row.id)}
-                    >
-                      {pdfLoadingId === row.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <FileDown className="h-4 w-4" aria-hidden />
-                      )}
-                    </Button>
                   </li>
                 )
               })}

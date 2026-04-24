@@ -1,16 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useQuery } from "@tanstack/react-query"
-import { FileClock, FileDown, Loader2 } from "lucide-react"
-import {
-  downloadSimulationReport,
-  formatBRL,
-  getSimulationRecord,
-  listSimulationRecords,
-} from "@/lib/api"
-import { Button } from "@/components/ui/button"
+import { FileClock, Loader2 } from "lucide-react"
+import { formatBRL, getSimulationRecord, listSimulationRecords } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { aggregateRagMetadata } from "@/lib/rag-metadata"
 import { useTaxStore } from "@/store/useTaxStore"
@@ -43,8 +36,6 @@ interface SimulationHistoryProps {
 
 export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
   const { userId, isLoaded, getToken } = useAuth()
-  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null)
-  const [pdfError, setPdfError] = useState<string | null>(null)
   const {
     setYear,
     setCompanyContext,
@@ -98,23 +89,6 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
     }
   }
 
-  async function handleDownloadPDF(id: string) {
-    setPdfError(null)
-    setPdfLoadingId(id)
-    try {
-      const token = await getToken()
-      if (!token || !userId) {
-        setPdfError("Sessão expirada. Entre novamente.")
-        return
-      }
-      await downloadSimulationReport(token, userId, id)
-    } catch (e) {
-      setPdfError((e as Error).message)
-    } finally {
-      setPdfLoadingId(null)
-    }
-  }
-
   if (!isLoaded || !userId) return null
 
   return (
@@ -148,18 +122,13 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
         )}
         {!isPending && data && data.length > 0 && (
           <div className="space-y-2">
-            {pdfError && (
-              <p className="text-xs text-destructive px-1" role="alert">
-                {pdfError}
-              </p>
-            )}
             <ul className="divide-y divide-border max-h-56 overflow-y-auto">
               {data.map((row) => {
                 const deltaNum = parseFloat(row.delta_impact)
                 const deltaNeutral = !Number.isFinite(deltaNum) || deltaNum === 0
                 const deltaSaving = deltaNum < 0
                 return (
-                  <li key={row.id} className="flex items-stretch gap-1 py-1 first:pt-0">
+                  <li key={row.id} className="py-1 first:pt-0">
                     <button
                       type="button"
                       onClick={() => void handleOpenRecord(row.id)}
@@ -201,22 +170,6 @@ export function SimulationHistory({ onBeforeHydrate }: SimulationHistoryProps) {
                         </div>
                       </div>
                     </button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-auto min-h-12 w-10 shrink-0 self-stretch sm:self-center"
-                      title="Baixar diagnóstico (PDF)"
-                      aria-label="Baixar diagnóstico em PDF"
-                      disabled={pdfLoadingId === row.id}
-                      onClick={() => void handleDownloadPDF(row.id)}
-                    >
-                      {pdfLoadingId === row.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <FileDown className="h-4 w-4" aria-hidden />
-                      )}
-                    </Button>
                   </li>
                 )
               })}

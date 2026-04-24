@@ -103,6 +103,15 @@ export interface SimulationRequest {
   expenses: ExpenseInput[]
 }
 
+/** Hierarquia normativa estruturada (GET /credit-classifications* — campo `legal_path` por evidência). */
+export interface LegalPath {
+  article_label?: string
+  paragraph?: string
+  inciso?: string
+  alinea?: string
+  span_note?: string
+}
+
 /** Metadados hierárquicos do chunk (LC 68/2024), espelhando o backend Go. */
 export interface LawChunkMetadata {
   source?: string
@@ -125,6 +134,8 @@ export interface EvidenceArticle {
   similarity: number
   /** Metadados determinísticos da ingestão (artigo, parágrafo, inciso, alínea). */
   metadata?: LawChunkMetadata
+  /** Campos espelhados de `metadata` para citação tipada (prioridade em `formatLegalCitationFromMetadata`). */
+  legal_path?: LegalPath
   /** Substrings validadas no servidor para realce PRO (âncoras fortes). */
   relevant_snippets?: string[]
   /** Substrings com nexo mais fraco; UI pode realçar com estilo distinto. */
@@ -263,12 +274,19 @@ export interface SimulationResult {
 // --- Histórico (GET/POST /simulation-records) ---
 
 /** Snapshot rico para reidratar o dashboard como na 1.ª execução (evidências RAG, ai_metadata). */
+export interface ReportBrandSnapshot {
+  logo_url?: string | null
+  org_name?: string | null
+}
+
 export interface ClassificationHistorySnapshot {
   snapshot_version?: number
   service_classifications?: ClassificationItem[]
   expense_classifications?: ClassificationItem[]
   ai_metadata?: AiMetadata
   discovered_tags?: StrategyTag[]
+  /** White-label (Premium) persistido para o dossié público. */
+  report_brand?: ReportBrandSnapshot | null
 }
 
 export interface SimulationRecordSummary {

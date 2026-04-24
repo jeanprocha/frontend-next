@@ -44,8 +44,10 @@ export function LawPdfAuthorityCard({
   const [data, setData] = useState<LawPdfAnchorResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const safeChunkId = chunkArticleId.trim()
+
   useEffect(() => {
-    if (!pro || !chunkArticleId.trim()) {
+    if (!pro || !safeChunkId) {
       setData(null)
       setError(null)
       return
@@ -60,7 +62,8 @@ export function LawPdfAuthorityCard({
           if (!cancelled) setError(null)
           return
         }
-        const res = await fetchLawPdfAnchor(chunkArticleId, token, userId, tier)
+        // article_id do chunk = chave de GET /law/articles/{id}/pdf-anchor; resposta traz `page` para #page=N
+        const res = await fetchLawPdfAnchor(safeChunkId, token, userId, tier)
         if (!cancelled) setData(res)
       } catch (e: unknown) {
         if (!cancelled) {
@@ -74,9 +77,9 @@ export function LawPdfAuthorityCard({
     return () => {
       cancelled = true
     }
-  }, [chunkArticleId, pro, getToken, userId, tier])
+  }, [safeChunkId, pro, getToken, userId, tier])
 
-  const articleLabel = formatArticleLabel(chunkArticleId)
+  const articleLabel = formatArticleLabel(safeChunkId || chunkArticleId)
 
   if (!pro) {
     return (
@@ -85,6 +88,7 @@ export function LawPdfAuthorityCard({
           embedded
             ? "mt-3 border-t border-border/60 pt-3"
             : "rounded-lg border border-slate-200/70 bg-slate-50/40 p-3 dark:border-slate-800/50 dark:bg-slate-900/25",
+          "print:block",
           className,
         )}
       >
@@ -113,6 +117,7 @@ export function LawPdfAuthorityCard({
         embedded
           ? "mt-3 border-t border-border/60 pt-3"
           : "rounded-lg border border-emerald-200/60 bg-emerald-50/30 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/25",
+        "print:block",
         className,
       )}
     >
@@ -138,8 +143,13 @@ export function LawPdfAuthorityCard({
               return (
                 <>
                   Este cenário baseia-se em {label}, com ancoragem na página{" "}
-                  <span className="font-mono tabular-nums">{data.page}</span> do PDF oficial do Diário da União {suffix}{" "}
-                  — prova documental alinhada ao texto indexado nesta auditoria.
+                  <span className="font-mono tabular-nums text-emerald-700 print:text-foreground dark:text-emerald-300">
+                    {data.page}
+                  </span>{" "}
+                  do PDF oficial do Diário da União {suffix}. «Abrir no PDF oficial» gera o URL com{" "}
+                  <span className="font-mono">#page=</span>
+                  <span className="font-mono tabular-nums">{data.page}</span> (parâmetros de abertura de PDF) — mesmo
+                  <span className="font-mono"> article_id</span> indexado no motor.
                 </>
               )
             }
@@ -151,9 +161,9 @@ export function LawPdfAuthorityCard({
           })()}
         </p>
       )}
-      {!hidePdfButton ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <LawPdfOpenButton chunkArticleId={chunkArticleId} prefetchedAnchor={data} />
+      {!hidePdfButton && safeChunkId ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 print:block">
+          <LawPdfOpenButton chunkArticleId={safeChunkId} prefetchedAnchor={data} />
         </div>
       ) : null}
     </div>

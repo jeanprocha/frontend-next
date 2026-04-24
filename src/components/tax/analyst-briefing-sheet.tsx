@@ -128,7 +128,7 @@ export function AnalystBriefingSheet() {
                     {evidence.slice(0, 6).map((ev) => (
                       <li key={ev.article_id} className="border-l-2 border-border pl-2">
                         <span className="font-mono text-xs text-foreground/80 break-words">
-                          {formatLegalCitationFromMetadata(ev.metadata) || ev.article_id}
+                          {formatLegalCitationFromMetadata(ev.metadata, ev.legal_path) || ev.article_id}
                         </span>
                         <span className="block line-clamp-2 mt-0.5 text-sm">
                           <LegalEvidenceHighlighter
@@ -136,6 +136,7 @@ export function AnalystBriefingSheet() {
                             snippets={ev.relevant_snippets}
                             tentative={ev.relevant_snippets_tentative}
                             enabled={fullRayx}
+                            proHighlight={fullRayx}
                           />
                         </span>
                       </li>

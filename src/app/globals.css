@@ -255,6 +255,16 @@
     }
   }
 
+  /**
+   * Narrativa executiva no PDF: alinha com .font-board-report (paridade Board-Ready / papel)
+   * sem forçar serif em tabelas — aplicar só em blocos de parecer / rótulos de herói.
+   */
+  .tribia-print-narrative-serif {
+    @media print {
+      font-family: var(--font-board-serif), ui-serif, Georgia, "Times New Roman", serif;
+    }
+  }
+
   .print-page-break {
     @media print {
       break-before: page;
@@ -458,12 +468,18 @@ main[data-pipeline-stage="verdict"] {
     display: none !important;
   }
 
-  .tribia-audit-tabs [role="tabpanel"][hidden] {
+  .tribia-audit-tabs [role="tabpanel"][hidden],
+  .tribia-audit-tabs [data-slot="tabs-content"][hidden] {
     display: block !important;
     position: static !important;
     opacity: 1 !important;
     visibility: visible !important;
     height: auto !important;
     overflow: visible !important;
+  }
+
+  .report-export-pdf-fab,
+  [data-report-pdf-fab] {
+    display: none !important;
   }
 }

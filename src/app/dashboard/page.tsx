@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo, type CSSProperties } from "react"
 import { useAuth } from "@clerk/nextjs"
+import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { History, Monitor } from "lucide-react"
@@ -11,6 +12,7 @@ import { AnalystBriefingSheet } from "@/components/tax/analyst-briefing-sheet"
 import { TransitionPrintTable } from "@/components/tax/transition-print-table"
 import { SimulationEsteiraSection } from "@/components/tax/simulation-esteira-section"
 import { SimulationRecalcBridge } from "@/components/tax/simulation-recalc-bridge"
+import { PrivacyTrustBanner } from "@/components/tax/privacy-trust-banner"
 import { ExpenseTable } from "@/components/tax/expense-table"
 import {
   PipelineStageAnnouncer,
@@ -28,7 +30,8 @@ import { cn } from "@/lib/utils"
 import { useTaxStore, type PersistedResults } from "@/store/useTaxStore"
 import { useSimulationMutation } from "@/hooks/use-simulation"
 import { useSimulationRecalc } from "@/hooks/use-simulation-recalc"
-import { errorDetailsFromUnknown } from "@/lib/api"
+import { errorDetailsFromUnknown, saveSimulationRecord } from "@/lib/api"
+import { buildSimulationRecordCreatePayload } from "@/lib/build-simulation-record-payload"
 import { RequestIdSupportRow } from "@/components/ui/request-id-support"
 import { useComparison } from "@/hooks/use-comparison"
 import { useBoardReady } from "@/hooks/use-board-ready"
@@ -60,6 +63,7 @@ import {
   clearDashboardCommandBridge,
   setDashboardCommandBridge,
 } from "@/lib/dashboard-command-bridge"
+import { BoardReadyPresentationCta } from "@/components/tax/board-ready-presentation-cta"
 import {
   usePlgCapabilities,
   useTribiaBranding,
@@ -116,7 +120,8 @@ function deriveSessionCompanyLabel(context: string | null | undefined): string {
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { isSignedIn, isLoaded: authLoaded } = useAuth()
+  const { isSignedIn, isLoaded: authLoaded, getToken, userId: clerkUserId } = useAuth()
+  const queryClient = useQueryClient()
   const { isBoardReady, setIsBoardReady, toggleBoardReady } = useBoardReady()
   const plgTier = useTribiaPlgTier()
   const plgCap = usePlgCapabilities()
@@ -127,6 +132,7 @@ export default function DashboardPage() {
   /** Cross-fade ao alternar Board-Ready: sinaliza opacity-0 no contentor de resultados. */
   const [boardFading, setBoardFading] = useState(false)
   const [compareUpgradeOpen, setCompareUpgradeOpen] = useState(false)
+  const [dossierBusy, setDossierBusy] = useState(false)
   const [inputMode, setInputMode] = useState<InputMode>("form")
   const [csvUploadPhase, setCsvUploadPhase] =
     useState<UploadZonePipelinePhase>("idle")
@@ -138,6 +144,7 @@ export default function DashboardPage() {
   const {
     results: formResults,
     setResults: setFormResults,
+    clearAllExpenseClassificationOverrides,
     companyRegime,
     companyContext,
     imobiliarioRedutorAjusteBrl,
@@ -169,6 +176,7 @@ export default function DashboardPage() {
   // ── 3.4.1 Override manual ────────────────────────────────────────────────
   const {
     recalculate: recalcImpact,
+    recalculateAndWait,
     isRecalculating,
   } = useSimulationRecalc()
   const {
@@ -374,6 +382,51 @@ export default function DashboardPage() {
 
   const shouldReduceMotion = useReducedMotion() ?? false
 
+  const handleRequestSingleView = useCallback(() => {
+    clearComparison()
+  }, [clearComparison])
+
+  const handleRequestComparisonView = useCallback(() => {
+    if (isComparing) return
+    if (!plgCap.compareAB) {
+      setCompareUpgradeOpen(true)
+      return
+    }
+    if (formResults?.mode === "form") {
+      startComparison(formResults)
+    }
+  }, [isComparing, plgCap.compareAB, formResults, startComparison])
+
+  const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+
+  /** Atalhos PRO (bridge): alternar A/B sem depender do botão do veredito. */
+  const toggleComparisonABFromBridge = useCallback(() => {
+    if (!isProOrPremium) return
+    if (!plgCap.compareAB) {
+      setCompareUpgradeOpen(true)
+      return
+    }
+    if (isComparing) {
+      clearComparison()
+      return
+    }
+    if (formResults?.mode === "form") {
+      startComparison(formResults)
+    }
+  }, [
+    isProOrPremium,
+    plgCap.compareAB,
+    isComparing,
+    formResults,
+    clearComparison,
+    startComparison,
+  ])
+
+  const confirmAiDiagnosticFromBridge = useCallback(() => {
+    if (!isProOrPremium) return
+    clearAllExpenseClassificationOverrides()
+  }, [isProOrPremium, clearAllExpenseClassificationOverrides])
+
   const handlePresentationMode = useCallback(() => {
     if (boardReadyUnlocked) {
       if (!shouldReduceMotion && results) {
@@ -394,6 +447,73 @@ export default function DashboardPage() {
       setBoardTeaseOpen(true)
     }
   }, [boardReadyUnlocked, toggleBoardReady, shouldReduceMotion, results])
+
+  const handleOpenDossier = useCallback(async () => {
+    if (!formResults || formResults.mode !== "form" || !clerkUserId) return
+    setDossierBusy(true)
+    try {
+      const token = await getToken()
+      if (!token) return
+      if (pendingSimulationSync) {
+        await recalculateAndWait()
+      }
+      const state = useTaxStore.getState()
+      const fr = state.results
+      if (!fr || fr.mode !== "form") return
+      let recordId = fr.meta?.recordId
+      if (!recordId) {
+        const payload = buildSimulationRecordCreatePayload(
+          {
+            year: fr.meta?.year ?? fr.simulation.year,
+            companyContext: (fr.meta?.companyContext ?? companyContext).trim() || companyContext,
+            companyRegime,
+            services: state.services,
+            expenses: state.expenses,
+            formResults: fr,
+          },
+          {
+            useInitialExpenseEligibility: false,
+            reportBrand: plgCap.whiteLabelExport
+              ? { logo_url: brandingLogoUrl, org_name: brandingOrgName }
+              : null,
+          },
+        )
+        const created = await saveSimulationRecord(token, clerkUserId, payload)
+        recordId = created.id
+        const meta = fr.meta
+          ? { ...fr.meta, recordId: created.id }
+          : {
+              createdAt: new Date().toISOString(),
+              companyContext,
+              year: fr.simulation.year,
+              recordId: created.id,
+            }
+        useTaxStore.getState().setResults({ ...fr, meta })
+        await queryClient.invalidateQueries({ queryKey: ["simulation-records", clerkUserId] })
+        await queryClient.invalidateQueries({ queryKey: ["plg-quota", clerkUserId] })
+      }
+      if (recordId) {
+        window.open(`/report/${recordId}`, "_blank", "noopener,noreferrer")
+      }
+    } catch (e) {
+      console.error("[TribIA] Dossié digital:", e)
+    } finally {
+      setDossierBusy(false)
+    }
+  }, [
+    formResults,
+    clerkUserId,
+    getToken,
+    pendingSimulationSync,
+    recalculateAndWait,
+    companyContext,
+    companyRegime,
+    plgCap.whiteLabelExport,
+    brandingLogoUrl,
+    brandingOrgName,
+    queryClient,
+  ])
+
   const phase = loading ? "loading" : results ? "results" : "input"
 
   const showCreditsRagLegend =
@@ -428,6 +548,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const isFormInput = phase === "input" && inputMode === "form"
     const canBoard = results?.mode === "form" && !loading
+    const proFormResults =
+      isProOrPremium && results?.mode === "form" && !loading
     setDashboardCommandBridge({
       runSimulation: isFormInput && !loading ? runSimulationFromBridge : null,
       toggleBoardReady: canBoard ? handlePresentationMode : null,
@@ -436,6 +558,9 @@ export default function DashboardPage() {
       isLoadingSimulation: loading,
       focusHistorySearch: null,
       openCompaniesNewForm: null,
+      toggleComparisonAB: proFormResults ? toggleComparisonABFromBridge : null,
+      confirmAiDiagnostic: proFormResults ? confirmAiDiagnosticFromBridge : null,
+      isComparingAB: Boolean(isComparing),
     })
     return () => clearDashboardCommandBridge()
   }, [
@@ -445,6 +570,10 @@ export default function DashboardPage() {
     results,
     runSimulationFromBridge,
     handlePresentationMode,
+    isProOrPremium,
+    isComparing,
+    toggleComparisonABFromBridge,
+    confirmAiDiagnosticFromBridge,
   ])
 
   return (
@@ -585,7 +714,7 @@ export default function DashboardPage() {
                 ← {results.mode === "form" ? "Nova simulação" : "Novo arquivo"}
               </Button>
               {/* Saída de emergência: só visível em Board-Ready (a sticky está oculta).
-                  O CTA principal vive agora na SimulationResultsDossierStickyChrome. */}
+                  O CTA principal vive agora no toolbar / cabeçalho da página. */}
               {results.mode === "form" && boardReadyActive && (
                 <Button
                   type="button"
@@ -634,30 +763,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── Banner: simulação carregada do histórico ─────────────────── */}
-        {formResults?.meta && (
-          <div className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 board-ready:hidden">
-            <div className="flex items-start gap-2.5 min-w-0">
-              <History className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-accent">Simulação do histórico</p>
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                  {new Date(formResults.meta.createdAt).toLocaleString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  {" · "}Ano {formResults.meta.year}
-                  {formResults.meta.companyContext
-                    ? ` · ${formResults.meta.companyContext.slice(0, 60)}${formResults.meta.companyContext.length > 60 ? "…" : ""}`
-                    : ""}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* ── Máquina de estados: input | loading | results (Motion) ─────── */}
         <AnimatePresence mode="wait">
@@ -799,8 +905,42 @@ export default function DashboardPage() {
                        * assume o controlo no toolbar slot (system.md modo apresentação).
                        */}
                       <SimulationRecalcBridge />
-                    <div className="order-3 print:order-last board-ready:order-2">
+
+                      <div className="order-3 print:order-last board-ready:order-2">
                       <SimulationEsteiraSection
+                        sessionStampAsideSlot={
+                          formResults?.meta && (
+                            <div className="rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 board-ready:hidden print:hidden w-full sm:max-w-none">
+                              <div className="flex items-start justify-end gap-2.5 min-w-0 text-right sm:max-w-[24rem] sm:ml-auto">
+                                <History className="h-4 w-4 shrink-0 text-accent mt-0.5" aria-hidden />
+                                <div className="min-w-0 text-left sm:text-right">
+                                  <p className="text-xs font-semibold text-accent">
+                                    Simulação do histórico
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 [overflow-wrap:anywhere]">
+                                    {new Date(formResults.meta.createdAt).toLocaleString("pt-BR", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                    {" · "}Ano {formResults.meta.year}
+                                    {formResults.meta.companyContext
+                                      ? ` · ${formResults.meta.companyContext.slice(0, 60)}${formResults.meta.companyContext.length > 60 ? "…" : ""}`
+                                      : ""}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        }
+                        headerBannersSlot={
+                          <PrivacyTrustBanner
+                            plgTier={plgTier}
+                            className="w-full board-ready:hidden"
+                          />
+                        }
                         showSessionOneHero={
                           Boolean(authLoaded && isSignedIn && !isComparing)
                         }
@@ -842,10 +982,20 @@ export default function DashboardPage() {
                         showTransitionAuditFactors={plgCap.transitionAuditFactors}
                         presentationMode={boardReadyActive}
                         sessionCompanyLabel={sessionCompanyLabel}
+                        resultMeta={formResults?.meta}
                         sessionScenarioLabel={sessionScenarioLabel}
-                        boardReadyUnlocked={boardReadyUnlocked}
-                        onPresentationToggle={handlePresentationMode}
-                        onPresentationTease={() => setBoardTeaseOpen(true)}
+                        dossierSlot={
+                          <BoardReadyPresentationCta
+                            unlocked={boardReadyUnlocked}
+                            busy={dossierBusy}
+                            onDossier={handleOpenDossier}
+                            onFreeTease={() => setBoardTeaseOpen(true)}
+                            disabled={loading}
+                            className="shrink-0 board-ready:hidden no-print print:hidden"
+                          />
+                        }
+                        onRequestSingleView={handleRequestSingleView}
+                        onRequestComparisonView={handleRequestComparisonView}
                         isComparing={isComparing}
                         pendingSimulationSync={pendingSimulationSync}
                         isRecalculating={isRecalculating}
@@ -865,7 +1015,7 @@ export default function DashboardPage() {
                           onFocusYearChange: setFocusYear,
                         }}
                       />
-                    </div>
+                      </div>
                     </>
                   )}
                 </motion.div>

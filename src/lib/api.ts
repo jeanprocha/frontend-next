@@ -13,6 +13,7 @@ import type {
   SimulationResponse,
 } from "@/types/api"
 
+/** Base URL pública do API Go (Vercel: definir `NEXT_PUBLIC_API_URL` = URL do Railway). */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
 /** Erro de API com campos opcionais alinhados a `ErrorResponse` do backend Go (`request_id` para suporte). */
@@ -316,6 +317,28 @@ export async function getSimulationRecord(
   if (!res.ok) {
     const raw = await res.json().catch(() => ({ error: res.statusText }))
     throwApiFailure(res, raw, "Erro ao carregar simulação")
+  }
+  return res.json()
+}
+
+/**
+ * URL do GET público: no browser usa o proxy same-origin do Next (evita 404
+ * quando a env aponta para :3000); no servidor, chama o motor directamente.
+ */
+function resolvePublicSimulationRecordUrl(id: string): string {
+  const eid = encodeURIComponent(id)
+  if (typeof globalThis !== "undefined" && globalThis.location?.origin) {
+    return `${globalThis.location.origin}/api/public/simulation-records/${eid}`
+  }
+  return `${API_BASE}/public/simulation-records/${eid}`
+}
+
+/** Leitura pública do dossié (sem JWT; o UUID de simulação é o segredo de partilha). */
+export async function getPublicSimulationRecord(id: string): Promise<SimulationRecordDetailResponse> {
+  const res = await fetch(resolvePublicSimulationRecordUrl(id), { cache: "no-store" })
+  if (!res.ok) {
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiFailure(res, raw, "Erro ao carregar dossié")
   }
   return res.json()
 }

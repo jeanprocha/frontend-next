@@ -102,6 +102,8 @@ export interface VerdictThesisPanelProps {
    * Suprimido em Board-Ready para não poluir o relatório oficial.
    */
   isRecalculating?: boolean
+  /** Números ainda não actualizados após override (ex.: debounce do POST). */
+  pendingSimulationSync?: boolean
   className?: string
 }
 
@@ -115,9 +117,11 @@ export function VerdictThesisPanel({
   presentationMode = false,
   thesisIsStale = false,
   isRecalculating = false,
+  pendingSimulationSync = false,
   className,
 }: VerdictThesisPanelProps) {
   const hasText = Boolean(markdown?.trim())
+  const syncVisualActive = isRecalculating || pendingSimulationSync
   const parsedScore = parseConfidenceScore01(scoreRaw ?? null)
   const parsedCoverage =
     evidenceCoverageRaw != null && Number.isFinite(evidenceCoverageRaw)
@@ -174,6 +178,7 @@ export function VerdictThesisPanel({
           "text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground",
           presentationMode &&
             "font-board-report normal-case text-sm tracking-normal font-semibold text-foreground",
+          "tribia-print-narrative-serif",
         )}
       >
         Parecer executivo
@@ -197,7 +202,7 @@ export function VerdictThesisPanel({
       {/* ── Estado: texto disponível ────────────────────────────────────────── */}
       {!pending && hasText && (
         <div
-          aria-busy={isRecalculating}
+          aria-busy={syncVisualActive}
           className={cn(
             // Tipografia de Parecer Executivo — peso de documento oficial.
             // Operacional: Geist (padrão); Board-Ready: font-board-report (Serif).
@@ -205,12 +210,13 @@ export function VerdictThesisPanel({
             "[&_p]:mb-3 [&_p:last-child]:mb-0",
             "[&_strong]:font-semibold",
             "[&_em]:italic",
+            "tribia-print-narrative-serif",
             presentationMode
               ? "font-board-report"
               : "font-sans",
-            // Ambient dim durante recálculo: o texto não muda mas sinaliza dependência
-            // temporal com os números do HeroCard ao lado. Suprimido em Board-Ready.
-            isRecalculating && "opacity-40 board-ready:opacity-100",
+            // Ambient dim: recálculo em curso ou simulação ainda não sincronizada.
+            // Suprimido em Board-Ready.
+            syncVisualActive && "opacity-40 board-ready:opacity-100",
           )}
         >
           <ReactMarkdown
@@ -228,6 +234,7 @@ export function VerdictThesisPanel({
           className={cn(
             "mt-3 text-sm leading-relaxed text-muted-foreground",
             presentationMode && "font-board-report",
+            "tribia-print-narrative-serif",
           )}
         >
           {markdown === null ? FALLBACK_UNAVAILABLE : FALLBACK_EMPTY}
@@ -243,7 +250,18 @@ export function VerdictThesisPanel({
        * carnavalesco (system.md "whisper-quiet"; tribia_core_rules §4 "Honestidade").
        * Board-Ready / print: suprimida para não poluir o relatório oficial.
        */}
-      {!pending && hasText && thesisIsStale && (
+      {!pending && hasText && syncVisualActive && (
+        <p
+          className="mt-2 text-[11px] leading-snug text-amber-800/90 dark:text-amber-200/80 board-ready:hidden print:hidden"
+          role="status"
+        >
+          {isRecalculating
+            ? "A sincronizar os números com o motor Go…"
+            : "Tese a sincronizar com os números — a simulação ainda reflecte a última decisão de classificação."}
+        </p>
+      )}
+
+      {!pending && hasText && thesisIsStale && !syncVisualActive && (
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground/70 board-ready:hidden print:hidden">
           Fundamentação baseada na simulação original da IA · os números acima
           reflectem os overrides do consultor

@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google"
 import { ClerkProvider } from "@clerk/nextjs"
-import { ShellContainer } from "@/components/shell/shell-container"
-import { TribiaTopNav } from "@/components/shell/tribia-top-nav"
+import { AppChromeShell } from "@/components/shell/app-chrome-shell"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Providers } from "@/components/providers"
 import "./globals.css"
@@ -43,14 +42,7 @@ export default function RootLayout({
         <body className="min-h-full flex flex-col bg-background text-foreground">
           <Providers>
             <TooltipProvider>
-              {/* ── Navbar fixa (dentro de Providers: PLG meter usa React Query) ── */}
-              <header className="fixed inset-x-0 top-0 z-50 h-14 border-b bg-background/80 backdrop-blur-sm print:hidden">
-                <ShellContainer className="flex h-full min-h-0 items-center gap-2">
-                  <TribiaTopNav />
-                </ShellContainer>
-              </header>
-
-              <div className="pt-14 print:pt-0 flex flex-col flex-1">{children}</div>
+              <AppChromeShell>{children}</AppChromeShell>
             </TooltipProvider>
           </Providers>
         </body>
