@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+// eslint-disable-next-line no-restricted-imports -- herança FE-0: lib→components/tax; resolver na FE-2
 import { TaxTerm } from "@/components/tax/tax-term"
 import { TAX_GLOSSARY, type TaxGlossaryTerm } from "@/constants/tax-glossary"
 

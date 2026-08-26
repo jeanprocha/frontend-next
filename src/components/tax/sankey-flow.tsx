@@ -4,7 +4,7 @@ import dynamic from "next/dynamic"
 import { useMemo } from "react"
 import type { SankeyLinkDatum, SankeyNodeDatum } from "@nivo/sankey"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import {
   buildCreditFlowSankey,
   SANKEY_NODE_LABELS,

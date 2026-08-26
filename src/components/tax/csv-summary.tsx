@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import type { ClassificationItem, FormExpense } from "@/types/api"
 
 interface CsvSummaryProps {

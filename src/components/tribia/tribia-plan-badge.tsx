@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 import type { TribiaPlgTier } from "@/lib/tribia-plg-flags"
 import { cn } from "@/lib/utils"

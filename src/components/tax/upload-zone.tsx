@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Papa from "papaparse"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { classifyBatch } from "@/lib/api"

@@ -1,8 +1,8 @@
 "use client"
 
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useQuery } from "@tanstack/react-query"
-import { fetchPlgQuota } from "@/lib/api"
+import { fetchPlgQuota, queryKeys } from "@/lib/api"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 
 export function usePlgQuota() {
@@ -10,7 +10,7 @@ export function usePlgQuota() {
   const tier = useTribiaPlgTier()
 
   return useQuery({
-    queryKey: ["plg-quota", userId, tier],
+    queryKey: queryKeys.plgQuota.forUser(userId, tier),
     enabled: Boolean(isLoaded && userId),
     staleTime: 30_000,
     queryFn: async () => {

@@ -8,7 +8,7 @@ import { ConfidenceGauge } from "@/components/tax/confidence-gauge"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import {
   confidenceTierFromScore01,
   confidenceTierShortLabel,

@@ -3,8 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth, SignInButton, UserButton } from "@clerk/nextjs"
+import { useAuth, SignInButton, UserButton } from "@/lib/auth-client"
 import { Menu } from "lucide-react"
+// eslint-disable-next-line no-restricted-imports -- herança FE-0: shell→components/tax; resolver na FE-2
 import { LegalVersionIndicator } from "@/components/tax/legal-version-indicator"
 import { PlgLimitMeter } from "@/components/tribia/plg-limit-meter"
 import { TribiaPlanBadge } from "@/components/tribia/tribia-plan-badge"

@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import {
   formatRegulatoryFactorDisplay,
   formatRegulatoryFactorPair,

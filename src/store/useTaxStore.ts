@@ -1,12 +1,10 @@
 import { create } from "zustand"
 import type {
   AiMetadata,
+  ClassificationItem,
   CompanyTemplate,
-  ConsultantClassificationOverride,
   FormService,
   FormExpense,
-  ClassificationItem,
-  SimulationRecordDetailResponse,
   SimulationResponse,
   StrategyTag,
 } from "@/types/api"
@@ -18,6 +16,11 @@ import { findNormalizedPatternRuneSpan } from "@/lib/context-rune-span"
 export const PRIVACY_TRUST_BANNER_DISMISSED_KEY = "tribia-privacy-banner-dismissed"
 
 // ─── Tipos internos do store ─────────────────────────────────────────────────
+//
+// PersistedResults/ResultMeta continuam definidos aqui mesmo após o estado de
+// pipeline (results, overrides, pendingSimulationSync…) ter migrado para
+// features/simulation/machine/ (FE-1) — 20+ arquivos importam esses tipos
+// (type-only); mover o TIPO em si é reorganização de FE-2, não desta fase.
 
 export interface ResultMeta {
   createdAt: string
@@ -68,7 +71,6 @@ interface TaxState {
   imobiliarioRedutorAjusteBrl: string
   services: FormService[]
   expenses: FormExpense[]
-  results: PersistedResults | null
   /**
    * Modo apresentação Board-Ready. Valor inicial sempre `false` (SSR-safe).
    * A hidratação a partir de `sessionStorage` é feita apenas no cliente, em
@@ -76,14 +78,6 @@ interface TaxState {
    */
   presentationMode: boolean
   setPresentationMode: (v: boolean) => void
-  /**
-   * Par A/B vindo do histórico: o dashboard consome uma vez e limpa.
-   * baseline = referência A; current = cenário B (hidrata formulário + resultados).
-   */
-  pendingHistoryComparison: {
-    baseline: SimulationRecordDetailResponse
-    current: SimulationRecordDetailResponse
-  } | null
   /** Mensagem após simulação quando a API gravou novas strategy_tags (chips). */
   strategyTagsDiscoveryMessage: string | null
   /** Padrões normalizados para realçar chips recém-inseridos na sessão. */
@@ -95,13 +89,6 @@ interface TaxState {
   setImobiliarioRedutorAjusteBrl: (v: string) => void
   setServices: (services: FormService[]) => void
   setExpenses: (expenses: FormExpense[]) => void
-  setResults: (r: PersistedResults | null) => void
-  setPendingHistoryComparison: (
-    p: {
-      baseline: SimulationRecordDetailResponse
-      current: SimulationRecordDetailResponse
-    } | null,
-  ) => void
   setStrategyTagsDiscoveryMessage: (msg: string | null) => void
   appendStrategyTagHighlightPatterns: (patterns: string[]) => void
   clearStrategyTagsDiscoveryUi: () => void
@@ -117,45 +104,15 @@ interface TaxState {
   /** Raio-X: matched_span da linha, sem abrir o sheet (Cédula «Ver lei» na tabela). */
   setContextHighlightFromClassification: (c: ClassificationItem | null) => void
   closeAnalystBriefing: () => void
+  /**
+   * Preenche contexto e serviços a partir de um template. `templateApplyTick`
+   * é o único canal store→máquina (FE-1): features/simulation/machine
+   * assina este contador via subscribe() e despacha RESULTS_CLEARED quando
+   * ele muda — o template é aplicado a partir de components/ (CommandMenu),
+   * que não pode importar a feature (lint de fronteira).
+   */
   applyCompanyTemplate: (company: CompanyTemplate) => void
-  reset: () => void
-
-  // ── 3.4.1 / 3.4.2 Override manual + recálculo reactivo ──────────────────
-  /**
-   * Verdadeiro quando o conjunto de overrides não foi ainda reflectido no
-   * `simulation` actual. Limpo após recálculo bem-sucedido via simulate-only.
-   */
-  pendingSimulationSync: boolean
-  /**
-   * Contador monotónico incrementado por cada apply/remove de override.
-   * A RecalcBridge observa este valor (useEffect dep) para disparar o debounce
-   * sem reagir a re-renders que não envolvam mudança real de classificação.
-   * Nunca decresce — só cresce durante a sessão.
-   */
-  overrideRecalcTick: number
-  /**
-   * Aplica um override ao ClassificationItem identificado por clientId.
-   * Merge imutável — nunca altera is_eligible/regime_type originais da IA.
-   * Após aplicar, marca pendingSimulationSync = true e incrementa overrideRecalcTick.
-   */
-  applyExpenseClassificationOverride: (
-    clientId: string,
-    override: ConsultantClassificationOverride,
-  ) => void
-  /**
-   * Remove override de uma linha (restaura sugestão IA).
-   * Sempre marca pendingSimulationSync = true — o motor Go deve reflectir
-   * o regresso à sugestão IA tanto quanto o avanço para override manual.
-   * Incrementa overrideRecalcTick para disparar a RecalcBridge.
-   */
-  removeExpenseClassificationOverride: (clientId: string) => void
-  /**
-   * Remove todos os `consultant_override` das classificações (mesa de operações)
-   * e solicita recálculo — alinhar a simulação às sugestões originais da IA.
-   */
-  clearAllExpenseClassificationOverrides: () => void
-  /** Chamado pelo hook de recálculo após POST /simulations bem-sucedido. */
-  markSimulationSynced: (newSimulation: SimulationResponse) => void
+  templateApplyTick: number
 }
 
 // ─── Valores padrão ───────────────────────────────────────────────────────────
@@ -168,12 +125,7 @@ const DEFAULTS = {
   imobiliarioRedutorAjusteBrl: "",
   services: [] as FormService[],
   expenses: [] as FormExpense[],
-  results: null as PersistedResults | null,
   presentationMode: false,
-  pendingHistoryComparison: null as {
-    baseline: SimulationRecordDetailResponse
-    current: SimulationRecordDetailResponse
-  } | null,
   strategyTagsDiscoveryMessage: null as string | null,
   strategyTagHighlightPatterns: [] as string[],
   analystBriefingOpen: false,
@@ -181,8 +133,7 @@ const DEFAULTS = {
   analystBriefingTag: null as StrategyTag | null,
   analystBriefingAiMeta: null as AiMetadata | null,
   contextHighlightRuneRange: null as { start: number; end: number } | null,
-  pendingSimulationSync: false,
-  overrideRecalcTick: 0,
+  templateApplyTick: 0,
 }
 
 // ─── Store (sem persistência — estado vive apenas enquanto a aba está aberta) ──
@@ -196,9 +147,7 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
   setImobiliarioRedutorAjusteBrl: (imobiliarioRedutorAjusteBrl) => set({ imobiliarioRedutorAjusteBrl }),
   setServices: (services) => set({ services }),
   setExpenses: (expenses) => set({ expenses }),
-  setResults: (results) => set({ results }),
   setPresentationMode: (presentationMode) => set({ presentationMode }),
-  setPendingHistoryComparison: (pendingHistoryComparison) => set({ pendingHistoryComparison }),
 
   setStrategyTagsDiscoveryMessage: (strategyTagsDiscoveryMessage) => set({ strategyTagsDiscoveryMessage }),
   appendStrategyTagHighlightPatterns: (patterns) =>
@@ -255,104 +204,19 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
 
   // Preenche contexto e serviços a partir de um template, forçando nova simulação.
   applyCompanyTemplate: (company) =>
-    set({
+    set((s) => ({
       companyContext: company.tax_context ?? "",
-      services: (company.default_services ?? []).map((s) => ({
+      services: (company.default_services ?? []).map((sv) => ({
         id: crypto.randomUUID(),
-        description: s.description ?? "",
-        amount: s.amount ?? "",
-        iss_rate: s.iss_rate ?? "0.05",
+        description: sv.description ?? "",
+        amount: sv.amount ?? "",
+        iss_rate: sv.iss_rate ?? "0.05",
       })),
-      results: null,
+      templateApplyTick: s.templateApplyTick + 1,
       analystBriefingOpen: false,
       analystBriefingKind: null,
       analystBriefingTag: null,
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: null,
-    }),
-
-  reset: () =>
-    set({
-      ...DEFAULTS,
-      presentationMode: false,
-      pendingHistoryComparison: null,
-      strategyTagsDiscoveryMessage: null,
-      strategyTagHighlightPatterns: [],
-      analystBriefingOpen: false,
-      analystBriefingKind: null,
-      analystBriefingTag: null,
-      analystBriefingAiMeta: null,
-      contextHighlightRuneRange: null,
-      pendingSimulationSync: false,
-      overrideRecalcTick: 0,
-    }),
-
-  // ── 3.4.1 / 3.4.2 Override manual + trigger reactivo ────────────────────
-  //
-  // Merge imutável: cada linha alterada recebe um novo objecto; as restantes
-  // mantêm a mesma referência. O motor Go lê a decisão humana via
-  // getEffectiveExpenseSimulationFields() em use-simulation-recalc (POST simulate).
-
-  applyExpenseClassificationOverride: (clientId, override) => {
-    const { results, overrideRecalcTick } = get()
-    if (!results || results.mode !== "form") return
-    const updated = results.classifications.map((c) => {
-      const match =
-        (c.client_id && c.client_id === clientId) ||
-        (!c.client_id && c.description === clientId)
-      if (!match) return c
-      return { ...c, consultant_override: override }
-    })
-    set({
-      results: { ...results, classifications: updated },
-      pendingSimulationSync: true,
-      overrideRecalcTick: overrideRecalcTick + 1,
-    })
-  },
-
-  removeExpenseClassificationOverride: (clientId) => {
-    const { results, overrideRecalcTick } = get()
-    if (!results || results.mode !== "form") return
-    const updated = results.classifications.map((c) => {
-      const match =
-        (c.client_id && c.client_id === clientId) ||
-        (!c.client_id && c.description === clientId)
-      if (!match) return c
-      const { consultant_override: _removed, ...rest } = c
-      return rest as ClassificationItem
-    })
-    // Sempre pendente após remoção: o motor Go deve reflectir o regresso à
-    // sugestão IA — não é apenas "sem override = sem diferença".
-    set({
-      results: { ...results, classifications: updated },
-      pendingSimulationSync: true,
-      overrideRecalcTick: overrideRecalcTick + 1,
-    })
-  },
-
-  clearAllExpenseClassificationOverrides: () => {
-    const { results, overrideRecalcTick } = get()
-    if (!results || results.mode !== "form") return
-    const hasAny = results.classifications.some((c) => c.consultant_override)
-    if (!hasAny) return
-    const updated = results.classifications.map((c) => {
-      if (!c.consultant_override) return c
-      const { consultant_override: _removed, ...rest } = c
-      return rest as ClassificationItem
-    })
-    set({
-      results: { ...results, classifications: updated },
-      pendingSimulationSync: true,
-      overrideRecalcTick: overrideRecalcTick + 1,
-    })
-  },
-
-  markSimulationSynced: (newSimulation) => {
-    const { results } = get()
-    if (!results || results.mode !== "form") return
-    set({
-      results: { ...results, simulation: newSimulation },
-      pendingSimulationSync: false,
-    })
-  },
+    })),
 }))

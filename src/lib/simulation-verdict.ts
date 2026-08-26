@@ -1,4 +1,4 @@
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import { parseApiDecimal } from "@/lib/money-decimal"
 import type { SimulationResponse } from "@/types/api"
 

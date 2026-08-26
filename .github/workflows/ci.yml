@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      # Chave dummy BEM-FORMADA (base64 de "clerk.example.com$") só para o
+      # `next build` — o ClerkProvider precisa de uma publishable key com
+      # formato válido para a prerenderização; nenhuma rede é usada no build.
+      # O bypass E2E NÃO ajuda aqui de propósito: `next build` roda sempre
+      # com NODE_ENV=production, o que mata a flag por construção (ver
+      # src/lib/e2e-auth-bypass.ts) — este job valida o caminho real do Clerk.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      # webServer (playwright.config.ts) sobe `next dev` com o bypass de auth
+      # — 100% offline, page.route mocka o motor Go. Sem
+      # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY de propósito: se o bypass
+      # regredir, o smoke falha alto em vez de mascarar.
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

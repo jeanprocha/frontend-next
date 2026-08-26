@@ -2,7 +2,7 @@
 
 import { TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import { parseApiDecimal } from "@/lib/money-decimal"
 import { peakYearMaxDelta, peakYearMaxDestinationNet } from "@/lib/transition-series-peaks"
 import type { TransitionSeriesPoint } from "@/types/api"

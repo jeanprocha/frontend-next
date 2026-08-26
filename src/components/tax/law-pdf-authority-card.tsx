@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useTribiaPlanContext } from "@/components/tribia/tribia-plan-provider"
 import { usePdfLegislationProAccess } from "@/hooks/use-tribia-plg-tier"
 import { cn } from "@/lib/utils"

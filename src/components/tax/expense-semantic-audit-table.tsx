@@ -44,7 +44,7 @@ import {
 import { ExpenseSemanticConfidenceDot } from "@/components/tax/expense-semantic-confidence-dot"
 import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
 
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import { findCreditLeakForRow } from "@/lib/credit-leak-match"
 import {
   EXPENSE_OVERRIDE_OPTIONS,

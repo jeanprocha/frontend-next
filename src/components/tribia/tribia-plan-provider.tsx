@@ -6,7 +6,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react"
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@/lib/auth-client"
 import {
   type TribiaPlgTier,
   getPlgCapabilities,

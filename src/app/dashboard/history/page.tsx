@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowRightLeft, FileClock, Loader2, Search } from "lucide-react"
-import { formatBRL, getSimulationRecord, listSimulationRecords } from "@/lib/api"
+import { getSimulationRecord, listSimulationRecords, queryKeys } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { HistoryRecordPreviewTrigger } from "@/components/tax/history-record-preview-trigger"
@@ -21,6 +22,7 @@ import { shellPageClass } from "@/lib/shell-layout"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { PlgUpgradeDialog } from "@/components/tribia/plg-upgrade-dialog"
 import { useTaxStore } from "@/store/useTaxStore"
+import { hydrateSimulationResults, requestHistoryComparison } from "@/features/simulation"
 
 function formatDate(iso: string): string {
   try {
@@ -85,12 +87,10 @@ export default function HistoryPage() {
     setCompanyContext,
     setServices,
     setExpenses,
-    setResults: setFormResults,
-    setPendingHistoryComparison,
   } = useTaxStore()
 
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ["simulation-records", userId],
+    queryKey: queryKeys.simulationRecords.list(userId, 100),
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")
@@ -165,7 +165,7 @@ export default function HistoryPage() {
           amount: e.amount,
         })),
       )
-      setFormResults(
+      hydrateSimulationResults(
         simulationDetailToPersisted(d, {
           createdAt,
           companyContext: companyContext ?? "",
@@ -192,7 +192,7 @@ export default function HistoryPage() {
         getSimulationRecord(token, userId, selectedIds[0]),
         getSimulationRecord(token, userId, selectedIds[1]),
       ])
-      setPendingHistoryComparison({ baseline: a, current: b })
+      requestHistoryComparison(a, b)
       setSelectedIds([])
       router.push("/dashboard")
     } catch (e) {

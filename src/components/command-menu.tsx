@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -42,7 +42,7 @@ import {
   SHORTCUT_KEYS,
   simulateShortcutLabel,
 } from "@/constants/shortcuts"
-import { listCompanies } from "@/lib/api"
+import { listCompanies, queryKeys } from "@/lib/api"
 import { getDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { isApplePlatform } from "@/lib/platform"
 import { toggleColorTheme } from "@/lib/theme-preference"
@@ -78,7 +78,7 @@ export function CommandMenu() {
   }>({ armed: false, timer: null })
 
   const { data: companies } = useQuery({
-    queryKey: ["companies", userId, plgTier],
+    queryKey: queryKeys.companies.list(userId, plgTier),
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")

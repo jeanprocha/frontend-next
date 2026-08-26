@@ -31,6 +31,7 @@ export function SimulationPublicReportView({ id }: SimulationPublicReportViewPro
 
   useEffect(() => {
     let c = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- herança FE-0: dívida pré-existente (regra nova do eslint-config-next 16.2.2); resolver ao tocar este arquivo
     setLoading(true)
     setErr(null)
     getPublicSimulationRecord(id)

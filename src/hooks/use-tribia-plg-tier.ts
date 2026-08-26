@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- herança FE-0: hooks→components/tribia; resolver na FE-2
 import { useTribiaPlanContext } from "@/components/tribia/tribia-plan-provider"
 import type { TribiaPlgTier, TribiaPlgCapabilities } from "@/lib/tribia-plg-flags"
 

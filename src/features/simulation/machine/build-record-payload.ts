@@ -1,4 +1,9 @@
-import type { SimulationRecordCreatePayload } from "@/types/api"
+// Movido de src/lib/build-simulation-record-payload.ts (FE-1) — só a máquina
+// consome isto agora. Estendido com `discoveredTags`: o save inicial
+// (use-simulation.ts) incluía discovered_tags no snapshot; sem esse
+// parâmetro, unificar os três caminhos de persist (initial/recalc/dossier)
+// num só helper perderia esse dado.
+import type { SimulationRecordCreatePayload, StrategyTag } from "@/types/api"
 import type { CompanyRegimeOption, PersistedResults } from "@/store/useTaxStore"
 import { getEffectiveExpenseSimulationFields } from "@/lib/classification-effective"
 import type { FormExpense, FormService } from "@/types/api"
@@ -7,6 +12,8 @@ export interface BuildSimulationRecordPayloadOptions {
   reportBrand?: { logo_url?: string | null; org_name?: string | null } | null
   /** Mapear despesas como no POST inicial; false = lógica de recálculo (eff override). */
   useInitialExpenseEligibility?: boolean
+  /** Só o save inicial (pós-classificação) preenche isto. */
+  discoveredTags?: StrategyTag[]
 }
 
 /**
@@ -28,6 +35,7 @@ export function buildSimulationRecordCreatePayload(
   const {
     reportBrand,
     useInitialExpenseEligibility = true,
+    discoveredTags,
   } = opts ?? {}
   const sim = formResults.simulation
   const { classifications, service_classifications, ai_metadata: metaFromResults } = formResults
@@ -71,6 +79,7 @@ export function buildSimulationRecordCreatePayload(
       service_classifications: service_classifications,
       expense_classifications: classifications,
       ai_metadata: metaFromResults ?? undefined,
+      discovered_tags: discoveredTags && discoveredTags.length > 0 ? discoveredTags : undefined,
       report_brand: reportBrand?.logo_url || reportBrand?.org_name
         ? {
             logo_url: reportBrand?.logo_url ?? null,

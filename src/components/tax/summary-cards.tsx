@@ -17,7 +17,7 @@ import {
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { formatBRL, formatPct } from "@/lib/api"
+import { formatBRL, formatPct } from "@/lib/format-money"
 import { parseApiDecimal, parseApiDecimalForChart } from "@/lib/money-decimal"
 import type { SimulationResponse } from "@/types/api"
 
@@ -34,11 +34,13 @@ interface SummaryCardsProps {
 }
 
 // Tooltip customizado para exibir valores em BRL
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- herança FE-0: dívida pré-existente; recharts não expõe um tipo estreito para tooltip props aqui; resolver ao tocar este arquivo
 function BrlTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
     <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
       <p className="font-semibold mb-1">{label}</p>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- herança FE-0: dívida pré-existente; resolver ao tocar este arquivo */}
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.fill }}>
           {p.name}: {formatBRL(String(p.value))}

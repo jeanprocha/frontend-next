@@ -1,4 +1,4 @@
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import type { SimulationResponse } from "@/types/api"
 
 /** Tabela de auditoria da transição — visível só na impressão (Board-Ready). */

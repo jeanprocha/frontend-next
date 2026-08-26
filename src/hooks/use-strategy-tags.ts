@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { fetchStrategyTags } from "@/lib/api"
+import { fetchStrategyTags, queryKeys } from "@/lib/api"
 import { dedupeStrategyTagsByPattern, getFallbackStrategyTags } from "@/lib/strategy-tags-match"
 import type { StrategyTag } from "@/types/api"
 
@@ -13,7 +13,7 @@ export function useStrategyTags(): {
   isFetched: boolean
 } {
   const q = useQuery({
-    queryKey: ["strategy-tags"],
+    queryKey: queryKeys.strategyTags.all,
     queryFn: fetchStrategyTags,
     staleTime: 30 * 60 * 1000,
     retry: 1,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Building2, Plus, Receipt, Trash2, X } from "lucide-react"
 import {
@@ -10,6 +10,7 @@ import {
   deleteCompany,
   errorDetailsFromUnknown,
   listCompanies,
+  queryKeys,
 } from "@/lib/api"
 import { RequestIdSupportRow } from "@/components/ui/request-id-support"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
@@ -61,8 +62,8 @@ function NewCompanyForm({ onClose }: { onClose: () => void }) {
       return createCompany(token, userId, payload, plgTier)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["companies"] })
-      queryClient.invalidateQueries({ queryKey: ["plg-quota"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.plgQuota.all })
       onClose()
     },
   })
@@ -241,7 +242,7 @@ function CompanyCard({
       if (!token || !userId) throw new Error("Não autenticado")
       return deleteCompany(token, userId, company.id)
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["companies"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.companies.all }),
   })
 
   function handleDelete() {
@@ -317,7 +318,7 @@ export default function CompaniesPage() {
   const plgTierList = useTribiaPlgTier()
 
   const { data: companies, isPending, isError } = useQuery({
-    queryKey: ["companies", userId, plgTierList],
+    queryKey: queryKeys.companies.list(userId, plgTierList),
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")

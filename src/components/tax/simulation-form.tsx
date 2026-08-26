@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Building2, Plus } from "lucide-react"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
-import { listCompanies } from "@/lib/api"
+import { listCompanies, queryKeys } from "@/lib/api"
 import type { FormExpense, FormService } from "@/types/api"
 import { ContextHub } from "@/components/tax/context-hub"
 import { RegimeFollowUps } from "@/components/tax/regime-follow-ups"
@@ -70,6 +70,7 @@ function FormSkeleton() {
 export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- herança FE-0: dívida pré-existente (regra nova do eslint-config-next 16.2.2); resolver ao tocar este arquivo
     setHydrated(true)
   }, [])
 
@@ -86,7 +87,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
   const { userId, getToken } = useAuth()
   const plgTier = useTribiaPlgTier()
   const { data: companies, isPending: companiesLoading } = useQuery({
-    queryKey: ["companies", userId, plgTier],
+    queryKey: queryKeys.companies.list(userId, plgTier),
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatBRL } from "@/lib/api";
+import { formatBRL } from "@/lib/format-money";
 import { formatRegulatoryFactorDisplay } from "@/lib/format-regulatory-factor";
 import { parseApiDecimal } from "@/lib/money-decimal";
 import {

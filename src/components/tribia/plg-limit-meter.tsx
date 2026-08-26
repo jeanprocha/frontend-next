@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import { usePlgQuota } from "@/hooks/use-plg-quota"
 import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"

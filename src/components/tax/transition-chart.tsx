@@ -16,7 +16,7 @@ import {
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { formatBRL } from "@/lib/api"
+import { formatBRL } from "@/lib/format-money"
 import { TransitionSparkline } from "@/components/tax/transition-sparkline"
 import { parseApiDecimalForChart } from "@/lib/money-decimal"
 import { clampTransitionYear } from "@/lib/transition-focus"

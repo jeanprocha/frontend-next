@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { ExternalLink } from "lucide-react"
 import { useCallback, useState } from "react"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { useTribiaPlanContext } from "@/components/tribia/tribia-plan-provider"
 import { usePdfLegislationProAccess } from "@/hooks/use-tribia-plg-tier"

@@ -29,6 +29,7 @@ export function PrivacyTrustBanner({ plgTier, className }: PrivacyTrustBannerPro
     if (typeof window === "undefined") return
     try {
       if (localStorage.getItem(PRIVACY_TRUST_BANNER_DISMISSED_KEY) === "1") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- herança FE-0: dívida pré-existente (regra nova do eslint-config-next 16.2.2); resolver ao tocar este arquivo
         setDismissed(true)
       }
     } catch {
