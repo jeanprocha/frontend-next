@@ -69,7 +69,15 @@ src/
 
 Regra de dependência: `app → features → lib/components/types`. Feature não importa de outra feature — o que duas features compartilham desce para `lib/` ou vira contrato explícito.
 
-**Nota sobre `lib/`:** a lógica específica de feature migra **junto com a feature** (ex.: `transition-*` → `features/simulation/lib/`, `rag-*` e `classification-*` → `features/classification/lib/`, `history-hydrate` → `features/simulation`), levando os testes. O `lib/` final é pequeno e estável.
+**Nota sobre `lib/`:** a lógica específica de feature migra **junto com a feature**, levando os testes. O `lib/` final é pequeno e estável.
+
+**Atualização pós-FE-2:** a execução revelou que nem toda lógica "de feature" tem dono único — algumas peças são consumidas por 2+ features e por isso **ficam** em `lib/` (ou sobem a `components/shared/`) em vez de migrar, mesmo quando o nome sugere um domínio só. Cada caso foi decidido por consumidor real, não por nome do arquivo:
+- **Tipos-contrato entre camadas:** `lib/report-contract.ts` (o `ReportSection` da seção 6 — só pode importar `types/api` e tipos, nunca `features/report`, porque `features/simulation` e `features/classification` também o consomem), `lib/persisted-results.ts` (`PersistedResults`/`ResultMeta` — `lib/history-hydrate.ts`, base, precisa deles tanto quanto a máquina), `lib/company-regime.ts`, `lib/tribia-plg-flags.ts` (só tipos; a implementação de `getPlgCapabilities` é que vive em `features/plg/`).
+- **Lógica com consumidor cruzado report/classification/simulation:** `lib/confidence-tiers.ts`, `lib/rag-metadata.ts`, `lib/classification-effective.ts`, `lib/comparison-metrics.ts`, `lib/simulation-verdict.ts`, `lib/rag-hero-article-heuristic.ts`, `lib/legal-highlight-segments.ts`, `lib/law-pdf-external-url.ts`, `lib/law-article-from-classification.ts`, `lib/aggregate-solidity-diagnostic.ts`, `lib/history-hydrate.ts`, `lib/session-labels.ts`, os 5 `lib/transition-*`, `lib/fiscal-law-changelog.ts`.
+- **Presos por consumidor fora de `features/` (shell, store):** `lib/simulation-line-helpers.ts` (`CommandMenu`), `lib/context-rune-span.ts` (`useTaxStore`), `lib/strategy-tags-match.ts`.
+- **`components/shared/` ganhou o mesmo tratamento** para componentes React na mesma situação: `solidity-aggregate-diagnostic`/`solidity-traffic-light` (usados por `features/report` e teriam criado aresta report→classification), e toda a cadeia da Cédula de auditoria — `expense-table`, `expense-evidence-columns`, `line-evidence-popover-body`, `classification-briefing-content`, `law-article-integral`, `ray-x-anchor-callout` (usados por `features/classification` **e** por `features/simulation` via `dashboard-csv-view.tsx`).
+
+Regra geral aplicada nas PRs 2d–2f: antes de mover um arquivo para dentro de uma feature, `grep` de todos os importadores reais; se algum vive fora da feature-alvo (e fora de `app/`), o arquivo fica em `lib/`/`components/shared/` em vez de migrar — o nome do arquivo não é evidência do domínio.
 
 ## 4. Camada de dados
 
@@ -95,19 +103,41 @@ idle → importing → classifying → calculating → enriching → saved
 
 ## 6. Report engine (dossiê como composição)
 
+Implementado na FE-2 (PR 2c) em `lib/report-contract.ts` (contrato) +
+`features/report/report-renderer.tsx` (renderer). Forma real — mais rica que
+o esboço original desta seção, com 3 modos de render e 4 valores de print
+(não 3), porque a exploração encontrou 3 mecanismos paralelos coexistindo
+(prop `presentationMode`, variant CSS `board-ready:*`, gate de montagem por
+aba) que o registry unificou:
+
 ```ts
-type ReportSection = {
+type ReportRenderMode = "screen-tabs" | "board" | "public-linear"
+// screen-tabs: dashboard logado fora do Board-Ready — monta só a secção da
+// aba activa. board: dashboard logado em modo apresentação — monta tudo.
+// public-linear: /report/[id] — monta tudo, sem tabs.
+
+type ReportPrintMode = "always" | "board-only" | "print-only" | "never"
+// always: participa do fluxo normal de impressão. board-only: só monta em
+// mode==="board", CSS `board-ready:* print:hidden` (watermark fica fora do
+// papel por decisão deliberada, não bug). print-only: sempre montada, CSS
+// `hidden print:*`. never: chrome interactivo, nunca aparece na impressão.
+
+type ReportScreenTab = "veredito" | "cronograma" | "dossie" | "mesa"
+
+interface ReportSection {
   id: string
   title: string
-  capability?: Capability        // gating PLG declarativo
-  Component: FC<{ record: SimulationRecord }>
-  print?: 'always' | 'board-only' | 'never'
+  capability?: CapabilityName    // gating PLG declarativo — secção não monta se false
+  print: ReportPrintMode
+  screenTab?: ReportScreenTab    // ausente = chrome (masthead/rodapé), sem aba própria
+  Component: ComponentType<ReportSectionProps>
 }
 ```
 
-- O dossiê (`/report/[id]` e a visão logada) itera um **registry de seções**; board-ready e impressão viram *modos de render*, não componentes paralelos.
+- O dossiê (`/report/[id]` e a visão logada) itera um **registry de seções**; board-ready e impressão viram *modos de render*, não componentes paralelos. As duas páginas (`app/dashboard/page.tsx`, `app/report/[id]/public-report-page.tsx`) compõem a lista a partir de `features/report` + `features/classification` (`classificationReportSections`) — nenhuma feature importa a outra; só `app/` cruza.
+- `dashboard-results-view.tsx` (features/simulation) não importa `features/report`: recebe um `renderDossier` *render-prop* injectado por `app/dashboard/page.tsx`, que constrói o `ReportRenderInput` e chama `<ReportRenderer sections={...} />`. Mesma razão do lado público: `app/report/[id]/page.tsx` (Server Component, só para `generateMetadata`) delega a um wrapper `"use client"` — passar a lista de secções (que carrega referências de componente) como prop de Server para Client Component falha em runtime ("Functions cannot be passed directly to Client Components"), erro que só apareceu correndo o servidor (E2E), não no `next build`.
 - Fases novas adicionam seções sem tocar no shell do dossiê: memória de cálculo (W2), impacto no caixa (W3), plano de ação (W4), fornecedores (W5), selo de validação RFB (W7), data-base do corpus (W1).
-- Registros antigos continuam abrindo: o registry recebe o record já enriquecido pelo backend (`enrichTransitionSeriesLegacy`); seção sem dados no snapshot não renderiza — nunca quebra.
+- Registros antigos continuam abrindo: o registry recebe o record já enriquecido pelo backend (`enrichTransitionSeriesLegacy`); seção sem dados no snapshot não renderiza — nunca quebra (coberto por smoke test com registo mínimo/antigo em `features/report/report-renderer.test.tsx` e `features/classification/sections/sections.test.tsx`).
 
 ## 7. Importers plugáveis
 
@@ -129,6 +159,8 @@ type Importer = {
   - `useCapability('compareAB')` para lógica.
 - Migram para cá: os ~13 flags de `tribia-plg-flags.ts`, `components/tribia/` (meter, dialog, badge, provider) e os hooks `use-plg-quota`/`use-tribia-plg-tier`.
 - Erros 403-com-código do backend continuam virando diálogo de upgrade, mas num único interceptor do client HTTP (`lib/http.ts`).
+
+**Estado pós-FE-2 (PR 2b):** o interceptor 403→diálogo descrito acima **não existe** — nem antes nem depois da FE-2. A exploração confirmou que nenhum código lê `ApiError.code`; os diálogos de upgrade (`PlgUpgradeDialog`) são hoje disparados manualmente pelos componentes (ex.: ao clicar "Comparar cenário" sem `compareAB`), não por um interceptor central de `lib/http.ts` (que também não existe — ver seção 4, ainda não quebrado em clients por domínio). Registado como trabalho futuro, não escopo da FE-2: a fase entregou `features/plg/` (provider, `useCapability`, `CapabilityProvider`, `RequireCapability`) e a migração dos ~10 `if`s crus de tier + 2 flags mortas religadas (`historyRichPreview`, `legalOpinionTab`), mas não tocou a camada HTTP.
 
 ## 9. Rotas e navegação (preparando W9)
 
@@ -203,16 +235,40 @@ Antes de mover qualquer linha.
 - O atalho de teclado `⌘Enter` do `CommandMenu` dispara a simulação sem checar se o dashboard está montado/na rota certa.
 - Um override aplicado enquanto um recálculo já está em voo (`recalc: "in-flight"`) não reagenda o debounce — fica pendente até o próximo override ou até o recálculo em curso terminar.
 
-### FE-2 — Modularização por domínio
+### FE-2 — Modularização por domínio ✅ concluída
 
 | Entrega | Detalhe |
 |---|---|
-| `features/` populado | moves por domínio na ordem `classification` → `report` → `simulation`; a `lib/` específica migra junto com os testes (nota da seção 3) |
+| `features/` populado | moves por domínio, ordem real: limpeza/promoções → `plg` → registry do dossiê → `classification` → `report` → `simulation` (6 PRs, abaixo) |
 | `features/plg` | `RequireCapability` + `useCapability`; flags, `components/tribia` e hooks de plano migram; `if`s espalhados morrem |
 | Registry de seções do dossiê | board-ready e print viram modos de render (seção 6) |
 
-**Gate:** `components/tax/` vazio (contagem = 0); dossiê renderiza 100% via registry; nenhum `if` de plano fora de `features/plg`.
+**Gate (verificado):** `test ! -d src/components/tax` ✓; `grep` de comparação literal de tier fora de `features/plg/` vazio ✓; `grep` de `eslint-disable-next-line no-restricted-imports` em todo o `src/` vazio ✓ (o último, lib→components/tax em `tax-terms-parser.tsx`, resolvido na PR 2e); dossiê 100% via registry (as duas páginas só compõem listas de `ReportSection`) ✓; lint/typecheck/testes/build/E2E verdes a cada PR.
 **Depende de:** FE-1. **Destrava:** W2 e W4 do plano de evolução (memória de cálculo e plano de ação entram como seções).
+
+**As 6 PRs executadas** (cada uma: `git mv` + imports, ou comportamento — nunca as duas; verde antes do commit):
+
+1. **2a — Limpeza e promoções.** Órfãos e wrapper morto deletados; CSS morto removido; 8 folhas partilhadas promovidas a `components/marketing|legal|shared/`; dead code em `audit-confidence-tabs.tsx` (11 imports, 2 props, 1 const, tipo duplicado); `CompanyRegimeOption`/`isImobiliarioRegime` → `lib/company-regime.ts`.
+2. **2b — `features/plg`.** Neutro por tabela-verdade: `getPlgCapabilities` sai de `lib/tribia-plg-flags.ts` (que fica só com tipos) para `features/plg/capabilities.ts`; `useCapability`/`CapabilityProvider`/`RequireCapability` novos; 2 flags novas (`pdfLegislationPro`, `privacyWorkspace`); ~10 `if`s crus de tier convertidos, religando `historyRichPreview` e `legalOpinionTab` (mortas por prop nunca passada). Lint ganha a única excepção transversal: negação `!@/features/plg` nos groups de `components/`, `shell/`, `hooks/`, `features/` — nenhuma outra feature ganha essa excepção.
+3. **2c — Registry do dossiê (a única PR de comportamento).** `simulation-results-top-down.tsx`, `simulation-public-report-view.tsx` e `audit-confidence-tabs.tsx` (1.343 linhas ao todo, 3 caminhos duplicados) dissolvidos em 13 secções + o renderer da seção 6. As 3 lacunas do PDF público preenchidas (masthead, tabela de transição, rodapé legal — antes só existiam no dashboard logado). Painel "Anatomia do resultado" (`SummaryCards`), antes inalcançável em screen-tabs (a aba externa nunca chamava "dados"), passa a viver na aba Cronograma — corrigido, não só movido, e por isso ganhou gate de capacidade `transitionFocusYear` (antes só afinava um sub-prop). `ComparisonVerdictCard`: `onEsteiraTabChange` passa a navegar de facto para a aba Dossiê (antes, no-op silencioso).
+4. **2d — Move `classification`.** 6 componentes + 4 secções (as "donas classification" da PR 2c) + 3 lib. Descoberta durante o mapeamento de consumidores: `ExpenseTable` e toda a cadeia da Cédula de auditoria são usadas também por `features/simulation` (`dashboard-csv-view.tsx`) — promovidas a `components/shared/` em vez de `features/classification/components/` (ver seção 3).
+5. **2e — Move `report`.** 21 componentes + 5 lib. Mesma descoberta: `board-audit-certificate`/`board-legal-coverage-shield` são "Board" no nome mas RAG/auditoria no domínio real (única consumidora é uma secção classification) → foram para lá; `board-ready-presentation-cta`/`board-ready-tease-sheet`/`print-button` são chrome do dashboard ao vivo, não secções do registry → foram para `features/simulation/components/`.
+6. **2f — Move `simulation` + tipos + gate final.** Últimos 19 componentes + 2 lib + 3 hooks. `PersistedResults`/`ResultMeta` saem do `useTaxStore` (que fica só com "estado de UI global") para `lib/persisted-results.ts` — não para `features/simulation/machine/` como o plano original previa, porque `lib/history-hydrate.ts` também precisa deles e não pode depender de `features/` (ver seção 3). `lib/download-simulation-memory-csv.ts` removido: ficou 100% órfão desde a dissolução do Dialog "memória de cálculo" na PR 2c. `src/components/tax/` deixa de existir.
+
+**Padrão recorrente nas PRs 2d–2f:** a lista de arquivos do plano original agrupava por *nome* ("board-\*", "print-\*"); o `grep` de consumidores reais, feito antes de cada `git mv`, revelou que o nome nem sempre coincide com o domínio real de uso. Nenhuma dessas correções mudou comportamento — só o destino do arquivo.
+
+**Mudanças deliberadas de comportamento** (só na PR 2c, a única que não é move puro):
+1. As 3 lacunas do PDF público (masthead, tabela de transição, rodapé legal) — declarado acima.
+2. Painel Anatomia deixa de ser inalcançável em screen-tabs — declarado acima.
+3. `ComparisonVerdictCard.onEsteiraTabChange` passa a navegar de facto — declarado acima.
+4. `cobertura-legal-auditoria` (BoardLegalCoverageShield + BoardAuditCertificate) ganha gate `boardReadyUnlocked` — antes renderizava para qualquer tier com `confidence_score` presente.
+
+**Preservados declarados** (identificados na exploração, decisão consciente de não corrigir nesta fase — candidatos a issue própria quando o arquivo for tocado de novo):
+- Print fora do Board-Ready continua imprimindo só a aba activa do screen-tabs (limitação conhecida do modo `screen-tabs` do renderer, seção 6) — imprimir o dossiê completo sem entrar em Board-Ready exige montar todas as secções fora desse modo, fora do escopo da FE-2.
+- Watermark Free (`BoardReadyWatermark`) é deliberadamente `print:hidden` — não aparece no papel, só na tela em Board-Ready. Comentário do componente, que dizia o oposto, corrigido na PR 2a.
+- Upsell duplo: `PlgUpgradeDialog` (features/plg) e o `TeaseSheet` do Board-Ready cobrem o mesmo caso de uso por dois caminhos distintos; a feature `board_ready` de `PlgUpgradeFeature` nunca é usada; existem 3 links directos a `/#planos` fora do fluxo de diálogo. Registado, não resolvido.
+- O Dialog "Certificado de memória de cálculo" (`TransitionAuditPanelBody` num `<Dialog>`, W2) nunca tinha botão que o abrisse — dead-in-practice desde antes da FE-2. Não recriado na dissolução da PR 2c (a máquina do dossiê agora é o registry; reintroduzir UI morta contradiria o próprio objectivo da fase). Fica para quando W2 (memória de cálculo) entrar como secção real.
+- `isLoaded` do `TribiaPlanProvider` (features/plg) nunca é lido por nenhum consumidor — o fallback sem provider já cobre o caso "ainda a carregar". Registado, não removido (é parte do contrato do provider, não dead code isolado).
 
 ### FE-3 — Extensibilidade: as portas dos módulos novos
 
@@ -264,7 +320,7 @@ Antes de mover qualquer linha.
 |---|---|---|
 | Máquina: à mão vs. XState | Reducer + union discriminada + registry de passos, sem dependência nova | FE-1, no PR da máquina |
 | Typegen a partir do OpenAPI | Adotar quando o backend cobrir as ~17 rotas no spec; até lá, espelho manual | Quando W10/backend ampliar o spec |
-| `/report/[id]` como Server Component | Avaliar: página pública, dados via GET público, ganho real de TTFB/print; exige conferir RSC no Next 16 | FE-2, ao migrar o report |
+| `/report/[id]` como Server Component | **Fechada na FE-2 (PR 2c): não adotado.** Decisão prévia do usuário — quebraria o mock de rede do E2E (`mockEngine`, que intercepta `fetch` no cliente) e o Clerk já carrega via `app/layout.tsx` raiz, então não há TTFB a ganhar isolando esta rota. Motivo técnico adicional descoberto na implementação: um Server Component não pode passar `ReportSection[]` (objetos com `Component: ComponentType`, i.e. referências de função) como prop para um Client Component — RSC lança em runtime ("Functions cannot be passed directly to Client Components"), erro que `next build` **não pega** (só análise estática + prerender de rotas estáticas; só apareceu sob Playwright, com o servidor rodando de verdade). Por isso `app/report/[id]/page.tsx` ficou Server Component só para `generateMetadata` + `notFound()`, delegando toda a composição de seções a `public-report-page.tsx` ("use client"), cruzando o boundary só com o `id` (string). | — |
 | `features/history` própria vs. dentro de `simulation` | Dentro de `simulation` (é a lista dos mesmos registros); separar só se ganhar comportamento próprio | FE-2, no move |
 
 ## 15. Definition of done (por módulo novo)
