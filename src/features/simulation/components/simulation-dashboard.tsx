@@ -5,15 +5,13 @@
 // comparação A/B, command bridge) e composição das 3 fases do pipeline
 // (input | loading | results). A árvore de resultados form e a vista CSV
 // vivem em dashboard-results-view.tsx / dashboard-csv-view.tsx.
-import { useEffect, useState, useCallback, useMemo, type CSSProperties } from "react"
+import { useEffect, useState, useCallback, useMemo, type CSSProperties, type ReactNode } from "react"
 import { useAuth } from "@/lib/auth-client"
 import Link from "next/link"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Monitor } from "lucide-react"
 import { BOARD_READY_SESSION_KEY } from "@/hooks/use-board-ready"
 import { SimulationForm } from "@/components/tax/simulation-form"
-import { AnalystBriefingSheet } from "@/components/tax/analyst-briefing-sheet"
-import { TransitionPrintTable } from "@/components/tax/transition-print-table"
 import {
   PipelineStageAnnouncer,
   PipelineStageCompass,
@@ -35,16 +33,8 @@ import {
   usePipelineStage,
   PIPELINE_GLOW_POSITION,
 } from "@/hooks/use-pipeline-stage"
-import {
-  BoardReadyHeader,
-  BoardReadyWatermark,
-} from "@/components/tax/board-ready-header"
 import { BoardReadyTeaseSheet } from "@/components/tax/board-ready-tease-sheet"
 import { PrintButton } from "@/components/tax/print-button"
-import {
-  PrintReportFooter,
-  PrintReportHeader,
-} from "@/components/tax/print-report-chrome"
 import {
   CONTAINER_VARIANTS,
   FADE_IN_VARIANTS,
@@ -63,13 +53,11 @@ import {
   parseCompanyRegimeFromDetail,
   simulationDetailToPersisted,
 } from "@/lib/history-hydrate"
-import { simulationAtFocusYear } from "@/lib/transition-focus"
 import { ShellBreadcrumb } from "@/components/shell/shell-breadcrumb"
 import { SHELL_INNER_CLASS } from "@/lib/shell-layout"
-import { FISCAL_LAW_CHANGELOG } from "@/lib/fiscal-law-changelog"
 import { useSimulationPipeline } from "../machine/use-simulation-pipeline"
 import { simulationMachine } from "../machine/machine-store"
-import { deriveSessionCompanyLabel } from "../lib/session-labels"
+import { deriveSessionCompanyLabel } from "@/lib/session-labels"
 import { DashboardResultsView } from "./dashboard-results-view"
 import { DashboardCsvView } from "./dashboard-csv-view"
 import type {
@@ -77,6 +65,7 @@ import type {
   FormExpense,
   FormService,
 } from "@/types/api"
+import type { ReportRenderInput } from "@/lib/report-contract"
 
 // Resultado de CSV não persiste — depende de arquivo local efêmero.
 interface CsvResults {
@@ -87,8 +76,13 @@ interface CsvResults {
 
 type InputMode = "form" | "csv"
 
-export function SimulationDashboard() {
-  const { isSignedIn, isLoaded: authLoaded, userId: clerkUserId } = useAuth()
+export interface SimulationDashboardProps {
+  /** Renderer do dossié (features/report) — injectado por app/dashboard/page.tsx para não criar aresta simulation→report. */
+  renderDossier: (input: Omit<ReportRenderInput, "sections">) => ReactNode
+}
+
+export function SimulationDashboard({ renderDossier }: SimulationDashboardProps) {
+  const { userId: clerkUserId } = useAuth()
   const { isBoardReady, setIsBoardReady, toggleBoardReady } = useBoardReady()
   const plgCap = usePlgCapabilities()
   const [focusYear, setFocusYear] = useState(2026)
@@ -146,12 +140,6 @@ export function SimulationDashboard() {
   // Vista unificada: CSV tem prioridade enquanto ativo, senão mostra form
   const results: typeof formResults | CsvResults | null =
     csvResults ?? formResults ?? null
-
-  const cardSimulation = useMemo(() => {
-    if (results?.mode !== "form") return null
-    if (!plgCap.transitionFocusYear) return results.simulation
-    return simulationAtFocusYear(results.simulation, focusYear)
-  }, [results, focusYear, plgCap.transitionFocusYear])
 
   // ── Labels do carimbo de autoridade (item 1.2.1) ─────────────────────────
   // Strings primitivas memoizadas: React.memo no carimbo não re-renderiza durante scroll.
@@ -331,17 +319,6 @@ export function SimulationDashboard() {
     clearComparison()
   }, [clearComparison])
 
-  const handleRequestComparisonView = useCallback(() => {
-    if (isComparing) return
-    if (!plgCap.compareAB) {
-      setCompareUpgradeOpen(true)
-      return
-    }
-    if (formResults?.mode === "form") {
-      startComparison(formResults)
-    }
-  }, [isComparing, plgCap.compareAB, formResults, startComparison])
-
   const isProOrPremium = plgCap.compareAB
 
   /** Atalhos PRO (bridge): alternar A/B sem depender do botão do veredito. */
@@ -484,16 +461,6 @@ export function SimulationDashboard() {
         )}
         aria-hidden
       />
-      {results?.mode === "form" && (
-        <BoardReadyWatermark
-          visible={plgCap.freeWatermark}
-          label={
-            plgCap.freeWatermark
-              ? "Gerado por TribIA Free"
-              : "Gerado por TribIA"
-          }
-        />
-      )}
       <div
         className={cn(
           SHELL_INNER_CLASS,
@@ -501,30 +468,6 @@ export function SimulationDashboard() {
           boardReadyActive && "board-ready:max-w-5xl",
         )}
       >
-        {results?.mode === "form" && !loading && (
-          <>
-            <PrintReportHeader
-              generatedAtIso={formResults?.meta?.createdAt}
-              whiteLabel={plgCap.whiteLabelExport}
-              clientBrandName={brandingOrgName}
-              clientLogoUrl={brandingLogoUrl}
-              simulationContextLine={sessionCompanyLabel || undefined}
-              scenarioLine={sessionScenarioLabel || undefined}
-            />
-            <BoardReadyHeader
-              companyContext={
-                formResults?.meta?.companyContext ?? undefined
-              }
-              year={results.simulation.year}
-              createdAtIso={formResults?.meta?.createdAt ?? null}
-              whiteLabel={plgCap.whiteLabelExport}
-              clientBrandName={brandingOrgName}
-              clientLogoUrl={brandingLogoUrl}
-            />
-            <TransitionPrintTable simulation={results.simulation} />
-          </>
-        )}
-
         <div
           className={cn(
             "board-ready:hidden print:hidden",
@@ -744,19 +687,13 @@ export function SimulationDashboard() {
               {results.mode === "form" && formResults && (
                 <DashboardResultsView
                   formResults={formResults}
-                  cardSimulation={cardSimulation}
                   isComparing={isComparing}
                   comparisonBaseline={comparisonBaseline}
                   clearComparison={clearComparison}
                   replaceBaselineWith={replaceBaselineWith}
                   handleRequestSingleView={handleRequestSingleView}
-                  handleRequestComparisonView={handleRequestComparisonView}
-                  plgCap={plgCap}
-                  authLoaded={authLoaded}
-                  isSignedIn={isSignedIn}
                   services={services}
                   expenses={expenses}
-                  companyContext={companyContext}
                   focusYear={focusYear}
                   setFocusYear={setFocusYear}
                   boardReadyActive={boardReadyActive}
@@ -773,6 +710,7 @@ export function SimulationDashboard() {
                   onRemoveOverride={pipeline.actions.removeOverride}
                   onRequestRecalc={pipeline.actions.requestRecalc}
                   shouldReduceMotion={shouldReduceMotion}
+                  renderDossier={renderDossier}
                 />
               )}
 
@@ -785,22 +723,10 @@ export function SimulationDashboard() {
                   shouldReduceMotion={shouldReduceMotion}
                 />
               )}
-
-              {results.mode === "form" && (
-                <div className="order-6">
-                  <PrintReportFooter
-                    whiteLabel={plgCap.whiteLabelExport}
-                    freeWatermark={plgCap.freeWatermark}
-                    isComparing={isComparing}
-                    lawVersion={FISCAL_LAW_CHANGELOG.version}
-                  />
-                </div>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      <AnalystBriefingSheet />
     </main>
   )
 }

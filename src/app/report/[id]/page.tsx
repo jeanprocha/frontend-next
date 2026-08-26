@@ -1,4 +1,4 @@
-import { SimulationPublicReportView } from "@/components/tax/simulation-public-report-view"
+import { PublicReport } from "@/features/report"
 import { notFound } from "next/navigation"
 
 type PageProps = { params: Promise<{ id: string }> }
@@ -9,7 +9,7 @@ type PageProps = { params: Promise<{ id: string }> }
 export default async function PublicReportPage({ params }: PageProps) {
   const { id } = await params
   if (!id || id.trim() === "") notFound()
-  return <SimulationPublicReportView id={id} />
+  return <PublicReport id={id} />
 }
 
 export async function generateMetadata({ params }: PageProps) {

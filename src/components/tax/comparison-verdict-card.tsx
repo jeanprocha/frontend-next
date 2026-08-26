@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
 import { ArrowRightLeft, Scale, ShieldCheck } from "lucide-react"
-import type { AuditTabValue } from "@/lib/simulation-esteira-types"
+import type { ReportScreenTab } from "@/lib/report-contract"
 import { ConfidenceGauge } from "@/components/shared/confidence-gauge"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -50,7 +50,7 @@ export interface ComparisonVerdictCardProps {
   /** Modo single: fontes RAG (ex. ai_metadata.sources_analyzed). */
   ragSources?: string[] | null
   layout?: "default" | "cockpit"
-  onEsteiraTabChange?: (tab: AuditTabValue) => void
+  onEsteiraTabChange?: (tab: ReportScreenTab) => void
   aiMetadata?: AiMetadata | null
   classifications?: ClassificationItem[]
   expenses?: { id: string; amount: string }[]
@@ -121,7 +121,7 @@ export function ComparisonVerdictCard({
 
   const scrollToEsteira = () => {
     if (typeof document === "undefined") return
-    document.getElementById("tribia-esteira-de-confianca")?.scrollIntoView({
+    document.getElementById("tribia-dossie-auditoria")?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     })
@@ -399,7 +399,7 @@ export function ComparisonVerdictCard({
                   onActivate={
                     aiMetadata
                       ? () => {
-                          onEsteiraTabChange("rag")
+                          onEsteiraTabChange("dossie")
                           openMacroBriefing(aiMetadata)
                           scrollToEsteira()
                         }

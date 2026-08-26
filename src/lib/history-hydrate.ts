@@ -8,6 +8,7 @@ import type {
 } from "@/types/api"
 import type { PersistedResults, ResultMeta } from "@/store/useTaxStore"
 import type { CompanyRegimeOption } from "@/lib/company-regime"
+import type { SimulationRecord } from "@/lib/report-contract"
 
 const REGIME_OPTIONS: CompanyRegimeOption[] = [
   "regular",
@@ -98,5 +99,27 @@ export function simulationDetailToPersisted(
     ai_metadata,
     service_classifications,
     meta,
+  }
+}
+
+/** Envelope de SimulationRecord (dossié) a partir de um registo do backend — histórico ou público. */
+export function simulationDetailToRecord(d: SimulationRecordDetailResponse): SimulationRecord {
+  const persisted = simulationDetailToPersisted(d, {
+    createdAt: d.created_at,
+    companyContext: d.company_context,
+    year: d.year,
+    recordId: d.id,
+  })
+  const snap = snapshotFromDetail(d)
+  return {
+    simulation: persisted.simulation,
+    classifications: persisted.classifications,
+    serviceClassifications: persisted.service_classifications,
+    expenses: persisted.expenses,
+    services: detailServicesToFormServices(d.services),
+    aiMetadata: persisted.ai_metadata,
+    meta: persisted.meta,
+    reportBrand: snap?.report_brand ?? null,
+    companyRegime: parseCompanyRegimeFromDetail(d),
   }
 }

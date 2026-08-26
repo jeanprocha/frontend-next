@@ -8,6 +8,7 @@ export { useSimulationPipeline } from "./machine/use-simulation-pipeline"
 export type { SimulationPipeline, SimulationPipelineActions } from "./machine/use-simulation-pipeline"
 
 export { SimulationDashboard } from "./components/simulation-dashboard"
+export type { SimulationDashboardProps } from "./components/simulation-dashboard"
 
 export type {
   ClassifiedInput,
