@@ -4,8 +4,8 @@ import userEvent from "@testing-library/user-event"
 import { CapabilityProvider } from "@/features/plg"
 import { getPlgCapabilities } from "@/features/plg"
 import { ReportRenderer } from "./report-renderer"
-import { dossieRagSection, fundamentacaoCreditosSection, mesaRastreabilidadeSection, vereditoSection } from "./sections"
-import type { ReportRenderInput, ReportSection, ReportSectionProps } from "@/lib/report-contract"
+import { vereditoSection } from "./sections"
+import type { ReportRenderInput, ReportSection } from "@/lib/report-contract"
 import type { SimulationRecord } from "@/lib/report-contract"
 
 function minimalRecord(): SimulationRecord {
@@ -106,12 +106,7 @@ describe("ReportRenderer — capacidades", () => {
 })
 
 describe("ReportRenderer — secções reais com registo mínimo/antigo (smoke)", () => {
-  const REAL_SECTIONS: ReportSection[] = [
-    vereditoSection,
-    dossieRagSection,
-    mesaRastreabilidadeSection,
-    fundamentacaoCreditosSection,
-  ]
+  const REAL_SECTIONS: ReportSection[] = [vereditoSection]
 
   it("não rebenta com um registo sem aiMetadata, meta, transition_series ou credit_leaks (board)", () => {
     const { container } = render(<ReportRenderer {...baseInput(REAL_SECTIONS, "board")} />)

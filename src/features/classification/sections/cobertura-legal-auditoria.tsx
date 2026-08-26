@@ -3,7 +3,7 @@
 import { BoardAuditCertificate } from "@/components/tax/board-audit-certificate"
 import { BoardLegalCoverageShield } from "@/components/tax/board-legal-coverage-shield"
 import { confidenceTierFromScore01, humanSolidityHintFromAggregatedScore01 } from "@/lib/confidence-tiers"
-import { avgEvidenceCountAmongLinesWithEvidence, countTenuousNexusLines } from "@/lib/rag-tab-stats"
+import { avgEvidenceCountAmongLinesWithEvidence, countTenuousNexusLines } from "../lib/rag-tab-stats"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 
 function CoberturaLegalAuditoriaSection({ record }: ReportSectionProps) {

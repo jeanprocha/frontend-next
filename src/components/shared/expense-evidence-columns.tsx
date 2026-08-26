@@ -8,7 +8,7 @@ import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
 
-import { LineUnifiedEvidencePanel } from "@/components/tax/line-evidence-popover-body"
+import { LineUnifiedEvidencePanel } from "./line-evidence-popover-body"
 
 import { cn } from "@/lib/utils"
 

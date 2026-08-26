@@ -8,49 +8,21 @@ import { simulationDetailToRecord } from "@/lib/history-hydrate"
 import { deriveSessionCompanyLabel } from "@/lib/session-labels"
 import { cn } from "@/lib/utils"
 import { ReportRenderer } from "./report-renderer"
-import {
-  anatomiaSection,
-  boardMastheadSection,
-  comparativoABSection,
-  coberturaLegalAuditoriaSection,
-  cronogramaSection,
-  dossieRagSection,
-  fundamentacaoCreditosSection,
-  mesaRastreabilidadeSection,
-  printMastheadSection,
-  rodapeLegalSection,
-  transicaoTabelaSection,
-  vereditoSection,
-  watermarkSection,
-} from "./sections"
 import type { ReportSection, SimulationRecord } from "@/lib/report-contract"
 
 const REPORT_PDF_FAB = "report-export-pdf-fab no-print print:hidden"
 
-// Ordem canónica do dossié — igual à do dashboard logado (arquitetura-frontend.md §6);
-// board-masthead/watermark não montam fora de mode="board", mas ficam na lista por
-// uniformidade (a mesma lista serve ambas as superfícies).
-const PUBLIC_REPORT_SECTIONS: ReportSection[] = [
-  printMastheadSection,
-  boardMastheadSection,
-  watermarkSection,
-  vereditoSection,
-  comparativoABSection,
-  anatomiaSection,
-  cronogramaSection,
-  transicaoTabelaSection,
-  dossieRagSection,
-  coberturaLegalAuditoriaSection,
-  mesaRastreabilidadeSection,
-  fundamentacaoCreditosSection,
-  rodapeLegalSection,
-]
-
 interface PublicReportProps {
   id: string
+  /**
+   * Lista de secções, composta por app/report/[id]/page.tsx a partir de
+   * features/report + features/classification — report ↛ classification
+   * (só features/plg tem excepção no lint de fronteira).
+   */
+  sections: ReportSection[]
 }
 
-export function PublicReport({ id }: PublicReportProps) {
+export function PublicReport({ id, sections }: PublicReportProps) {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [record, setRecord] = useState<SimulationRecord | null>(null)
@@ -163,7 +135,7 @@ export function PublicReport({ id }: PublicReportProps) {
 
           <ReportRenderer
             record={record}
-            sections={PUBLIC_REPORT_SECTIONS}
+            sections={sections}
             mode="public-linear"
             focusYear={focusYear}
             onFocusYearChange={setFocusYear}

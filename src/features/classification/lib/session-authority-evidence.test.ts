@@ -3,7 +3,7 @@ import {
   pickHeroEvidenceByFinancialVolume,
   pickRepresentativeEvidence,
   resolveHeroEvidencePick,
-} from "@/lib/session-authority-evidence"
+} from "./session-authority-evidence"
 import type { ClassificationItem } from "@/types/api"
 
 describe("pickRepresentativeEvidence", () => {

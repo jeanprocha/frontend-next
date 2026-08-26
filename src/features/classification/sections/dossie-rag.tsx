@@ -1,8 +1,8 @@
 "use client"
 
-import { LawPdfAuthorityCard } from "@/components/tax/law-pdf-authority-card"
-import { RagAuditCard } from "@/components/tax/rag-audit-card"
-import { resolveHeroEvidencePick } from "@/lib/session-authority-evidence"
+import { LawPdfAuthorityCard } from "../components/law-pdf-authority-card"
+import { RagAuditCard } from "../components/rag-audit-card"
+import { resolveHeroEvidencePick } from "../lib/session-authority-evidence"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 

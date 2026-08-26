@@ -41,7 +41,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-import { ExpenseSemanticConfidenceDot } from "@/components/tax/expense-semantic-confidence-dot"
+import { ExpenseSemanticConfidenceDot } from "./expense-semantic-confidence-dot"
 import { GlossaryHelpTrigger } from "@/components/shared/glossary-help-trigger"
 
 import { formatBRL } from "@/lib/format-money"

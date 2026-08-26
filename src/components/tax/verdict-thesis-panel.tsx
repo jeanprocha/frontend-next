@@ -41,8 +41,8 @@ import ReactMarkdown from "react-markdown"
 import { Skeleton } from "@/components/ui/skeleton"
 import { parseConfidenceScore01 } from "@/lib/confidence-tiers"
 import { cn } from "@/lib/utils"
-import { SolidityAggregateDiagnostic } from "./solidity-aggregate-diagnostic"
-import { SolidityTrafficLight } from "./solidity-traffic-light"
+import { SolidityAggregateDiagnostic } from "@/components/shared/solidity-aggregate-diagnostic"
+import { SolidityTrafficLight } from "@/components/shared/solidity-traffic-light"
 
 // ─── Allowlist de elementos Markdown seguros ──────────────────────────────────
 // Apenas formatação inline e parágrafos — sem links, imagens ou blocos

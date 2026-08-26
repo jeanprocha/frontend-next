@@ -5,7 +5,7 @@
 // form a tabela de créditos vive dentro da esteira).
 import { motion } from "motion/react"
 import { CsvSummary } from "@/components/tax/csv-summary"
-import { ExpenseTable } from "@/components/tax/expense-table"
+import { ExpenseTable } from "@/components/shared/expense-table"
 import { cn } from "@/lib/utils"
 import { FADE_IN_VARIANTS } from "@/lib/motion-variants"
 import type { ClassificationItem, FormExpense } from "@/types/api"

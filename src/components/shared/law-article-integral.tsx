@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { BriefingSectionTitle } from "@/components/shared/briefing-section-title"
-import { RayXAnchorCallout } from "@/components/tax/ray-x-anchor-callout"
+import { RayXAnchorCallout } from "./ray-x-anchor-callout"
 import { useCapability } from "@/features/plg"
 import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"
 import { cn } from "@/lib/utils"

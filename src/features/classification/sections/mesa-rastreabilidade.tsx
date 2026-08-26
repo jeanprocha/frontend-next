@@ -1,7 +1,7 @@
 "use client"
 
-import { ExpenseSemanticAuditTable } from "@/components/tax/expense-semantic-audit-table"
-import { aggregateClassifications } from "@/lib/classification-aggregates"
+import { ExpenseSemanticAuditTable } from "../components/expense-semantic-audit-table"
+import { aggregateClassifications } from "../lib/classification-aggregates"
 import { cn } from "@/lib/utils"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 

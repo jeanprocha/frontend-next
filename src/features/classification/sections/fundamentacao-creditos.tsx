@@ -1,6 +1,6 @@
 "use client"
 
-import { ExpenseTable } from "@/components/tax/expense-table"
+import { ExpenseTable } from "@/components/shared/expense-table"
 import { cn } from "@/lib/utils"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 

@@ -6,7 +6,7 @@ import { useCapability, useTribiaPlgTier } from "@/features/plg"
 import { cn } from "@/lib/utils"
 import { fetchLawPdfAnchor } from "@/lib/api"
 import { formatArticleLabel } from "@/lib/rag-metadata"
-import { LawPdfOpenButton } from "@/components/tax/law-pdf-open-button"
+import { LawPdfOpenButton } from "./law-pdf-open-button"
 import type { LawPdfAnchorResponse } from "@/types/api"
 
 interface LawPdfAuthorityCardProps {

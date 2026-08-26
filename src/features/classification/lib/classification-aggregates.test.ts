@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { aggregateClassifications } from "@/lib/classification-aggregates"
+import { aggregateClassifications } from "./classification-aggregates"
 import type { ClassificationItem } from "@/types/api"
 
 describe("aggregateClassifications", () => {

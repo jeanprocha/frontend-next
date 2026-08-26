@@ -1,28 +1,26 @@
 "use client"
 
-import { AnalystBriefingSheet } from "@/components/tax/analyst-briefing-sheet"
 import { SimulationDashboard } from "@/features/simulation"
 import {
   ReportRenderer,
   anatomiaSection,
   boardMastheadSection,
   comparativoABSection,
-  coberturaLegalAuditoriaSection,
   cronogramaSection,
-  dossieRagSection,
-  fundamentacaoCreditosSection,
-  mesaRastreabilidadeSection,
   printMastheadSection,
   rodapeLegalSection,
   transicaoTabelaSection,
   vereditoSection,
   watermarkSection,
 } from "@/features/report"
+import { AnalystBriefingSheet, classificationReportSections } from "@/features/classification"
 import type { ReportRenderInput, ReportSection } from "@/lib/report-contract"
 
 // Ordem canónica do dossié logado — mastheads/rodapé de impressão intercalados
 // com o conteúdo na ordem em que aparecem no papel (board/print); em
 // screen-tabs só o conteúdo da aba activa monta (ver ReportRenderer).
+// classificationReportSections agrupa dossie-rag, cobertura-legal-auditoria,
+// mesa-rastreabilidade e fundamentacao-creditos — donas do domínio classification.
 const DASHBOARD_SECTIONS: ReportSection[] = [
   printMastheadSection,
   boardMastheadSection,
@@ -32,10 +30,7 @@ const DASHBOARD_SECTIONS: ReportSection[] = [
   anatomiaSection,
   cronogramaSection,
   transicaoTabelaSection,
-  dossieRagSection,
-  coberturaLegalAuditoriaSection,
-  mesaRastreabilidadeSection,
-  fundamentacaoCreditosSection,
+  ...classificationReportSections,
   rodapeLegalSection,
 ]
 
