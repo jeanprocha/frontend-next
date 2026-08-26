@@ -10,8 +10,6 @@ import { getSimulationRecord, listSimulationRecords, queryKeys } from "@/lib/api
 import { formatBRL } from "@/lib/format-money"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { HistoryRecordPreviewTrigger } from "@/components/tax/history-record-preview-trigger"
-import { HistoryRowHoverPreview } from "@/components/tax/history-row-hover-preview"
 import { TransitionSparkline } from "@/components/shared/transition-sparkline"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
 import { useCapability, PlgUpgradeDialog } from "@/features/plg"
@@ -21,7 +19,12 @@ import { ShellBreadcrumb } from "@/components/shell/shell-breadcrumb"
 import { shellPageClass } from "@/lib/shell-layout"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { useTaxStore } from "@/store/useTaxStore"
-import { hydrateSimulationResults, requestHistoryComparison } from "@/features/simulation"
+import {
+  hydrateSimulationResults,
+  requestHistoryComparison,
+  HistoryRecordPreviewTrigger,
+  HistoryRowHoverPreview,
+} from "@/features/simulation"
 
 function formatDate(iso: string): string {
   try {

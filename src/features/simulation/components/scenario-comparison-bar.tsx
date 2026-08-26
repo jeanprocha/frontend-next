@@ -4,7 +4,7 @@ import { ArrowLeftRight, Pencil, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { formatRegimeLabel } from "@/lib/comparison-metrics"
-import type { PersistedResults } from "@/store/useTaxStore"
+import type { PersistedResults } from "@/lib/persisted-results"
 
 interface ScenarioComparisonBarProps {
   baseline: PersistedResults

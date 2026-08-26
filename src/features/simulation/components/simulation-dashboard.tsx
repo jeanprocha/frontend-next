@@ -11,34 +11,34 @@ import Link from "next/link"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Monitor } from "lucide-react"
 import { BOARD_READY_SESSION_KEY } from "@/hooks/use-board-ready"
-import { SimulationForm } from "@/components/tax/simulation-form"
+import { SimulationForm } from "./simulation-form"
 import {
   PipelineStageAnnouncer,
   PipelineStageCompass,
-} from "@/components/tax/pipeline-stage-indicators"
+} from "./pipeline-stage-indicators"
 import {
   UploadZone,
   type UploadResult,
   type UploadZonePipelinePhase,
-} from "@/components/tax/upload-zone"
+} from "./upload-zone"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import { errorDetailsFromUnknown } from "@/lib/api"
 import { RequestIdSupportRow } from "@/components/ui/request-id-support"
-import { useComparison } from "@/hooks/use-comparison"
+import { useComparison } from "../hooks/use-comparison"
 import { useBoardReady } from "@/hooks/use-board-ready"
 import {
   usePipelineStage,
   PIPELINE_GLOW_POSITION,
-} from "@/hooks/use-pipeline-stage"
+} from "../hooks/use-pipeline-stage"
 import { BoardReadyTeaseSheet } from "./board-ready-tease-sheet"
 import { PrintButton } from "./print-button"
 import {
   CONTAINER_VARIANTS,
   FADE_IN_VARIANTS,
-} from "@/lib/motion-variants"
+} from "../lib/motion-variants"
 import {
   clearDashboardCommandBridge,
   setDashboardCommandBridge,

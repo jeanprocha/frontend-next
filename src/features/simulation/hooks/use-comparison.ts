@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import type { PersistedResults } from "@/store/useTaxStore"
+import type { PersistedResults } from "@/lib/persisted-results"
 
 function clonePersistedResults(r: PersistedResults): PersistedResults {
   return structuredClone(r)

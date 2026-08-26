@@ -11,10 +11,10 @@ import { Button } from "@/components/ui/button"
 import {
   CompanyRegimeSelect,
   RegimeProfileHelp,
-} from "@/components/tax/company-regime-select"
-import { StrategyChips } from "@/components/tax/strategy-chips"
-import { ContextHighlightField } from "@/components/tax/context-highlight-field"
-import { useStrategyTags } from "@/hooks/use-strategy-tags"
+} from "./company-regime-select"
+import { StrategyChips } from "./strategy-chips"
+import { ContextHighlightField } from "./context-highlight-field"
+import { useStrategyTags } from "../hooks/use-strategy-tags"
 import { useCapability, PlgUpgradeDialog } from "@/features/plg"
 
 export function ContextHub() {

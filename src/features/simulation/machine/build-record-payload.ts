@@ -4,7 +4,7 @@
 // parâmetro, unificar os três caminhos de persist (initial/recalc/dossier)
 // num só helper perderia esse dado.
 import type { SimulationRecordCreatePayload, StrategyTag } from "@/types/api"
-import type { PersistedResults } from "@/store/useTaxStore"
+import type { PersistedResults } from "@/lib/persisted-results"
 import type { CompanyRegimeOption } from "@/lib/company-regime"
 import { getEffectiveExpenseSimulationFields } from "@/lib/classification-effective"
 import type { FormExpense, FormService } from "@/types/api"

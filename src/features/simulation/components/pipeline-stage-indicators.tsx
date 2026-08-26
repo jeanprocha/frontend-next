@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import {
   PIPELINE_STAGE_LABEL_PT,
   type PipelineStage,
-} from "@/hooks/use-pipeline-stage"
+} from "../hooks/use-pipeline-stage"
 
 /** Bússola visual (touch / viewport sem rail); leitura por voz via PipelineStageAnnouncer. */
 export function PipelineStageCompass({

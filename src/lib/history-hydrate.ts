@@ -6,7 +6,7 @@ import type {
   FormService,
   SimulationRecordDetailResponse,
 } from "@/types/api"
-import type { PersistedResults, ResultMeta } from "@/store/useTaxStore"
+import type { PersistedResults, ResultMeta } from "./persisted-results"
 import type { CompanyRegimeOption } from "@/lib/company-regime"
 import type { SimulationRecord } from "@/lib/report-contract"
 

@@ -5,42 +5,10 @@ import type {
   CompanyTemplate,
   FormService,
   FormExpense,
-  SimulationResponse,
   StrategyTag,
 } from "@/types/api"
 import { findNormalizedPatternRuneSpan } from "@/lib/context-rune-span"
 import type { CompanyRegimeOption } from "@/lib/company-regime"
-
-// ─── Tipos internos do store ─────────────────────────────────────────────────
-//
-// PersistedResults/ResultMeta continuam definidos aqui mesmo após o estado de
-// pipeline (results, overrides, pendingSimulationSync…) ter migrado para
-// features/simulation/machine/ (FE-1) — 20+ arquivos importam esses tipos
-// (type-only); mover o TIPO em si é reorganização de FE-2, não desta fase.
-
-export interface ResultMeta {
-  createdAt: string
-  companyContext: string
-  year: number
-  /** Registo no histórico (API) após gravação bem-sucedida; necessário para dossié /report/[id]. */
-  recordId?: string
-}
-
-export interface PersistedResults {
-  mode: "form"
-  simulation: SimulationResponse
-  classifications: ClassificationItem[]
-  expenses: FormExpense[]
-  meta?: ResultMeta
-  /** Agregado RAG (serviços + despesas); omitido em registos antigos / sem evidências. */
-  ai_metadata?: AiMetadata | null
-  /**
-   * Classificações dos serviços (regime_type por serviço) — pré-requisito para
-   * recalcular a simulação após override sem novo batch de classificação IA.
-   * Ausente em registos antigos; fallback "padrao" no recálculo.
-   */
-  service_classifications?: ClassificationItem[]
-}
 
 interface TaxState {
   year: number

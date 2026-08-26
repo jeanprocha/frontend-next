@@ -10,6 +10,9 @@ export type { SimulationPipeline, SimulationPipelineActions } from "./machine/us
 export { SimulationDashboard } from "./components/simulation-dashboard"
 export type { SimulationDashboardProps } from "./components/simulation-dashboard"
 
+export { HistoryRecordPreviewTrigger } from "./components/history-record-preview-trigger"
+export { HistoryRowHoverPreview } from "./components/history-row-hover-preview"
+
 export type {
   ClassifiedInput,
   FormResults,

@@ -9,7 +9,7 @@ import {
   matchActiveStrategyTags,
   normalizeText,
 } from "@/lib/strategy-tags-match"
-import { emitStrategyTagSuggested } from "@/lib/strategy-tags-telemetry"
+import { emitStrategyTagSuggested } from "../lib/strategy-tags-telemetry"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { StrategyTag } from "@/types/api"
 

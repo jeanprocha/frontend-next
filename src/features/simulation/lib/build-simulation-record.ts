@@ -1,4 +1,4 @@
-import type { PersistedResults } from "@/store/useTaxStore"
+import type { PersistedResults } from "@/lib/persisted-results"
 import type { FormExpense, FormService, ReportBrandSnapshot } from "@/types/api"
 import type { CompanyRegimeOption } from "@/lib/company-regime"
 import type { SimulationRecord } from "@/lib/report-contract"

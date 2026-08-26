@@ -15,7 +15,7 @@ import { Kbd } from "@/components/ui/kbd"
 import { Separator } from "@/components/ui/separator"
 import { modKeyLabel, SHORTCUT_KEYS } from "@/constants/shortcuts"
 import { cn } from "@/lib/utils"
-import { TermTooltip } from "@/components/tax/term-tooltip"
+import { TermTooltip } from "./term-tooltip"
 
 interface ResultSidebarProps {
   year: number

@@ -7,7 +7,7 @@ import type {
   SimulationResponse,
   StrategyTag,
 } from "@/types/api"
-import type { PersistedResults } from "@/store/useTaxStore"
+import type { PersistedResults } from "@/lib/persisted-results"
 import type { CompanyRegimeOption } from "@/lib/company-regime"
 
 /** Resultado de simulação form — a única forma que a máquina possui. */
