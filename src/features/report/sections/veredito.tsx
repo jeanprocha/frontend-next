@@ -1,9 +1,9 @@
 "use client"
 
-import { FinancialVerdictHeroCard } from "@/components/tax/financial-verdict-hero-card"
-import { VerdictThesisPanel } from "@/components/tax/verdict-thesis-panel"
-import { ComparisonVerdictCard } from "@/components/tax/comparison-verdict-card"
-import { TribiaInsights } from "@/components/tax/tribia-insights"
+import { FinancialVerdictHeroCard } from "../components/financial-verdict-hero-card"
+import { VerdictThesisPanel } from "../components/verdict-thesis-panel"
+import { ComparisonVerdictCard } from "../components/comparison-verdict-card"
+import { TribiaInsights } from "../components/tribia-insights"
 import { cn } from "@/lib/utils"
 import { useReportDisplaySimulation } from "../lib/use-report-display-simulation"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"

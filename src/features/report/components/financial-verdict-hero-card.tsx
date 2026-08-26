@@ -40,7 +40,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { ShieldAlert, ShieldCheck, ShieldMinus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { deriveFinancialVerdictPolarity } from "@/lib/financial-verdict-polarity"
+import { deriveFinancialVerdictPolarity } from "../lib/financial-verdict-polarity"
 import { parseApiDecimal } from "@/lib/money-decimal"
 import {
   decimalStringToCents,

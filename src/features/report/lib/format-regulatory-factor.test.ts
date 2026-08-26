@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   formatRegulatoryFactorDisplay,
   formatRegulatoryFactorPair,
-} from "@/lib/format-regulatory-factor"
+} from "./format-regulatory-factor"
 
 describe("formatRegulatoryFactorDisplay", () => {
   it("formats 0–1 decimals as Brazilian percentage", () => {

@@ -5,8 +5,8 @@ import {
   SIMULATION_RESULTS_ANCHORS,
   SimulationResultsStickyIndex,
   type SimulationResultsAnchorKey,
-} from "@/components/tax/simulation-results-sticky-index"
-import { SimulationSessionAuthorityStamp } from "@/components/tax/simulation-session-authority-stamp"
+} from "./components/simulation-results-sticky-index"
+import { SimulationSessionAuthorityStamp } from "./components/simulation-session-authority-stamp"
 import { usePlgCapabilities } from "@/features/plg"
 import { cn } from "@/lib/utils"
 import type {

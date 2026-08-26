@@ -1,4 +1,4 @@
-import { PrintReportFooter } from "@/components/tax/print-report-chrome"
+import { PrintReportFooter } from "../components/print-report-chrome"
 import { useCapability } from "@/features/plg"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 

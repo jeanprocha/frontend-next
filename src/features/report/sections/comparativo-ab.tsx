@@ -1,6 +1,6 @@
 "use client"
 
-import { ComparisonVerdictCard } from "@/components/tax/comparison-verdict-card"
+import { ComparisonVerdictCard } from "../components/comparison-verdict-card"
 import { accumulatedNewTaxDiff, projectedNetTaxDiff } from "@/lib/comparison-metrics"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 

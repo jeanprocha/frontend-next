@@ -1,6 +1,6 @@
 "use client"
 
-import { SummaryCards } from "@/components/tax/summary-cards"
+import { SummaryCards } from "../components/summary-cards"
 import { useReportDisplaySimulation } from "../lib/use-report-display-simulation"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 

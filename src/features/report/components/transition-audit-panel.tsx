@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { TransitionAuditPanelBody } from "@/components/tax/transition-audit-panel-body"
+import { TransitionAuditPanelBody } from "./transition-audit-panel-body"
 import { cn } from "@/lib/utils"
 import type { TransitionSeriesPoint } from "@/types/api"
 

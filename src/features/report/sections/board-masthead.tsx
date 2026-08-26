@@ -1,4 +1,4 @@
-import { BoardReadyHeader } from "@/components/tax/board-ready-header"
+import { BoardReadyHeader } from "../components/board-ready-header"
 import { useCapability } from "@/features/plg"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 

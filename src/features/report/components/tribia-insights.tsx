@@ -3,8 +3,8 @@
 import { Lightbulb } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { insightYearMismatch } from "@/lib/tribia-insight-focus"
-import { parseTaxTerms } from "@/lib/tax-terms-parser"
+import { insightYearMismatch } from "../lib/tribia-insight-focus"
+import { parseTaxTerms } from "../lib/tax-terms-parser"
 import type { SimulationResponse } from "@/types/api"
 
 interface TribiaInsightsProps {

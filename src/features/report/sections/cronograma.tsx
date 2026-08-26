@@ -1,9 +1,9 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { CreditLeakageAlert } from "@/components/tax/credit-leakage-alert"
-import { TransitionAuditPanel } from "@/components/tax/transition-audit-panel"
-import { TransitionGoPeaksMarcos } from "@/components/tax/transition-go-peaks-marcos"
+import { CreditLeakageAlert } from "../components/credit-leakage-alert"
+import { TransitionAuditPanel } from "../components/transition-audit-panel"
+import { TransitionGoPeaksMarcos } from "../components/transition-go-peaks-marcos"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCapability } from "@/features/plg"
 import { cn } from "@/lib/utils"
@@ -14,12 +14,12 @@ function ChartSankeySkeleton() {
 }
 
 const TransitionChartLazy = dynamic(
-  () => import("@/components/tax/transition-chart").then((m) => m.TransitionChart),
+  () => import("../components/transition-chart").then((m) => m.TransitionChart),
   { ssr: false, loading: () => <ChartSankeySkeleton /> },
 )
 
 const SankeyFlowLazy = dynamic(
-  () => import("@/components/tax/sankey-flow").then((m) => m.SankeyFlow),
+  () => import("../components/sankey-flow").then((m) => m.SankeyFlow),
   { ssr: false, loading: () => <ChartSankeySkeleton /> },
 )
 

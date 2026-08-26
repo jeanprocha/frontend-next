@@ -1,4 +1,4 @@
-import { TransitionPrintTable } from "@/components/tax/transition-print-table"
+import { TransitionPrintTable } from "../components/transition-print-table"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 
 function TransicaoTabelaSection({ record }: ReportSectionProps) {

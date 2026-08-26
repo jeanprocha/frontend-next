@@ -9,7 +9,7 @@ import {
   buildCreditFlowSankey,
   SANKEY_NODE_LABELS,
   type SankeyGraphData,
-} from "@/lib/tax-sankey"
+} from "../lib/tax-sankey"
 import type { FormExpense, SimulationResponse } from "@/types/api"
 
 type FlowNode = { id: string; label?: string; nodeColor?: string }

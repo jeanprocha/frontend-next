@@ -33,8 +33,8 @@ import {
   usePipelineStage,
   PIPELINE_GLOW_POSITION,
 } from "@/hooks/use-pipeline-stage"
-import { BoardReadyTeaseSheet } from "@/components/tax/board-ready-tease-sheet"
-import { PrintButton } from "@/components/tax/print-button"
+import { BoardReadyTeaseSheet } from "./board-ready-tease-sheet"
+import { PrintButton } from "./print-button"
 import {
   CONTAINER_VARIANTS,
   FADE_IN_VARIANTS,
