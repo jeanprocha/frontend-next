@@ -9,11 +9,7 @@ import type {
   StrategyTag,
 } from "@/types/api"
 import { findNormalizedPatternRuneSpan } from "@/lib/context-rune-span"
-
-// ─── Chaves de persistência (cliente) ───────────────────────────────────────
-
-/** `localStorage`: utilizador fechou o banner de privacidade PRO no dashboard. */
-export const PRIVACY_TRUST_BANNER_DISMISSED_KEY = "tribia-privacy-banner-dismissed"
+import type { CompanyRegimeOption } from "@/lib/company-regime"
 
 // ─── Tipos internos do store ─────────────────────────────────────────────────
 //
@@ -44,23 +40,6 @@ export interface PersistedResults {
    * Ausente em registos antigos; fallback "padrao" no recálculo.
    */
   service_classifications?: ClassificationItem[]
-}
-
-export type CompanyRegimeOption =
-  | "regular"
-  | "mei"
-  | "simples_puro"
-  | "simples_hibrido"
-  | "diferenciado_60"
-  | "aliquota_zero"
-  | "exportadora"
-  | "entidade_imune"
-  | "imobiliario_venda"
-  | "imobiliario_aluguel"
-  | "prof_liberal"
-
-export function isImobiliarioRegime(r: CompanyRegimeOption): boolean {
-  return r === "imobiliario_venda" || r === "imobiliario_aluguel"
 }
 
 interface TaxState {

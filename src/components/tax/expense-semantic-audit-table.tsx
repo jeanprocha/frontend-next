@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/tooltip"
 
 import { ExpenseSemanticConfidenceDot } from "@/components/tax/expense-semantic-confidence-dot"
-import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
+import { GlossaryHelpTrigger } from "@/components/shared/glossary-help-trigger"
 
 import { formatBRL } from "@/lib/format-money"
 import { findCreditLeakForRow } from "@/lib/credit-leak-match"

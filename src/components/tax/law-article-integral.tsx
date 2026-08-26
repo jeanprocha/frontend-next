@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { BriefingSectionTitle } from "@/components/tax/briefing-section-title"
+import { BriefingSectionTitle } from "@/components/shared/briefing-section-title"
 import { RayXAnchorCallout } from "@/components/tax/ray-x-anchor-callout"
 import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
 import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"

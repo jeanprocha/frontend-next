@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Radar, Scale } from "lucide-react"
 
-import { ChangelogFiscalPanel } from "@/components/tax/changelog-fiscal-panel"
+import { ChangelogFiscalPanel } from "@/components/legal/changelog-fiscal-panel"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Sheet,

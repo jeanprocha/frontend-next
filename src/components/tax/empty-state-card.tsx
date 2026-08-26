@@ -1,7 +1,7 @@
 "use client"
 
 import { FileSearch, ReceiptText, Sparkles } from "lucide-react"
-import { EmptyStateBox } from "@/components/tax/empty-state-box"
+import { EmptyStateBox } from "@/components/shared/empty-state-box"
 import { SHORTCUT_KEYS } from "@/constants/shortcuts"
 import { cn } from "@/lib/utils"
 

@@ -1,8 +1,8 @@
 import Link from "next/link"
 import { Show, SignInButton } from "@clerk/nextjs"
 import { ArrowRight, CheckCircle, ExternalLink, Sparkles, Scale } from "lucide-react"
-import { ProductFlowLinear } from "@/components/tax/product-flow-linear"
-import { TechnologyPilarGrid } from "@/components/tax/technology-pilar-grid"
+import { ProductFlowLinear } from "@/components/marketing/product-flow-linear"
+import { TechnologyPilarGrid } from "@/components/marketing/technology-pilar-grid"
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 

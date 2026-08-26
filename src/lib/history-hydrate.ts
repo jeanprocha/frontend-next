@@ -6,7 +6,8 @@ import type {
   FormService,
   SimulationRecordDetailResponse,
 } from "@/types/api"
-import type { CompanyRegimeOption, PersistedResults, ResultMeta } from "@/store/useTaxStore"
+import type { PersistedResults, ResultMeta } from "@/store/useTaxStore"
+import type { CompanyRegimeOption } from "@/lib/company-regime"
 
 const REGIME_OPTIONS: CompanyRegimeOption[] = [
   "regular",

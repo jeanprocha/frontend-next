@@ -12,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import { useTaxStore, isImobiliarioRegime } from "@/store/useTaxStore"
+import { useTaxStore } from "@/store/useTaxStore"
+import { isImobiliarioRegime } from "@/lib/company-regime"
 
 export function RegimeFollowUps() {
   const {

@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { formatBRL } from "@/lib/format-money"
-import { TransitionSparkline } from "@/components/tax/transition-sparkline"
+import { TransitionSparkline } from "@/components/shared/transition-sparkline"
 import { parseApiDecimalForChart } from "@/lib/money-decimal"
 import { clampTransitionYear } from "@/lib/transition-focus"
 import { buildDualComplianceYearSet, computeOverlapBand } from "@/lib/transition-overlap"

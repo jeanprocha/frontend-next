@@ -10,7 +10,7 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react"
-import { ConfidenceGauge } from "@/components/tax/confidence-gauge"
+import { ConfidenceGauge } from "@/components/shared/confidence-gauge"
 import { Kbd } from "@/components/ui/kbd"
 import { Separator } from "@/components/ui/separator"
 import { modKeyLabel, SHORTCUT_KEYS } from "@/constants/shortcuts"

@@ -1,10 +1,10 @@
 "use client"
 
 import { CircleHelp } from "lucide-react"
-import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
+import { GlossaryHelpTrigger } from "@/components/shared/glossary-help-trigger"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import type { CompanyRegimeOption } from "@/store/useTaxStore"
+import type { CompanyRegimeOption } from "@/lib/company-regime"
 
 interface CompanyRegimeSelectProps {
   id?: string

@@ -6,7 +6,7 @@ import { useState } from "react"
 
 import { Sparkles } from "lucide-react"
 
-import { ConfidenceGauge } from "@/components/tax/confidence-gauge"
+import { ConfidenceGauge } from "@/components/shared/confidence-gauge"
 
 import { Badge } from "@/components/ui/badge"
 

@@ -4,8 +4,8 @@ import { useState } from "react"
 import { BookMarked } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { BriefingSectionTitle } from "@/components/tax/briefing-section-title"
-import { LegalEvidenceHighlighter } from "@/components/tax/legal-evidence-highlighter"
+import { BriefingSectionTitle } from "@/components/shared/briefing-section-title"
+import { LegalEvidenceHighlighter } from "@/components/shared/legal-evidence-highlighter"
 import {
   confidenceTierBadgeClassName,
   confidenceTierFromScore01,

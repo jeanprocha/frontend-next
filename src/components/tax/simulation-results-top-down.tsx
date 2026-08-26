@@ -17,7 +17,7 @@ import type { ResultMeta } from "@/store/useTaxStore"
 import type {
   AuditTabValue,
   SimulationEsteiraProps,
-} from "@/components/tax/simulation-esteira-types"
+} from "@/lib/simulation-esteira-types"
 import { cn } from "@/lib/utils"
 import type {
   AiMetadata,
@@ -256,7 +256,6 @@ export function SimulationResultsTopDown({
                 >
                   <FinancialVerdictHeroCard
                     simulation={simulation}
-                    aiMetadata={aiMetadata}
                     presentationMode={presentationMode}
                     isRecalculating={isRecalculating}
                     pendingSimulationSync={pendingSimulationSync}
@@ -538,7 +537,6 @@ export function SimulationResultsTopDown({
               </div>
             </div>
             <SimulationResultsStickyIndex
-              embedded
               activeTab={activeTab}
               onChangeTab={setActiveTab}
             />

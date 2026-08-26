@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
+import { GlossaryHelpTrigger } from "@/components/shared/glossary-help-trigger"
 import { cn } from "@/lib/utils"
 
 const glossary: Record<string, string> = {

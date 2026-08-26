@@ -22,10 +22,6 @@ const ITEMS: { key: SimulationResultsAnchorKey; label: string; step: number }[] 
 
 export interface SimulationResultsStickyIndexProps {
   className?: string
-  /**
-   * Quando true: o <nav> está dentro do card unificado do dossié (simulation-results-top-down).
-   */
-  embedded?: boolean
   activeTab?: SimulationResultsAnchorKey
   onChangeTab?: (key: SimulationResultsAnchorKey) => void
 }
@@ -36,7 +32,6 @@ export interface SimulationResultsStickyIndexProps {
  */
 export function SimulationResultsStickyIndex({
   className,
-  embedded: _embedded = false,
   activeTab = "veredito",
   onChangeTab,
 }: SimulationResultsStickyIndexProps) {

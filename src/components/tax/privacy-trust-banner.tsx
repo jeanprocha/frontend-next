@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Shield, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { PRIVACY_TRUST_BANNER_DISMISSED_KEY } from "@/store/useTaxStore"
 import type { TribiaPlgTier } from "@/lib/tribia-plg-flags"
 import { cn } from "@/lib/utils"
+
+/** `localStorage`: utilizador fechou o banner de privacidade PRO no dashboard. */
+const PRIVACY_TRUST_BANNER_DISMISSED_KEY = "tribia-privacy-banner-dismissed"
 
 const BANNER_MESSAGE =
   "Ambiente de Trabalho Profissional: Os seus dados financeiros e simulações são confidenciais e NÃO são utilizados para treinar modelos de IA."

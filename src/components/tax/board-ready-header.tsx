@@ -129,7 +129,7 @@ export function BoardReadyHeader({
   )
 }
 
-/** Marca d’água discreta; visível com ancestral `.board-ready` (inclui impressão). */
+/** Marca d’água discreta; visível apenas em ecrã com ancestral `.board-ready` — propositadamente ausente da impressão (`print:hidden`). */
 export function BoardReadyWatermark({
   visible = true,
   label = "Gerado por TribIA",

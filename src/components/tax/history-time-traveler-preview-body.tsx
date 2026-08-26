@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { TransitionSparkline } from "@/components/tax/transition-sparkline"
+import { TransitionSparkline } from "@/components/shared/transition-sparkline"
 import { formatBRL } from "@/lib/format-money"
 import { cn } from "@/lib/utils"
 import type { SimulationRecordSummary } from "@/types/api"

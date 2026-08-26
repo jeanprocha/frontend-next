@@ -14,7 +14,7 @@ import { motion } from "motion/react"
 import { History } from "lucide-react"
 import { ScenarioComparisonBar } from "@/components/tax/scenario-comparison-bar"
 import { ComparisonVerdictCard } from "@/components/tax/comparison-verdict-card"
-import { SimulationEsteiraSection } from "@/components/tax/simulation-esteira-section"
+import { SimulationResultsTopDown } from "@/components/tax/simulation-results-top-down"
 import { PrivacyTrustBanner } from "@/components/tax/privacy-trust-banner"
 import { BoardReadyPresentationCta } from "@/components/tax/board-ready-presentation-cta"
 import { accumulatedNewTaxDiff, projectedNetTaxDiff } from "@/lib/comparison-metrics"
@@ -126,7 +126,7 @@ export function DashboardResultsView({
         </div>
       )}
       <div className="order-3 print:order-last board-ready:order-2">
-        <SimulationEsteiraSection
+        <SimulationResultsTopDown
           sessionStampAsideSlot={
             formResults.meta && (
               <div className="rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 board-ready:hidden print:hidden w-full sm:max-w-none">

@@ -2,19 +2,15 @@
 
 import dynamic from "next/dynamic"
 import { useCallback, useEffect, useState } from "react"
-import { AUDIT_TRAIL_STEPS } from "@/components/tax/audit-trail-journey"
 import { BoardAuditCertificate } from "@/components/tax/board-audit-certificate"
 import { BoardLegalCoverageShield } from "@/components/tax/board-legal-coverage-shield"
 import { CreditLeakageAlert } from "@/components/tax/credit-leakage-alert"
-import { ExpenseTable } from "@/components/tax/expense-table"
 import { RagAuditCard } from "@/components/tax/rag-audit-card"
 import { SummaryCards } from "@/components/tax/summary-cards"
 import { LawPdfAuthorityCard } from "@/components/tax/law-pdf-authority-card"
 import { TransitionAuditPanel } from "@/components/tax/transition-audit-panel"
 import { TransitionAuditPanelBody } from "@/components/tax/transition-audit-panel-body"
 import { TransitionGoPeaksMarcos } from "@/components/tax/transition-go-peaks-marcos"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -23,14 +19,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatBRL } from "@/lib/format-money"
-import {
-  formatRegulatoryFactorDisplay,
-  formatRegulatoryFactorPair,
-} from "@/lib/format-regulatory-factor"
-import { parseApiDecimal } from "@/lib/money-decimal"
-import { factorTransitionAuditTooltip } from "@/lib/transition-audit-copy"
 import { aggregateClassifications } from "@/lib/classification-aggregates"
 import { confidenceTierFromScore01, humanSolidityHintFromAggregatedScore01 } from "@/lib/confidence-tiers"
 import {
@@ -38,6 +26,7 @@ import {
   countTenuousNexusLines,
 } from "@/lib/rag-tab-stats"
 import { resolveHeroEvidencePick } from "@/lib/session-authority-evidence"
+import type { AuditTabValue } from "@/lib/simulation-esteira-types"
 import type { TransitionEsteiraUi } from "@/lib/transition-esteira-ui"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
@@ -47,11 +36,6 @@ import type {
   SimulationResponse,
   TransitionSeriesPoint,
 } from "@/types/api"
-
-const TAB_VALUES = ["dados", "classificacao", "rag", "go"] as const
-export type AuditTabValue = (typeof TAB_VALUES)[number]
-/** Valores das tabs da esteira (sincronizar com `AUDIT_TRAIL_STEPS`). */
-export const AUDIT_TAB_VALUES = TAB_VALUES
 
 function ChartSankeySkeleton() {
   return <Skeleton className="h-[min(360px,50vh)] w-full min-h-[200px] rounded-xl" />
@@ -135,19 +119,15 @@ const ESTEIRA_TAB_CARD_CLASS =
   "dark:data-active:border-emerald-400 dark:data-active:bg-emerald-950/50 dark:data-active:shadow-[0_10px_36px_rgb(0,0,0,0.32)] dark:data-active:ring-emerald-400/35 " +
   "print:z-0 print:shadow-none print:ring-0"
 
-import type { SimulationEsteiraProps } from "@/components/tax/simulation-esteira-types"
-
 export interface AuditConfidenceTabsProps {
   simulation: SimulationResponse
   services: { id: string; description: string; amount: string }[]
   expenses: { id: string; description: string; amount: string }[]
-  companyContext: string
   classifications: ClassificationItem[]
   aiMetadata: AiMetadata | null | undefined
   focusYear: number
   point: TransitionSeriesPoint | undefined
   seriesEnriched?: boolean
-  showTransitionAuditFactors: boolean
   /** Modo apresentação / Board-Ready — alinha com `ExpenseTable` (colunas legais). */
   presentationMode?: boolean
   /** Gráfico de transição, Sankey e picos — Tab Motor Go. */
@@ -174,13 +154,11 @@ export function AuditConfidenceTabs({
   simulation,
   services,
   expenses,
-  companyContext,
   classifications,
   aiMetadata,
   focusYear,
   point,
   seriesEnriched,
-  showTransitionAuditFactors,
   presentationMode = false,
   transitionUi,
   summaryResult,

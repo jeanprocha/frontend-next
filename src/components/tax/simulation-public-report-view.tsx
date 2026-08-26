@@ -99,12 +99,10 @@ export function SimulationPublicReportView({ id }: SimulationPublicReportViewPro
       simulation: cardSimulation,
       services,
       expenses: persisted.expenses,
-      companyContext: raw.company_context,
       classifications: persisted.classifications,
       aiMetadata: persisted.ai_metadata,
       focusYear,
       seriesEnriched: raw.simulation.transition_series_enriched === true,
-      showTransitionAuditFactors: true,
       presentationMode: true,
       publicLinear: true,
       transitionUi: {
@@ -222,7 +220,6 @@ export function SimulationPublicReportView({ id }: SimulationPublicReportViewPro
           >
             <FinancialVerdictHeroCard
               simulation={sim}
-              aiMetadata={persisted.ai_metadata}
               presentationMode
               isRecalculating={false}
               pendingSimulationSync={false}

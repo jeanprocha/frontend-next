@@ -9,11 +9,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { buttonVariants } from "@/components/ui/button"
-import { BriefingSectionTitle } from "@/components/tax/briefing-section-title"
+import { BriefingSectionTitle } from "@/components/shared/briefing-section-title"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
-import { LegalEvidenceHighlighter } from "@/components/tax/legal-evidence-highlighter"
+import { LegalEvidenceHighlighter } from "@/components/shared/legal-evidence-highlighter"
 import { formatLegalCitationFromMetadata, ragScoreFormulaSummary } from "@/lib/rag-metadata"
 import type { ClassificationItem } from "@/types/api"
 

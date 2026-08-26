@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
+import { GlossaryHelpTrigger } from "@/components/shared/glossary-help-trigger"
 import { TAX_GLOSSARY, type TaxGlossaryTerm } from "@/constants/tax-glossary"
 import { cn } from "@/lib/utils"
 

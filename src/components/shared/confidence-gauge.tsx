@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react"
 import { Info } from "lucide-react"
-import { GlossaryHelpTrigger } from "@/components/tax/glossary-help-trigger"
+import { GlossaryHelpTrigger } from "@/components/shared/glossary-help-trigger"
 import { cn } from "@/lib/utils"
 import {
   confidenceTierFromScore01,
