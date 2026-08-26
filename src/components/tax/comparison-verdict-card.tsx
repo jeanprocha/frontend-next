@@ -23,7 +23,7 @@ import {
 } from "@/lib/simulation-verdict"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { AiMetadata, ClassificationItem, SimulationResponse } from "@/types/api"
-import type { TribiaPlgTier } from "@/lib/tribia-plg-flags"
+import { useCapability } from "@/features/plg"
 
 function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): string {
   const base = `A simulação assenta nas premissas do modelo TribIA para a ${lawLabel}, com regimes de transição e elegibilidade a créditos conforme o quadro legal aplicável (incluindo Art. 131 da LC 68/2024, no âmbito do modelo).`
@@ -37,7 +37,6 @@ function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): str
 
 export interface ComparisonVerdictCardProps {
   mode: "single" | "comparison"
-  plgTier?: TribiaPlgTier
   strategyInsight?: string
   lawVersion?: string
   /** Sempre o cenário actual (B em modo comparison). */
@@ -69,7 +68,6 @@ export interface ComparisonVerdictCardProps {
 
 export function ComparisonVerdictCard({
   mode,
-  plgTier = "free",
   strategyInsight,
   lawVersion = FISCAL_LAW_CHANGELOG.version,
   currentSimulation,
@@ -87,7 +85,7 @@ export function ComparisonVerdictCard({
 }: ComparisonVerdictCardProps) {
   const openMacroBriefing = useTaxStore((s) => s.openAnalystBriefingFromMacro)
   const [execTab, setExecTab] = useState<"veredito" | "parecer">("veredito")
-  const showLegalTab = plgTier === "premium"
+  const showLegalTab = useCapability("legalOpinionTab")
   const lawLabel = fiscalLawVersionLabel(lawVersion)
 
   const isComparison = mode === "comparison"

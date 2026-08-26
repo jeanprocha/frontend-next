@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { classifyBatch } from "@/lib/api"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useTribiaPlgTier } from "@/features/plg"
 import type { ClassificationItem, FormExpense } from "@/types/api"
 
 export interface UploadResult {

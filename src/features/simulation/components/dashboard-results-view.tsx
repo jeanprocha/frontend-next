@@ -21,7 +21,7 @@ import { accumulatedNewTaxDiff, projectedNetTaxDiff } from "@/lib/comparison-met
 import { FADE_IN_VARIANTS } from "@/lib/motion-variants"
 import type { ConsultantClassificationOverride, FormExpense, FormService } from "@/types/api"
 import type { PersistedResults } from "@/store/useTaxStore"
-import type { TribiaPlgTier, usePlgCapabilities } from "@/hooks/use-tribia-plg-tier"
+import type { usePlgCapabilities } from "@/features/plg"
 
 type FormResults = Extract<PersistedResults, { mode: "form" }>
 type PlgCapabilities = ReturnType<typeof usePlgCapabilities>
@@ -35,7 +35,6 @@ export interface DashboardResultsViewProps {
   replaceBaselineWith: (r: FormResults) => void
   handleRequestSingleView: () => void
   handleRequestComparisonView: () => void
-  plgTier: TribiaPlgTier
   plgCap: PlgCapabilities
   authLoaded: boolean
   isSignedIn: boolean | undefined
@@ -69,7 +68,6 @@ export function DashboardResultsView({
   replaceBaselineWith,
   handleRequestSingleView,
   handleRequestComparisonView,
-  plgTier,
   plgCap,
   authLoaded,
   isSignedIn,
@@ -113,7 +111,6 @@ export function DashboardResultsView({
         <div className="order-2 board-ready:order-first print:order-first">
           <ComparisonVerdictCard
             mode="comparison"
-            plgTier={plgTier}
             accumulatedDiff={accumulatedNewTaxDiff(
               comparisonBaseline.simulation.transition_series,
               formResults.simulation.transition_series,
@@ -152,7 +149,7 @@ export function DashboardResultsView({
               </div>
             )
           }
-          headerBannersSlot={<PrivacyTrustBanner plgTier={plgTier} className="w-full board-ready:hidden" />}
+          headerBannersSlot={<PrivacyTrustBanner className="w-full board-ready:hidden" />}
           showSessionOneHero={Boolean(authLoaded && isSignedIn && !isComparing)}
           showExecutiveVerdict={!isComparing}
           insightResult={cardSimulation ?? formResults.simulation}

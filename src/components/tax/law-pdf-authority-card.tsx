@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-client"
-import { useTribiaPlanContext } from "@/components/tribia/tribia-plan-provider"
-import { usePdfLegislationProAccess } from "@/hooks/use-tribia-plg-tier"
+import { useCapability, useTribiaPlgTier } from "@/features/plg"
 import { cn } from "@/lib/utils"
 import { fetchLawPdfAnchor } from "@/lib/api"
 import { formatArticleLabel } from "@/lib/rag-metadata"
@@ -37,8 +36,8 @@ export function LawPdfAuthorityCard({
   eyebrow,
 }: LawPdfAuthorityCardProps) {
   const embedded = variant === "embedded"
-  const pro = usePdfLegislationProAccess()
-  const { tier } = useTribiaPlanContext()
+  const pro = useCapability("pdfLegislationPro")
+  const tier = useTribiaPlgTier()
   const { getToken, userId } = useAuth()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<LawPdfAnchorResponse | null>(null)

@@ -6,8 +6,7 @@ import { usePathname } from "next/navigation"
 import { useAuth, SignInButton, UserButton } from "@/lib/auth-client"
 import { Menu } from "lucide-react"
 import { LegalVersionIndicator } from "@/components/legal/legal-version-indicator"
-import { PlgLimitMeter } from "@/components/tribia/plg-limit-meter"
-import { TribiaPlanBadge } from "@/components/tribia/tribia-plan-badge"
+import { PlgLimitMeter, TribiaPlanBadge } from "@/features/plg"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sheet"
 import { FISCAL_LAW_CHANGELOG } from "@/lib/fiscal-law-changelog"
 import { cn } from "@/lib/utils"
-import { usePlgCapabilities } from "@/hooks/use-tribia-plg-tier"
+import { usePlgCapabilities } from "@/features/plg"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
 
 export interface LegalVersionIndicatorProps {

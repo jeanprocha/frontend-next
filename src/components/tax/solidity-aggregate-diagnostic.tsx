@@ -32,7 +32,7 @@
 import { useMemo } from "react"
 import { ShieldAlert, ShieldCheck } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useCapability } from "@/features/plg"
 import { buildAggregateSolidityDiagnosticMessage } from "@/lib/aggregate-solidity-diagnostic"
 import { cn } from "@/lib/utils"
 import type { ConfidenceTier } from "@/lib/confidence-tiers"
@@ -80,8 +80,7 @@ export function SolidityAggregateDiagnostic({
   presentationMode = false,
   className,
 }: SolidityAggregateDiagnosticProps) {
-  const plgTier = useTribiaPlgTier()
-  const isPro = plgTier === "pro" || plgTier === "premium"
+  const isPro = useCapability("rayxFull")
 
   const diagnostic = useMemo(() => {
     if (score == null || !Number.isFinite(score)) return null

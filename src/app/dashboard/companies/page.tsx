@@ -13,7 +13,7 @@ import {
   queryKeys,
 } from "@/lib/api"
 import { RequestIdSupportRow } from "@/components/ui/request-id-support"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useTribiaPlgTier } from "@/features/plg"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { useTaxStore } from "@/store/useTaxStore"
 import { ShellBreadcrumb } from "@/components/shell/shell-breadcrumb"

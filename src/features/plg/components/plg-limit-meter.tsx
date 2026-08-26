@@ -3,9 +3,9 @@
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
-import { usePlgQuota } from "@/hooks/use-plg-quota"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
-import { PlgUpgradeDialog } from "@/components/tribia/plg-upgrade-dialog"
+import { usePlgQuota } from "../use-plg-quota"
+import { useTribiaPlgTier } from "../use-capability"
+import { PlgUpgradeDialog } from "./plg-upgrade-dialog"
 
 /**
  * Medidor subtil de simulações/dia (Free) na top bar — estado âmbar + Unlock Pro ao esgotar.

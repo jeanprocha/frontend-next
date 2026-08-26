@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Shield, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import type { TribiaPlgTier } from "@/lib/tribia-plg-flags"
+import { useCapability } from "@/features/plg"
 import { cn } from "@/lib/utils"
 
 /** `localStorage`: utilizador fechou o banner de privacidade PRO no dashboard. */
@@ -14,18 +14,17 @@ const BANNER_MESSAGE =
   "Ambiente de Trabalho Profissional: Os seus dados financeiros e simulações são confidenciais e NÃO são utilizados para treinar modelos de IA."
 
 type PrivacyTrustBannerProps = {
-  plgTier: TribiaPlgTier
   className?: string
 }
 
 /**
  * Faixa de confiança PRO/Premium: promessa alinhada a `/privacidade` (Pilar 3.6).
  */
-export function PrivacyTrustBanner({ plgTier, className }: PrivacyTrustBannerProps) {
+export function PrivacyTrustBanner({ className }: PrivacyTrustBannerProps) {
   const [ready, setReady] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
-  const isProOrPremium = plgTier !== "free"
+  const isProOrPremium = useCapability("privacyWorkspace")
 
   useEffect(() => {
     if (typeof window === "undefined") return

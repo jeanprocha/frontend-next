@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { BriefingSectionTitle } from "@/components/shared/briefing-section-title"
 import { RayXAnchorCallout } from "@/components/tax/ray-x-anchor-callout"
-import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
+import { useCapability } from "@/features/plg"
 import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem, EvidenceArticle } from "@/types/api"
@@ -30,7 +30,7 @@ export function LawArticleIntegral({
   articleId,
   classification = null,
 }: LawArticleIntegralProps) {
-  const rayxFull = useRayxFullAccess()
+  const rayxFull = useCapability("rayxFull")
   const articleLabel = useMemo(() => {
     if (!articleId) return ""
     const ev = evidenceForArticle(classification, articleId)

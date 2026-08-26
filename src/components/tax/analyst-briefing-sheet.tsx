@@ -12,7 +12,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { BriefingSectionTitle } from "@/components/shared/briefing-section-title"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
-import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
+import { useCapability } from "@/features/plg"
 import { LegalEvidenceHighlighter } from "@/components/shared/legal-evidence-highlighter"
 import { formatLegalCitationFromMetadata, ragScoreFormulaSummary } from "@/lib/rag-metadata"
 import type { ClassificationItem } from "@/types/api"
@@ -23,7 +23,7 @@ export function AnalystBriefingSheet() {
   const tag = useTaxStore((s) => s.analystBriefingTag)
   const aiMeta = useTaxStore((s) => s.analystBriefingAiMeta)
   const close = useTaxStore((s) => s.closeAnalystBriefing)
-  const fullRayx = useRayxFullAccess()
+  const fullRayx = useCapability("rayxFull")
 
   const onOpenChange = (next: boolean) => {
     if (!next) close()

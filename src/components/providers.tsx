@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { CommandMenu } from "@/components/command-menu"
-import { TribiaPlanProvider } from "@/components/tribia/tribia-plan-provider"
+import { TribiaPlanProvider } from "@/features/plg"
 import { initThemeFromStorage } from "@/lib/theme-preference"
 
 // Remove a chave legada do localStorage que era usada pelo Zustand persist.

@@ -15,7 +15,7 @@ import {
   TENUOUS_RAG_NEXUS_MESSAGE,
 } from "@/lib/confidence-tiers"
 import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"
-import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
+import { useCapability } from "@/features/plg"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem } from "@/types/api"
 
@@ -35,7 +35,7 @@ export function ClassificationBriefingContent({
   /** Quando false, omitir nota final (ex.: antes de «Texto legal integral» no mesmo modal). */
   withClosingNote?: boolean
 }) {
-  const rayxFull = useRayxFullAccess()
+  const rayxFull = useCapability("rayxFull")
   const evidence = c.evidence ?? []
   const riskRaw = c.risk_level?.trim() || "—"
   const riskBadge = /risco/i.test(riskRaw) ? riskRaw : `Risco ${riskRaw}`

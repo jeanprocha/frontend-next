@@ -49,7 +49,7 @@ import {
   formatPct,
 } from "@/lib/format-money"
 import { FISCAL_LAW_CHANGELOG } from "@/lib/fiscal-law-changelog"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useCapability } from "@/features/plg"
 import type { SimulationResponse } from "@/types/api"
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
@@ -160,8 +160,7 @@ export function FinancialVerdictHeroCard({
   pendingSimulationSync = false,
   className,
 }: FinancialVerdictHeroCardProps) {
-  const plgTier = useTribiaPlgTier()
-  const isPro = plgTier === "pro" || plgTier === "premium"
+  const isPro = useCapability("rayxFull")
 
   // ── Polaridade — fonte exclusiva: simulation.delta (motor Go) ─────────────
   // `deriveFinancialVerdictPolarity` usa Decimal internamente — sem float.

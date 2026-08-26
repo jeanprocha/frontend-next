@@ -14,13 +14,12 @@ import { HistoryRecordPreviewTrigger } from "@/components/tax/history-record-pre
 import { HistoryRowHoverPreview } from "@/components/tax/history-row-hover-preview"
 import { TransitionSparkline } from "@/components/shared/transition-sparkline"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useCapability, PlgUpgradeDialog } from "@/features/plg"
 import { cn } from "@/lib/utils"
 import { simulationDetailToPersisted } from "@/lib/history-hydrate"
 import { ShellBreadcrumb } from "@/components/shell/shell-breadcrumb"
 import { shellPageClass } from "@/lib/shell-layout"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
-import { PlgUpgradeDialog } from "@/components/tribia/plg-upgrade-dialog"
 import { useTaxStore } from "@/store/useTaxStore"
 import { hydrateSimulationResults, requestHistoryComparison } from "@/features/simulation"
 
@@ -78,8 +77,7 @@ export default function HistoryPage() {
   const [compareLoading, setCompareLoading] = useState(false)
   const [compareUpgradeOpen, setCompareUpgradeOpen] = useState(false)
 
-  const plgTier = useTribiaPlgTier()
-  const historyPro = plgTier === "pro" || plgTier === "premium"
+  const historyPro = useCapability("historyRichPreview")
   const touchMeeting = useTouchMeetingMode()
 
   const {

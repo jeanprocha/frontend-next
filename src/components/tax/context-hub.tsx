@@ -15,8 +15,7 @@ import {
 import { StrategyChips } from "@/components/tax/strategy-chips"
 import { ContextHighlightField } from "@/components/tax/context-highlight-field"
 import { useStrategyTags } from "@/hooks/use-strategy-tags"
-import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
-import { PlgUpgradeDialog } from "@/components/tribia/plg-upgrade-dialog"
+import { useCapability, PlgUpgradeDialog } from "@/features/plg"
 
 export function ContextHub() {
   const { year, companyContext, companyRegime, setYear, setCompanyContext, setCompanyRegime } =
@@ -28,7 +27,7 @@ export function ContextHub() {
   const contextHighlightRuneRange = useTaxStore((s) => s.contextHighlightRuneRange)
   const analystBriefingOpen = useTaxStore((s) => s.analystBriefingOpen)
   const analystBriefingKind = useTaxStore((s) => s.analystBriefingKind)
-  const fullRayx = useRayxFullAccess()
+  const fullRayx = useCapability("rayxFull")
   const [rayxUpgradeOpen, setRayxUpgradeOpen] = useState(false)
 
   const hasAnchorSpan =
@@ -45,7 +44,7 @@ export function ContextHub() {
 
   const rayxCalloutMode = useMemo(() => {
     if (!showRayxCallout) return null
-    if (hasAnchorSpan) return fullRayx ? "pro" : "free"
+    if (hasAnchorSpan) return fullRayx ? "full" : "tease"
     return "missing"
   }, [showRayxCallout, hasAnchorSpan, fullRayx])
 
@@ -120,21 +119,21 @@ export function ContextHub() {
             role="status"
             className={cn(
               "rounded-lg border px-3 py-2 text-xs leading-snug",
-              rayxCalloutMode === "pro" &&
+              rayxCalloutMode === "full" &&
                 "border-emerald-500/30 bg-emerald-50/80 text-emerald-950 dark:border-emerald-500/20 dark:bg-emerald-950/25 dark:text-emerald-50",
-              rayxCalloutMode === "free" &&
+              rayxCalloutMode === "tease" &&
                 "border-border/80 bg-muted/40 text-foreground/90 dark:bg-muted/25",
               rayxCalloutMode === "missing" &&
                 "border-amber-500/35 bg-amber-50/80 text-amber-950 dark:border-amber-500/25 dark:bg-amber-950/30 dark:text-amber-50",
             )}
           >
-            {rayxCalloutMode === "pro" && (
+            {rayxCalloutMode === "full" && (
               <p>
                 Trecho do contexto que sustenta esta instância está{" "}
                 <span className="font-medium text-foreground">realçado abaixo</span>.
               </p>
             )}
-            {rayxCalloutMode === "free" && (
+            {rayxCalloutMode === "tease" && (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="min-w-0 flex-1">
                   O sistema identificou o trecho correspondente; no Pro o realce fica nítido no contexto e o briefing reúne a trilha completa na LC 68/2024 com evidências RAG.

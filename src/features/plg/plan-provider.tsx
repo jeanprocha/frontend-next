@@ -11,7 +11,7 @@ import {
   type TribiaPlgTier,
   getPlgCapabilities,
   type TribiaPlgCapabilities,
-} from "@/lib/tribia-plg-flags"
+} from "./capabilities"
 
 function normalizeTier(raw: unknown): TribiaPlgTier | null {
   if (typeof raw !== "string") return null

@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth-client"
 import { useQuery } from "@tanstack/react-query"
 import { fetchPlgQuota, queryKeys } from "@/lib/api"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useTribiaPlgTier } from "./use-capability"
 
 export function usePlgQuota() {
   const { userId, isLoaded, getToken } = useAuth()

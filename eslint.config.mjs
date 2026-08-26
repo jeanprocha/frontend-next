@@ -62,26 +62,28 @@ const eslintConfig = defineConfig([
     ),
   },
 
-  // 2. hooks/: abaixo de components e app.
+  // 2. hooks/: abaixo de components e app. Excepção: @/features/plg (só o
+  // barrel) — única feature transversal; nenhuma outra ganha negação.
   {
     files: ["src/hooks/**"],
     rules: restrict(
       {
-        group: ["@/components/**", "@/app/**", "@/features/**"],
-        message: "hooks/ não importa de components/, app/ ou features/.",
+        group: ["@/components/**", "@/app/**", "@/features/**", "!@/features/plg"],
+        message: "hooks/ não importa de components/, app/ ou features/ (excepto @/features/plg).",
       },
       NO_UP_RELATIVE,
       NO_CLERK_DIRECT,
     ),
   },
 
-  // 3. components/ (genérico — tax, tribia, raiz).
+  // 3. components/ (genérico — tax, tribia, raiz). Excepção: @/features/plg
+  // (só o barrel) — única feature transversal; nenhuma outra ganha negação.
   {
     files: ["src/components/**"],
     rules: restrict(
       {
-        group: ["@/app/**", "@/features/**"],
-        message: "components/ não importa de app/ nem de features/.",
+        group: ["@/app/**", "@/features/**", "!@/features/plg"],
+        message: "components/ não importa de app/ nem de features/ (excepto @/features/plg).",
       },
       NO_UP_RELATIVE,
       NO_CLERK_DIRECT,
@@ -89,19 +91,21 @@ const eslintConfig = defineConfig([
   },
 
   // 4a. shell/: chrome genérico do app — não importa do domínio tax.
+  // Excepção: @/features/plg (só o barrel) — única feature transversal.
   {
     files: ["src/components/shell/**"],
     rules: restrict(
       {
-        group: ["@/app/**", "@/features/**", "@/components/tax/**"],
-        message: "shell/ é chrome genérico: não importa de app/, features/ nem components/tax.",
+        group: ["@/app/**", "@/features/**", "!@/features/plg", "@/components/tax/**"],
+        message: "shell/ é chrome genérico: não importa de app/, features/ (excepto @/features/plg) nem components/tax.",
       },
       NO_UP_RELATIVE,
       NO_CLERK_DIRECT,
     ),
   },
 
-  // 4b. ui/: o mais genérico de todos — só ui/, lib/ e types/.
+  // 4b. ui/: o mais genérico de todos — só ui/, lib/ e types/. Sem excepção
+  // para features/plg (nem sequer o barrel) — é a camada mais primitiva.
   {
     files: ["src/components/ui/**"],
     rules: restrict(
@@ -110,7 +114,6 @@ const eslintConfig = defineConfig([
           "@/app/**",
           "@/features/**",
           "@/components/tax/**",
-          "@/components/tribia/**",
           "@/components/shell/**",
         ],
         message: "ui/ só importa de ui/, lib/ e types/.",
@@ -148,17 +151,18 @@ const eslintConfig = defineConfig([
     ),
   },
 
-  // 7. features/ (regra futura — ativa desde já; zero arquivos hoje).
-  // Isolamento total entre features: dentro da própria feature use import
-  // relativo (por isso NO_UP_RELATIVE não entra aqui); para partilhar entre
-  // features, promova a lib/ ou components/.
+  // 7. features/: isolamento total entre features: dentro da própria feature
+  // use import relativo (por isso NO_UP_RELATIVE não entra aqui); para
+  // partilhar entre features, promova a lib/ ou components/. Excepção:
+  // @/features/plg (só o barrel) — única feature transversal; nenhuma outra
+  // ganha negação. Deep import @/features/plg/** continua banido.
   {
     files: ["src/features/**"],
     rules: restrict(
       {
-        group: ["@/features/*", "@/features/*/**"],
+        group: ["@/features/*", "@/features/*/**", "!@/features/plg"],
         message:
-          "feature ↛ feature. Dentro da própria feature use import relativo; para partilhar, promova a lib/ ou components/.",
+          "feature ↛ feature (excepto @/features/plg). Dentro da própria feature use import relativo; para partilhar, promova a lib/ ou components/.",
       },
       { group: ["@/app/**"], message: "features/ não importa de app/." },
       NO_CLERK_DIRECT,

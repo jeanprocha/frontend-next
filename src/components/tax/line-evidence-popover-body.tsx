@@ -11,7 +11,7 @@ import { LegalEvidenceHighlighter } from "@/components/shared/legal-evidence-hig
 import { RayXAnchorCallout } from "@/components/tax/ray-x-anchor-callout"
 import { firstEvidenceWithContent, resolveLawArticleChunkId } from "@/lib/law-article-from-classification"
 import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"
-import { useRayxFullAccess } from "@/hooks/use-tribia-plg-tier"
+import { useCapability } from "@/features/plg"
 import { useTaxStore } from "@/store/useTaxStore"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem } from "@/types/api"
@@ -81,14 +81,14 @@ function PanelChrome({
 }
 
 /**
- * Secção lei integral / RAG. Raio-X Full (`LegalEvidenceHighlighter`) segue `useRayxFullAccess()`
+ * Secção lei integral / RAG. Raio-X Full (`LegalEvidenceHighlighter`) segue `useCapability("rayxFull")`
  * — mesmo contrato que `classification-briefing-content` e `context-hub` (tiers: docs/sistema-tiers-tribia.md).
  */
 function LawArticleSection({ c }: { c: ClassificationItem }) {
   const chunkId = resolveLawArticleChunkId(c)
   const ev = firstEvidenceWithContent(c)
   const [ragOpen, setRagOpen] = useState(false)
-  const rayxFull = useRayxFullAccess()
+  const rayxFull = useCapability("rayxFull")
 
   return (
     <div className="space-y-6 border-t border-border/50 pt-3">

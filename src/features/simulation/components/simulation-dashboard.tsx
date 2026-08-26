@@ -54,11 +54,10 @@ import {
   setDashboardCommandBridge,
 } from "@/lib/dashboard-command-bridge"
 import {
+  PlgUpgradeDialog,
   usePlgCapabilities,
   useTribiaBranding,
-  useTribiaPlgTier,
-} from "@/hooks/use-tribia-plg-tier"
-import { PlgUpgradeDialog } from "@/components/tribia/plg-upgrade-dialog"
+} from "@/features/plg"
 import {
   detailServicesToFormServices,
   parseCompanyRegimeFromDetail,
@@ -91,7 +90,6 @@ type InputMode = "form" | "csv"
 export function SimulationDashboard() {
   const { isSignedIn, isLoaded: authLoaded, userId: clerkUserId } = useAuth()
   const { isBoardReady, setIsBoardReady, toggleBoardReady } = useBoardReady()
-  const plgTier = useTribiaPlgTier()
   const plgCap = usePlgCapabilities()
   const [focusYear, setFocusYear] = useState(2026)
   const { brandingLogoUrl, brandingOrgName } = useTribiaBranding()
@@ -344,7 +342,7 @@ export function SimulationDashboard() {
     }
   }, [isComparing, plgCap.compareAB, formResults, startComparison])
 
-  const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+  const isProOrPremium = plgCap.compareAB
 
   /** Atalhos PRO (bridge): alternar A/B sem depender do botão do veredito. */
   const toggleComparisonABFromBridge = useCallback(() => {
@@ -753,7 +751,6 @@ export function SimulationDashboard() {
                   replaceBaselineWith={replaceBaselineWith}
                   handleRequestSingleView={handleRequestSingleView}
                   handleRequestComparisonView={handleRequestComparisonView}
-                  plgTier={plgTier}
                   plgCap={plgCap}
                   authLoaded={authLoaded}
                   isSignedIn={isSignedIn}
@@ -792,8 +789,8 @@ export function SimulationDashboard() {
               {results.mode === "form" && (
                 <div className="order-6">
                   <PrintReportFooter
-                    plgTier={plgTier}
                     whiteLabel={plgCap.whiteLabelExport}
+                    freeWatermark={plgCap.freeWatermark}
                     isComparing={isComparing}
                     lawVersion={FISCAL_LAW_CHANGELOG.version}
                   />

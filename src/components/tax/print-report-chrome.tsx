@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils"
 import { FISCAL_LAW_CHANGELOG, fiscalLawVersionLabel } from "@/lib/fiscal-law-changelog"
-import type { TribiaPlgTier } from "@/lib/tribia-plg-flags"
 
 function formatPrintDate(iso?: string | null): string {
   if (iso) {
@@ -117,9 +116,10 @@ export function PrintReportHeader({
 
 export interface PrintReportFooterProps {
   className?: string
-  plgTier?: TribiaPlgTier
   /** Premium: omitir menções directas à marca TribIA no rodapé. */
   whiteLabel?: boolean
+  /** Free: rodapé sinaliza explicitamente o plano Free. */
+  freeWatermark?: boolean
   /** True quando há comparativo A/B activo na vista impressa. */
   isComparing?: boolean
   /** Versão da lei (default changelog). */
@@ -129,15 +129,15 @@ export interface PrintReportFooterProps {
 /** Rodapé legal só na impressão — varia por plano e modo de simulação. */
 export function PrintReportFooter({
   className,
-  plgTier = "free",
   whiteLabel = false,
+  freeWatermark = false,
   isComparing = false,
   lawVersion = FISCAL_LAW_CHANGELOG.version,
 }: PrintReportFooterProps) {
   const law = fiscalLawVersionLabel(lawVersion)
   const simLine = isComparing ? "Comparativo A/B (dois cenários)" : "Simulação única"
 
-  if (plgTier === "premium" && whiteLabel) {
+  if (whiteLabel) {
     return (
       <div
         className={cn(
@@ -160,7 +160,7 @@ export function PrintReportFooter({
     )
   }
 
-  if (plgTier === "free") {
+  if (freeWatermark) {
     return (
       <div
         className={cn(

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-client"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useCapability, useTribiaPlgTier } from "@/features/plg"
 import { useQuery } from "@tanstack/react-query"
 import {
   Building2,
@@ -71,6 +71,7 @@ export function CommandMenu() {
   const pathname = usePathname()
   const { userId, getToken } = useAuth()
   const plgTier = useTribiaPlgTier()
+  const rayxFull = useCapability("rayxFull")
   const mod = modKeyLabel()
   const leaderGRef = useRef<{
     armed: boolean
@@ -245,7 +246,7 @@ export function CommandMenu() {
       const b = getDashboardCommandBridge()
       const apple = isApplePlatform()
       const modDown = apple ? e.metaKey : e.ctrlKey
-      const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+      const isProOrPremium = rayxFull
       const proFormResults =
         isProOrPremium &&
         onDashboard &&
@@ -324,7 +325,7 @@ export function CommandMenu() {
   }, [
     open,
     onDashboard,
-    plgTier,
+    rayxFull,
     addService,
     addExpense,
     router,
@@ -340,7 +341,7 @@ export function CommandMenu() {
   const canFocusHistorySearch = Boolean(b.focusHistorySearch)
   const canOpenCompanyForm = Boolean(b.openCompaniesNewForm)
 
-  const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+  const isProOrPremium = rayxFull
   const proFormResultHotkeys =
     isProOrPremium &&
     onDashboard &&

@@ -4,8 +4,7 @@ import { useCallback, useState } from "react"
 import { ExternalLink } from "lucide-react"
 import { useAuth } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
-import { useTribiaPlanContext } from "@/components/tribia/tribia-plan-provider"
-import { usePdfLegislationProAccess } from "@/hooks/use-tribia-plg-tier"
+import { useCapability, useTribiaPlgTier } from "@/features/plg"
 import { fetchLawPdfAnchor } from "@/lib/api"
 import { buildLawPdfExternalUrl } from "@/lib/law-pdf-external-url"
 import type { LawPdfAnchorResponse } from "@/types/api"
@@ -25,8 +24,8 @@ export function LawPdfOpenButton({
   prefetchedAnchor,
   className,
 }: LawPdfOpenButtonProps) {
-  const pro = usePdfLegislationProAccess()
-  const { tier } = useTribiaPlanContext()
+  const pro = useCapability("pdfLegislationPro")
+  const tier = useTribiaPlgTier()
   const { getToken, userId, isLoaded } = useAuth()
   const [opening, setOpening] = useState(false)
   const [error, setError] = useState<string | null>(null)

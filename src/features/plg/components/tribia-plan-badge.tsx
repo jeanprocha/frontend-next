@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-client"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
-import type { TribiaPlgTier } from "@/lib/tribia-plg-flags"
+import { useTribiaPlgTier } from "../use-capability"
+import type { TribiaPlgTier } from "../capabilities"
 import { cn } from "@/lib/utils"
 
 const LABEL: Record<TribiaPlgTier, string> = {
