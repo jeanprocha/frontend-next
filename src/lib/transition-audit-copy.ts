@@ -76,8 +76,16 @@ export function explainDestinationCredits(
 
   const parts: string[] = []
   if (focusYear >= 2026 && focusYear <= 2028 && combined && combined.lt("0.12")) {
+    // W7/B2.2: a partir de 2027 a CBS já entra praticamente plena (~8,7%) — quem
+    // represa a alíquota combinada é o IBS, mantido nominal em 0,1% até 2029. Em
+    // 2026 os dois ainda sobem juntos (fase-teste). Não descrever como "rampa"
+    // única do combinado: seria impreciso para 2027-2028.
+    const notaIBS =
+      focusYear >= 2027
+        ? " A CBS já entra praticamente plena a partir de 2027; é o IBS, mantido em patamar nominal até 2029, que ainda represa a alíquota combinada."
+        : ""
     parts.push(
-      `No modelo TribIA, a alíquota CBS+IBS de referência em ${focusYear} ainda está em rampa (${f.combined_projected_rate ?? "—"}). Créditos sobre despesas elegíveis seguem essa mesma lógica de alíquota efetiva; por isso o montante absoluto de créditos do bloco destino pode parecer modesto em relação à receita, sem indicar erro de cálculo.`,
+      `No modelo TribIA, a alíquota CBS+IBS de referência em ${focusYear} ainda reflete a fase inicial da transição (${f.combined_projected_rate ?? "—"}).${notaIBS} Créditos sobre despesas elegíveis seguem essa mesma lógica de alíquota efetiva; por isso o montante absoluto de créditos do bloco destino pode parecer modesto em relação à receita, sem indicar erro de cálculo.`,
     )
   } else if (credits && gross && gross.gt(0)) {
     const ratio = credits.div(gross)

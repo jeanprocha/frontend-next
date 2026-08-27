@@ -33,15 +33,17 @@ function makePoint(
   }
 }
 
-// Pontos canónicos (StringFixed(6) do Go)
+// Pontos canónicos (StringFixed(6) do Go, W7/B2.2: PIS/COFINS extinto a
+// partir de 2027 — não sobra ano 2027-2032 em que pis_cofins_factor > 0;
+// a convivência nesse intervalo é sustentada só pelo ISS municipal).
 // 2026: PIS/COFINS=1, CBS=0.9%, IBS=0.1%, ISS=100% → convivência
 const p2026 = makePoint(2026, "1.000000", "0.009000", "0.001000", "1.000000")
-// 2031: PIS/COFINS=7.5%, CBS=8%, IBS=15%, ISS=40% → convivência
-const p2031 = makePoint(2031, "0.075000", "0.080000", "0.150000", "0.400000")
-// 2032: PIS/COFINS=0, CBS=9%, IBS=16%, ISS=20% → convivência (ISS ainda vivo!)
-const p2032 = makePoint(2032, "0.000000", "0.090000", "0.160000", "0.200000")
-// 2033: PIS/COFINS=0, CBS=9.9%, IBS=16.6%, ISS=0 → FORA da convivência
-const p2033 = makePoint(2033, "0.000000", "0.099000", "0.166000", "0.000000")
+// 2031: PIS/COFINS extinto, CBS=8.8%, IBS=5.31%, ISS=70% → convivência (via ISS)
+const p2031 = makePoint(2031, "0.000000", "0.088000", "0.053100", "0.700000")
+// 2032: PIS/COFINS extinto, CBS=8.8%, IBS=7.08%, ISS=60% → convivência (ISS ainda vivo!)
+const p2032 = makePoint(2032, "0.000000", "0.088000", "0.070800", "0.600000")
+// 2033: PIS/COFINS=0, CBS=8.8%, IBS=17.7%, ISS=0 → FORA da convivência
+const p2033 = makePoint(2033, "0.000000", "0.088000", "0.177000", "0.000000")
 
 const fullSeries = [p2026, p2031, p2032, p2033]
 
@@ -52,7 +54,7 @@ describe("isDualCompliancePoint", () => {
     expect(isDualCompliancePoint(p2026)).toBe(true)
   })
 
-  it("2031 — PIS/COFINS reduzido + CBS/IBS crescendo → convivência", () => {
+  it("2031 — PIS/COFINS extinto mas ISS ainda vivo → convivência (via ISS)", () => {
     expect(isDualCompliancePoint(p2031)).toBe(true)
   })
 

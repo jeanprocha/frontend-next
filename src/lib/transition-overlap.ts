@@ -16,9 +16,10 @@ import { parseApiDecimal } from "@/lib/money-decimal"
  *   2. pis_cofins_factor > 0 OU iss_municipal_factor > 0 — componente legado ainda vigente
  *
  * Inclui `iss_municipal_factor` por integridade normativa:
- * em 2032 o PIS/COFINS já zerou (fator 0.000000), mas o ISS municipal ainda convive
- * (fator 0.200000 em ISSMunicipalTransitionFactor do Go). Omitir ISS encerraria a
- * sombra um ano antes da realidade do modelo.
+ * em 2032 o PIS/COFINS já zerou (fator 0.000000, extinto desde 2027), mas o ISS
+ * municipal ainda convive (fator 0.600000 em ISSMunicipalTransitionFactor do Go —
+ * rampa de 1/10 ao ano, W7/B2.2). Omitir ISS encerraria a sombra um ano antes da
+ * realidade do modelo.
  *
  * Pontos sem `factors` (registos históricos não enriquecidos) retornam false silenciosamente.
  */
