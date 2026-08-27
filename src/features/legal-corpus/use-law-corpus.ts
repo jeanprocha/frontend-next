@@ -7,11 +7,12 @@ import type { FiscalLawChangelogPayload } from "@/lib/fiscal-law-changelog"
 import { corpusToChangelogPayload, staticCorpusFallback } from "./corpus-fallback"
 
 /**
- * W1 (docs/plano-evolucao-tribia.md): `GET /law/corpus` ainda não existe no
- * backend Go. Ativação de UMA linha quando a rota entregar — o resto do hook
- * (fallback, query key, shape) já está pronto.
+ * W1/PR 8 (docs/plano-evolucao-tribia.md): `GET /law/corpus` está em produção
+ * desde a PR 4 (verificado ao vivo — 200, 377 trechos, data-base 22/07/2024).
+ * Ligado; `isLive` cai para false e o hook volta ao fallback estático se a
+ * chamada falhar ou ainda não tiver resolvido (`data` undefined).
  */
-const LAW_CORPUS_API_ENABLED = false
+const LAW_CORPUS_API_ENABLED = true
 
 export interface UseLawCorpusResult {
   corpus: LawCorpusResponse

@@ -12,9 +12,11 @@ import type {
   SimulationRecordSummary,
   SimulationResponse,
 } from "@/types/api"
-// PlgQuotaResponse vive em lib/api.ts (não em types/api.ts) — import type-only,
-// não traz o client HTTP para o bundle do teste.
+// PlgQuotaResponse e LawCorpusResponse vivem em lib/api.ts / lib/api/legal.ts
+// (não em types/api.ts) — import type-only, não traz o client HTTP para o
+// bundle do teste.
 import type { PlgQuotaResponse } from "@/lib/api"
+import type { LawCorpusResponse } from "@/lib/api/legal"
 
 export const E2E_RECORD_ID = "11111111-1111-4111-8111-111111111111"
 
@@ -149,6 +151,33 @@ const RECORD_SERVICES: FormServiceDTO[] = [
 const RECORD_EXPENSES: FormExpenseDTO[] = [
   { id: "exp-1", description: "Licença de software ERP", amount: "3000.00" },
 ]
+
+/**
+ * GET /law/corpus (W1/PR 8) — version "9.9-e2e" deliberadamente distinto de
+ * FISCAL_LAW_CHANGELOG.version ("2.1", o fallback estático). O teste
+ * legal-corpus-live.spec.ts assevera esse valor no badge para provar que
+ * LegalVersionIndicator está lendo a API mockada, não a constante hardcoded.
+ */
+export const LAW_CORPUS_FIXTURE: LawCorpusResponse = {
+  documents: [
+    {
+      id: "lc68-2024-e2e",
+      label: "LC 68/2024",
+      version: "9.9-e2e",
+      published_at: "2026-08-20T00:00:00.000Z",
+      source_url: "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2430143",
+      chunk_prefix: "lc68_",
+    },
+  ],
+  current_document_id: "lc68-2024-e2e",
+  changelog: [
+    {
+      type: "ia",
+      label: "Corpus legal ativo via API (fixture E2E)",
+      desc: "GET /law/corpus mockado — confirma que o badge não depende mais da constante estática.",
+    },
+  ],
+}
 
 export const RECORD_DETAIL_FIXTURE: SimulationRecordDetailResponse = {
   id: E2E_RECORD_ID,
