@@ -27,8 +27,9 @@ export function LegalVersionIndicator({ criticalAlert = false }: LegalVersionInd
   const [open, setOpen] = useState(false)
   const { changelog } = useLawCorpus()
   const version = changelog.version
+  const label = changelog.label
 
-  const ariaLabel = `Legislação LC 68/2024 versão ${version}. Abrir changelog fiscal.`
+  const ariaLabel = `Legislação ${label} versão ${version}. Abrir changelog fiscal.`
 
   const plgRibbon = (
     <>
@@ -39,7 +40,7 @@ export function LegalVersionIndicator({ criticalAlert = false }: LegalVersionInd
             Compliance Radar
           </p>
           <p className="mt-1 text-sm leading-snug text-muted-foreground">
-            Alertas prioritários quando a LC 68/2024 ou o motor determinístico mudam de versão — visão agregada
+            Alertas prioritários quando a {label} ou o motor determinístico mudam de versão — visão agregada
             Premium (roadmap).
           </p>
         </div>
@@ -82,7 +83,7 @@ export function LegalVersionIndicator({ criticalAlert = false }: LegalVersionInd
       )}
       <Scale className="size-3 shrink-0 opacity-90" strokeWidth={2.5} aria-hidden />
       <span className="hidden font-mono text-xs font-semibold uppercase tracking-wider sm:inline">
-        LC 68/2024 · v{version}
+        {label} · v{version}
       </span>
       <span className="font-mono text-xs font-semibold uppercase tracking-wider sm:hidden">v{version}</span>
     </>
@@ -109,7 +110,7 @@ export function LegalVersionIndicator({ criticalAlert = false }: LegalVersionInd
           >
             <SheetHeader className="shrink-0 border-b border-border px-4 py-3 text-left">
               <SheetTitle className="text-base font-semibold text-foreground">
-                Changelog fiscal · LC 68/2024
+                Changelog fiscal · {label}
               </SheetTitle>
             </SheetHeader>
             <div className="min-h-0 flex-1 overflow-y-auto">{panel}</div>

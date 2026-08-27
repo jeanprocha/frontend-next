@@ -3,7 +3,7 @@
 // porque a implementação do fallback é específica desta feature; o dado e os
 // tipos ficam em lib/ (report-contract.ts já é o precedente: report→plg via
 // CapabilityName, aqui é legal-corpus→fiscal-law-changelog via os mesmos tipos).
-import { FISCAL_LAW_CHANGELOG, LC68_SOURCE_URL } from "@/lib/fiscal-law-changelog"
+import { FISCAL_LAW_CHANGELOG, LAW_SOURCE_URL } from "@/lib/fiscal-law-changelog"
 import type { FiscalLawChangelogPayload } from "@/lib/fiscal-law-changelog"
 import type { LawCorpusResponse } from "@/lib/api/legal"
 
@@ -15,10 +15,10 @@ export function staticCorpusFallback(): LawCorpusResponse {
     documents: [
       {
         id: FALLBACK_DOCUMENT_ID,
-        label: "LC 68/2024",
+        label: FISCAL_LAW_CHANGELOG.label,
         version: FISCAL_LAW_CHANGELOG.version,
         published_at: FISCAL_LAW_CHANGELOG.date,
-        source_url: LC68_SOURCE_URL,
+        source_url: LAW_SOURCE_URL,
         chunk_prefix: "lc68_",
       },
     ],
@@ -33,6 +33,8 @@ export function corpusToChangelogPayload(corpus: LawCorpusResponse): FiscalLawCh
   return {
     version: doc?.version ?? FISCAL_LAW_CHANGELOG.version,
     date: doc?.published_at ?? FISCAL_LAW_CHANGELOG.date,
+    label: doc?.label ?? FISCAL_LAW_CHANGELOG.label,
+    sourceUrl: doc?.source_url ?? FISCAL_LAW_CHANGELOG.sourceUrl,
     updates: corpus.changelog,
   }
 }

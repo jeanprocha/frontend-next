@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { FISCAL_LAW_CHANGELOG, LC68_SOURCE_URL } from "@/lib/fiscal-law-changelog"
+import { FISCAL_LAW_CHANGELOG, LAW_SOURCE_URL } from "@/lib/fiscal-law-changelog"
 import { corpusToChangelogPayload, staticCorpusFallback } from "./corpus-fallback"
 
 describe("staticCorpusFallback", () => {
@@ -8,9 +8,10 @@ describe("staticCorpusFallback", () => {
     expect(corpus.documents).toHaveLength(1)
     expect(corpus.current_document_id).toBe(corpus.documents[0].id)
     expect(corpus.documents[0]).toMatchObject({
+      label: FISCAL_LAW_CHANGELOG.label,
       version: FISCAL_LAW_CHANGELOG.version,
       published_at: FISCAL_LAW_CHANGELOG.date,
-      source_url: LC68_SOURCE_URL,
+      source_url: LAW_SOURCE_URL,
     })
     expect(corpus.changelog).toBe(FISCAL_LAW_CHANGELOG.updates)
   })
@@ -22,6 +23,8 @@ describe("corpusToChangelogPayload", () => {
     expect(payload).toEqual({
       version: FISCAL_LAW_CHANGELOG.version,
       date: FISCAL_LAW_CHANGELOG.date,
+      label: FISCAL_LAW_CHANGELOG.label,
+      sourceUrl: FISCAL_LAW_CHANGELOG.sourceUrl,
       updates: FISCAL_LAW_CHANGELOG.updates,
     })
   })
@@ -37,5 +40,7 @@ describe("corpusToChangelogPayload", () => {
     })
     expect(payload.version).toBe("2.0")
     expect(payload.date).toBe("2024-06-01")
+    expect(payload.label).toBe("B")
+    expect(payload.sourceUrl).toBe("https://b")
   })
 })

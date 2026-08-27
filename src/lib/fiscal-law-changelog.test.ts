@@ -12,9 +12,9 @@ describe("fiscal-law-changelog — audit trail UI/PDF", () => {
     expect(v.trim()).toBe(v)
   })
 
-  it("fiscalLawVersionLabel usa a mesma versão por defeito que o payload", () => {
+  it("fiscalLawVersionLabel usa a mesma versão e rótulo por defeito que o payload", () => {
     expect(fiscalLawVersionLabel()).toBe(
-      `LC 68/2024 v${FISCAL_LAW_CHANGELOG.version}`,
+      `${FISCAL_LAW_CHANGELOG.label} v${FISCAL_LAW_CHANGELOG.version}`,
     )
     expect(fiscalLawVersionLabel(FISCAL_LAW_CHANGELOG.version)).toBe(
       fiscalLawVersionLabel(),
@@ -25,5 +25,9 @@ describe("fiscal-law-changelog — audit trail UI/PDF", () => {
     const footerDefault = fiscalLawVersionLabel(FISCAL_LAW_CHANGELOG.version)
     const navbarStyle = fiscalLawVersionLabel()
     expect(footerDefault).toBe(navbarStyle)
+  })
+
+  it("fiscalLawVersionLabel aceita um rótulo de documento diferente (corpus real, W1)", () => {
+    expect(fiscalLawVersionLabel("1", "LC 214/2025")).toBe("LC 214/2025 v1")
   })
 })

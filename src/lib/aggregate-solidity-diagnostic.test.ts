@@ -64,7 +64,7 @@ describe("buildAggregateSolidityDiagnosticMessage — tier verde", () => {
     expect(r.adherencePct).toBe(90)
     expect(r.reviewPct).toBeNull()
     expect(r.message).toContain("90%")
-    expect(r.message).toContain("LC 68/2024")
+    expect(r.message).toContain("lei recuperada")
   })
 
   it("Pro sem evidence_coverage: fallback % em score", () => {

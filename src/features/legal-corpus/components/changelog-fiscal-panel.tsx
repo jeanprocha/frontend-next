@@ -1,7 +1,6 @@
 import { Scale, Zap } from "lucide-react"
 
 import type { FiscalLawChangelogPayload } from "@/lib/fiscal-law-changelog"
-import { LC68_SOURCE_URL } from "@/lib/fiscal-law-changelog"
 import { cn } from "@/lib/utils"
 
 function formatChangelogDate(iso: string): string {
@@ -32,7 +31,7 @@ export function ChangelogFiscalPanel({
     <div className={cn("flex flex-col", embedded && "min-h-0")}>
       <div className="border-b border-border px-4 py-3">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Changelog fiscal</p>
-        <p className="mt-0.5 text-sm font-semibold text-foreground">LC 68/2024 · v{data.version}</p>
+        <p className="mt-0.5 text-sm font-semibold text-foreground">{data.label} · v{data.version}</p>
         <p className="text-xs text-muted-foreground">{formatChangelogDate(data.date)}</p>
       </div>
       <ul
@@ -69,12 +68,12 @@ export function ChangelogFiscalPanel({
           versão.
         </p>
         <a
-          href={LC68_SOURCE_URL}
+          href={data.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex text-sm font-medium text-accent underline-offset-2 hover:underline"
         >
-          Texto integral LC 68/2024 (Planalto)
+          Texto integral {data.label}
         </a>
       </div>
     </div>

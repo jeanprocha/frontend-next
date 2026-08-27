@@ -17,7 +17,7 @@
  *   - Léxico de dossié / auditoria: admissibilidade, divergência interpretativa,
  *     risco de enquadramento, aderência à lei recuperada.
  *   - PROIBIDO: alarmismo, tom emocional, linguagem de chatbot.
- *   - Sem afirmar «jurisprudência pacificada» — o produto é RAG + LC 68/2024.
+ *   - Sem afirmar «jurisprudência pacificada» — o produto é RAG sobre a legislação ingerida.
  */
 
 import {
@@ -115,7 +115,7 @@ export function buildAggregateSolidityDiagnosticMessage(
 
       const message =
         isPro && adherencePct != null
-          ? `Solidez jurídica elevada — cerca de ${adherencePct}% das linhas com fundamento ancorado na LC 68/2024.`
+          ? `Solidez jurídica elevada — cerca de ${adherencePct}% das linhas com fundamento ancorado na lei recuperada.`
           : "Admissibilidade elevada. Os fundamentos desta simulação apresentam alta aderência à lei recuperada."
 
       return { tier, message, reviewPct: null, adherencePct }

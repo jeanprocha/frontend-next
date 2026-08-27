@@ -5,6 +5,7 @@ import type {
   LawChunkMetadata,
   LegalPath,
 } from "@/types/api"
+import { labelForChunkId } from "./law-document-labels"
 
 const CITATION_SEP = " · "
 
@@ -55,13 +56,17 @@ export function formatLegalCitationFromMetadata(
 
 /**
  * Rótulo legível a partir de article_id de chunk (ex.: lc68_0052_art_52_p2 → Art. 52 · LC 68/2024).
+ * O documento vem do PREFIXO do id (labelForChunkId) — nunca hardcoded: dois
+ * documentos podem coexistir no corpus (ver W1/Onda 2), e um dossiê salvo
+ * antes da re-ingestão continua citando o documento certo por causa disso.
  */
 export function formatArticleLabel(articleId: string): string {
   const id = articleId.trim()
   if (!id) return ""
   const m = id.match(/_art_(\d+)/i)
   if (m) {
-    return `Art. ${m[1]} · LC 68/2024`
+    const doc = labelForChunkId(id)
+    return doc ? `Art. ${m[1]} · ${doc}` : `Art. ${m[1]}`
   }
   if (id.length > 42) {
     return `${id.slice(0, 20)}…`
@@ -163,5 +168,5 @@ export function aggregateRagMetadata(
 
 /** Texto curto para tooltip ou rodapé (parâmetros da fórmula). */
 export function ragScoreFormulaSummary(): string {
-  return `${Math.round(W_RAG * 100)}% similaridade RAG média + ${Math.round(W_LLM * 100)}% confiança média do classificador + ${Math.round(W_COV * 100)}% cobertura de linhas com evidência na LC 68/2024.`
+  return `${Math.round(W_RAG * 100)}% similaridade RAG média + ${Math.round(W_LLM * 100)}% confiança média do classificador + ${Math.round(W_COV * 100)}% cobertura de linhas com evidência na lei recuperada.`
 }

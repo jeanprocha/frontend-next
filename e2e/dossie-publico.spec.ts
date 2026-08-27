@@ -41,5 +41,7 @@ test("dossiê público: UUID inexistente mostra erro em vez de tela em branco", 
   )
 
   await page.goto(`/report/${UNKNOWN_ID}`)
-  await expect(page.getByRole("alert")).toBeVisible()
+  // role="alert" também bate no #__next-route-announcer__ do Next (a11y interna),
+  // por isso o locator precisa do texto para mirar só no <p> de erro do PublicReport.
+  await expect(page.getByRole("alert").filter({ hasText: "Simulação não encontrada" })).toBeVisible()
 })
