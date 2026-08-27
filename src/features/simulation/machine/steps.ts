@@ -33,16 +33,16 @@ import type {
 // ─── Prefixos de contexto por regime (verbatim de use-simulation.ts) ─────────
 
 const PREFIX_CLASSIFY_DIFERENCIADO_60 =
-  "[Perfil simulador: empresa enquadrável no regime diferenciado da LC 68/2024 (saúde, educação, cultura; Art. 131). " +
+  "[Perfil simulador: empresa enquadrável no regime diferenciado da legislação vigente (saúde, educação, cultura; Art. 131). " +
   "Avalie com rigor se cada item é coerente com essa atividade e elegível a crédito; use só trechos da lei recuperados como base.]\n\n"
 
 const PREFIX_CLASSIFY_ALIQUOTA_ZERO =
-  "[Perfil simulador: company_regime aliquota_zero — operação voltada à Cesta Básica Nacional / alíquota zero CBS+IBS na saída (LC 68/2024, Anexo I). " +
+  "[Perfil simulador: company_regime aliquota_zero — operação voltada à Cesta Básica Nacional / alíquota zero CBS+IBS na saída (Anexo I da legislação vigente). " +
   "Para cada receita ou despesa, verifique se o item é literalmente coberto pelos trechos recuperados; arroz, feijão etc. podem ser reduzido_zero se a lei no contexto assim indicar; " +
   "itens fora da cesta (ex.: luxo) devem ser regime_type padrao. Use apenas trechos da lei recuperados como base.]\n\n"
 
 const PREFIX_CLASSIFY_IMOBILIARIO =
-  "[Perfil simulador: setor imobiliário (incorporação, venda ou locação — LC 68/2024, ilustrativo). " +
+  "[Perfil simulador: setor imobiliário (incorporação, venda ou locação — ilustrativo). " +
   "Priorize elegibilidade a crédito IBS/CBS em materiais de construção (cimento, aço, etc.), serviços de empreiteira e subempreitada usados na atividade, " +
   "sempre com base nos trechos recuperados da lei; não invente regras.]\n\n"
 
@@ -54,7 +54,7 @@ const PREFIX_CLASSIFY_PROF_LIBERAL =
 const PREFIX_CLASSIFY_EXPORTADORA =
   "[Perfil simulador: company_regime exportadora — operação com foco em mercado externo (exportação, ilustrativo). " +
   "Priorize análise de elegibilidade a crédito IBS/CBS em fretes internacionais, armazenagem portuária ou logística, despachante aduaneiro e insumos ligados à cadeia de exportação, " +
-  "sempre com base exclusiva nos trechos da LC 68/2024 recuperados abaixo; não afirme benefício sem âncora no texto.]\n\n"
+  "sempre com base exclusiva nos trechos da lei recuperados abaixo; não afirme benefício sem âncora no texto.]\n\n"
 
 const PREFIX_CLASSIFY_ENTIDADE_IMUNE =
   "[Perfil simulador: company_regime entidade_imune — entidade imune ou ISFL (ilustrativo). " +

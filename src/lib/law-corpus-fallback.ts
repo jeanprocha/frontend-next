@@ -1,8 +1,8 @@
 // Adapter puro entre a constante estática (lib/fiscal-law-changelog.ts) e o
-// shape de LawCorpusResponse — fica em features/legal-corpus/ (não em lib/)
-// porque a implementação do fallback é específica desta feature; o dado e os
-// tipos ficam em lib/ (report-contract.ts já é o precedente: report→plg via
-// CapabilityName, aqui é legal-corpus→fiscal-law-changelog via os mesmos tipos).
+// shape de LawCorpusResponse. Vive em lib/ (promovido de features/legal-corpus/
+// na PR 10) porque deixou de ser consumo exclusivo dessa feature: useLawCorpus
+// (lib/use-law-corpus.ts) precisa ficar acessível a qualquer feature que cite
+// o corpus legal — regra de dependência do projeto proíbe feature→feature.
 import { FISCAL_LAW_CHANGELOG, LAW_SOURCE_URL } from "@/lib/fiscal-law-changelog"
 import type { FiscalLawChangelogPayload } from "@/lib/fiscal-law-changelog"
 import type { LawCorpusResponse } from "@/lib/api/legal"

@@ -20,7 +20,7 @@ const RAG_HELP_CONTENT = (
       motor — este arco mede só a camada de recuperação e coerência agregada.
     </p>
     <p>
-      O valor combina similaridade RAG, confiança do classificador e cobertura de linhas com trechos na LC 68/2024. Não é
+      O valor combina similaridade RAG, confiança do classificador e cobertura de linhas com trechos na lei recuperada. Não é
       certeza jurídica nem probabilidade de acerto fiscal: trate como <strong>aderência à lei recuperada</strong>, com
       espaço para <strong>interpretação por analogia</strong> ou <strong>baixa evidência directa</strong> quando o
       semáforo não estiver verde.

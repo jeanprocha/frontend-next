@@ -41,6 +41,26 @@ export function factorTransitionAuditTooltip(focusYear: number, kind: FactorAudi
   }
 }
 
+/**
+ * Traduz o valor bruto de `iss_model` (enum do motor Go — hoje só
+ * "municipal_transition_lc68" | "input_static", ver internal/transport/http/
+ * handler_simulation.go) num rótulo amigável. Nunca mostrar o identificador
+ * cru na UI: ele carrega "lc68" no próprio nome e ficaria enganoso assim que
+ * o corpus migrar (W1/Onda 2), mesmo sem o backend renomear o valor da API
+ * (mapeamento frontend-only — o backend pode adicionar valores novos sem
+ * quebrar a UI; valor desconhecido cai no próprio texto bruto como fallback).
+ */
+export function issModelDisplayLabel(rawValue: string): string {
+  switch (rawValue) {
+    case "municipal_transition_lc68":
+      return "Transição municipal (rampa por ano)"
+    case "input_static":
+      return "Alíquota informada (sem rampa)"
+    default:
+      return rawValue
+  }
+}
+
 /** Texto educativo: por que créditos CBS/IBS podem parecer baixos nos primeiros anos da transição. */
 export function explainDestinationCredits(
   focusYear: number,

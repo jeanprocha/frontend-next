@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle, ExternalLink, Sparkles, Scale } from "lucide-r
 import { ProductFlowLinear } from "@/components/marketing/product-flow-linear"
 import { TechnologyPilarGrid } from "@/components/marketing/technology-pilar-grid"
 import { ROTAS } from "@/constants/routes"
+import { LAW_SOURCE_URL } from "@/lib/fiscal-law-changelog"
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ function Hero() {
       <div className="relative mx-auto max-w-4xl px-4 py-24 text-center sm:py-32">
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs font-medium text-muted-foreground">
           <Scale className="h-3 w-3" aria-hidden />
-          LC 68/2024 · CBS · IBS · Imposto Seletivo
+          Reforma Tributária · CBS · IBS · Imposto Seletivo
         </div>
 
         <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
@@ -45,7 +46,7 @@ function Hero() {
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
           O TribIA combina IA-RAG para classificação jurídica com um motor Go
           determinístico para calcular sua carga líquida CBS/IBS (2026–2033) com
-          base na LC 68/2024. Sem alucinações.
+          base na legislação vigente. Sem alucinações.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -111,7 +112,7 @@ const plans = [
     price: "Em breve",
     period: "",
     description:
-      "Para equipas que precisam de auditoria rigorosa e projeção de caixa em todo o arco 2026–2033, com rastreio LC 68/2024 e saída auditável.",
+      "Para equipas que precisam de auditoria rigorosa e projeção de caixa em todo o arco 2026–2033, com rastreio normativo e saída auditável.",
     features: [
       "Simulações ilimitadas",
       "Lotes de até 500 despesas",
@@ -225,12 +226,12 @@ function Footer() {
               Privacidade e dados
             </Link>
             <a
-              href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp68.htm"
+              href={LAW_SOURCE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 transition-colors hover:text-foreground"
             >
-              LC 68/2024
+              Texto da lei
               <ExternalLink className="h-2.5 w-2.5" />
             </a>
             <a

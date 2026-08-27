@@ -6,6 +6,7 @@ import { useCapability, useTribiaPlgTier } from "@/features/plg"
 import { cn } from "@/lib/utils"
 import { fetchLawPdfAnchor } from "@/lib/api"
 import { formatArticleLabel } from "@/lib/rag-metadata"
+import { labelForChunkId } from "@/lib/law-document-labels"
 import { LawPdfOpenButton } from "./law-pdf-open-button"
 import type { LawPdfAnchorResponse } from "@/types/api"
 
@@ -79,6 +80,9 @@ export function LawPdfAuthorityCard({
   }, [safeChunkId, pro, getToken, userId, tier])
 
   const articleLabel = formatArticleLabel(safeChunkId || chunkArticleId)
+  // Mesma fonte que formatArticleLabel usa internamente — evita citar dois
+  // documentos diferentes na mesma frase (ex.: "Art. 10 · LC 214/2025 ... (LC 68/2024)").
+  const anchorDocLabel = labelForChunkId(safeChunkId || chunkArticleId) || "a lei aplicável"
 
   if (!pro) {
     return (
@@ -137,7 +141,7 @@ export function LawPdfAuthorityCard({
           {(() => {
             const label = articleLabel || "Dispositivo indexado"
             const versionRef = data?.lei_version?.trim() || data?.prf_file?.trim()
-            const suffix = versionRef ? `(LC 68/2024 · ${versionRef})` : "(LC 68/2024)"
+            const suffix = versionRef ? `(${anchorDocLabel} · ${versionRef})` : `(${anchorDocLabel})`
             if (data?.page != null) {
               return (
                 <>

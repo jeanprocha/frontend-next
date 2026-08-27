@@ -1,12 +1,23 @@
+import type { ReactNode } from "react"
 import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { CapabilityProvider } from "@/features/plg"
 import { getPlgCapabilities } from "@/features/plg"
 import { ReportRenderer } from "./report-renderer"
 import { vereditoSection } from "./sections"
 import type { ReportRenderInput, ReportSection } from "@/lib/report-contract"
 import type { SimulationRecord } from "@/lib/report-contract"
+
+/**
+ * vereditoSection monta componentes que chamam useLawCorpus() (PR 10) — sem
+ * QueryClientProvider, useQuery rebenta mesmo com a API desligada no teste.
+ */
+function withQueryClient(children: ReactNode) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+}
 
 function minimalRecord(): SimulationRecord {
   return {
@@ -109,12 +120,14 @@ describe("ReportRenderer — secções reais com registo mínimo/antigo (smoke)"
   const REAL_SECTIONS: ReportSection[] = [vereditoSection]
 
   it("não rebenta com um registo sem aiMetadata, meta, transition_series ou credit_leaks (board)", () => {
-    const { container } = render(<ReportRenderer {...baseInput(REAL_SECTIONS, "board")} />)
+    const { container } = render(withQueryClient(<ReportRenderer {...baseInput(REAL_SECTIONS, "board")} />))
     expect(container).not.toBeEmptyDOMElement()
   })
 
   it("não rebenta em public-linear com o mesmo registo mínimo", () => {
-    const { container } = render(<ReportRenderer {...baseInput(REAL_SECTIONS, "public-linear")} />)
+    const { container } = render(
+      withQueryClient(<ReportRenderer {...baseInput(REAL_SECTIONS, "public-linear")} />),
+    )
     expect(container).not.toBeEmptyDOMElement()
   })
 })

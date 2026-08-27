@@ -17,7 +17,7 @@ interface CompanyRegimeSelectProps {
 }
 
 const REGIME_HELP_TEXT =
-  "Regime geral: PIS, COFINS e ISS no atual versus CBS/IBS na projeção. Benefícios LC 68/2024: saúde/educação/cultura (-60% na saída projetada); profissões regulamentadas (-30% ilustrativo na alíquota projetada); MEI com DAS fixo ilustrativo. Incentivo social: cesta básica / medicamentos com CBS+IBS zero na saída projetada (créditos nas compras podem deixar o líquido negativo — posição de crédito). Mercado externo: exportadora com CBS+IBS zero na saída projetada e créditos nas compras (ilustrativo). Entidades sem fins lucrativos: imunidade ilustrativa na saída projetada sem créditos no modelo (custo de aquisições na narrativa do produto). Setor imobiliário: projeção com redução sobre a alíquota padrão do ano e redutor opcional de base (ilustrativo). Simples Nacional: modelo ilustrativo no atual e puro/híbrido na projeção. Não substitui orientação profissional."
+  "Regime geral: PIS, COFINS e ISS no atual versus CBS/IBS na projeção. Benefícios da legislação vigente: saúde/educação/cultura (-60% na saída projetada); profissões regulamentadas (-30% ilustrativo na alíquota projetada); MEI com DAS fixo ilustrativo. Incentivo social: cesta básica / medicamentos com CBS+IBS zero na saída projetada (créditos nas compras podem deixar o líquido negativo — posição de crédito). Mercado externo: exportadora com CBS+IBS zero na saída projetada e créditos nas compras (ilustrativo). Entidades sem fins lucrativos: imunidade ilustrativa na saída projetada sem créditos no modelo (custo de aquisições na narrativa do produto). Setor imobiliário: projeção com redução sobre a alíquota padrão do ano e redutor opcional de base (ilustrativo). Simples Nacional: modelo ilustrativo no atual e puro/híbrido na projeção. Não substitui orientação profissional."
 
 export function RegimeProfileHelp() {
   return (
@@ -72,7 +72,7 @@ export function CompanyRegimeSelect({
         <optgroup label="Regime geral">
           <option value="regular">Lucro Real / Presumido (alíquota cheia)</option>
         </optgroup>
-        <optgroup label="Benefícios LC 68/2024">
+        <optgroup label="Benefícios da legislação vigente">
           <option value="diferenciado_60">Saúde, Educação e Cultura (-60%)</option>
           <option value="prof_liberal">Profissionais liberais (−30% na alíquota projetada)</option>
           <option value="mei">MEI (carga fixa mensal — DAS ilustrativo)</option>

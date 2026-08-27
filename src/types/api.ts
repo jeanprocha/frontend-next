@@ -112,7 +112,7 @@ export interface LegalPath {
   span_note?: string
 }
 
-/** Metadados hierárquicos do chunk (LC 68/2024), espelhando o backend Go. */
+/** Metadados hierárquicos do chunk (corpus legal), espelhando o backend Go. */
 export interface LawChunkMetadata {
   source?: string
   type?: string
@@ -142,7 +142,7 @@ export interface EvidenceArticle {
   relevant_snippets_tentative?: string[]
 }
 
-/** Resposta de GET /law/articles/{id} — artigo LC 68 remontado a partir dos chunks. */
+/** Resposta de GET /law/articles/{id} — artigo do corpus legal remontado a partir dos chunks. */
 export interface LawArticleResponse {
   id: string
   title: string
@@ -194,7 +194,7 @@ export interface ClassificationItem {
   justification: string
   legal_base: string
   risk_level: string
-  // regime_type: regime tributário do item conforme Art. 131 LC 68/2024.
+  // regime_type: regime tributário do item conforme Art. 131 da legislação vigente.
   // "padrao" | "diferenciado_60" (saúde, educação) | "reduzido_zero" (cesta básica)
   /** Sugestão da IA — NUNCA alterar após o batch. Usar getEffectiveExpenseSimulationFields(). */
   regime_type: string

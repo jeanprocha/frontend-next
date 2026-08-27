@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils"
 import { usePlgCapabilities } from "@/features/plg"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
-import { useLawCorpus } from "../use-law-corpus"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 
 export interface LegalVersionIndicatorProps {
   /** Quando true, mostra ponto de alerta (ex.: lei mudou e pode invalidar simulações salvas). */

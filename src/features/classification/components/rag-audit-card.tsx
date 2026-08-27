@@ -67,7 +67,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
             <p className="mt-1 text-[11px] text-muted-foreground">
 
-              Classificação semântica, recuperação de trechos da LC 68/2024 e linguagem de apoio — sem aritmética fiscal
+              Classificação semântica, recuperação de trechos da legislação vigente e linguagem de apoio — sem aritmética fiscal
 
               no domínio do motor.
 

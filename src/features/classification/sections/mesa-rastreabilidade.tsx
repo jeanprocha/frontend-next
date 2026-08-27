@@ -132,7 +132,7 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
             <p className="mt-1.5 print:text-foreground/85">
               Uma assinatura de software ou streaming (por exemplo, Netflix) pode ser elegível a crédito quando o
               serviço estiver ligado à produção da receita tributável — mas se a linha não for enquadrada ou não
-              houver nexo documental na LC 68/2024, o benefício deixa de ser recuperável: vira{" "}
+              houver nexo documental na legislação vigente, o benefício deixa de ser recuperável: vira{" "}
               <span className="font-medium text-foreground/90">custo morto</span> para efeitos de crédito nesta
               simulação. O motor não «adivinha» elegibilidade; a tabela abaixo mostra o enquadramento por linha; o
               detalhe de confiança e nexo RAG está na Cédula (Ver lei).

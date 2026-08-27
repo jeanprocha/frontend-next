@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 
 /** Relatório executivo: contexto longo vira linha curta (evita parecer “nome fantasia”). */
 function truncateContext(s: string, max = 42): string {
@@ -57,6 +58,7 @@ export function BoardReadyHeader({
   clientBrandName,
   clientLogoUrl,
 }: BoardReadyHeaderProps) {
+  const { changelog } = useLawCorpus()
   const hasContext = Boolean(companyContext?.trim())
   const displayContext = hasContext
     ? truncateContext(companyContext!)
@@ -72,7 +74,7 @@ export function BoardReadyHeader({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1 min-w-0 sm:max-w-[60%]">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            LC 68/2024 — CBS / IBS
+            {changelog.label} — CBS / IBS
           </p>
           <h1 className="font-board-report text-2xl font-semibold tracking-tight text-foreground">
             {title}

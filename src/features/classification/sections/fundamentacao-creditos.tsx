@@ -2,12 +2,14 @@
 
 import { ExpenseTable } from "@/components/shared/expense-table"
 import { cn } from "@/lib/utils"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 
 function FundamentacaoCreditosSection({ record, mode }: ReportSectionProps) {
   const presentationMode = mode !== "screen-tabs"
   const { expenses, classifications, aiMetadata } = record
   const showCreditsRagLegend = Boolean(aiMetadata)
+  const { changelog } = useLawCorpus()
 
   return (
     <div
@@ -17,7 +19,7 @@ function FundamentacaoCreditosSection({ record, mode }: ReportSectionProps) {
       <div className="border-b border-border/60 bg-muted/25 px-4 py-3 print:border-foreground/20 print:bg-transparent">
         <h3 className={cn("text-sm font-semibold", presentationMode && "font-board-report text-base")}>
           <span className="board-ready:hidden print:hidden">Análise de Créditos — IA</span>
-          <span className="hidden board-ready:inline print:inline">Fundamentação de créditos — LC 68/2024</span>
+          <span className="hidden board-ready:inline print:inline">Fundamentação de créditos — {changelog.label}</span>
         </h3>
         {showCreditsRagLegend ? (
           <p
@@ -25,12 +27,12 @@ function FundamentacaoCreditosSection({ record, mode }: ReportSectionProps) {
             className="mt-1 text-xs leading-relaxed text-muted-foreground print:text-foreground/85"
           >
             O índice de auditoria acima sintetiza a conformidade global; cada linha abaixo mostra a fundamentação na
-            LC 68/2024.
+            {" "}{changelog.label}.
           </p>
         ) : null}
         <p className="mt-0.5 text-xs text-muted-foreground board-ready:hidden print:hidden">
           Borda à esquerda: verde elegível, âmbar atenção (inelegível ou vazamento de crédito), ardósia neutro.
-          &quot;Ver lei&quot; abre a Cédula de auditoria (diagnóstico, evidências e dispositivo legal LC 68/2024).
+          &quot;Ver lei&quot; abre a Cédula de auditoria (diagnóstico, evidências e dispositivo legal {changelog.label}).
         </p>
       </div>
       <ExpenseTable

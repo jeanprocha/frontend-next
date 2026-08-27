@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils"
 import type { ClassificationItem } from "@/types/api"
 
 export const BRIEFING_AUDITORIA_DESCRIPTION =
-  "Nota técnica sintética — trilha entre o dado do cliente, a interpretação do modelo e a LC 68/2024."
+  "Nota técnica sintética — trilha entre o dado do cliente, a interpretação do modelo e a legislação vigente."
 
 function pct(x: number) {
   return `${Math.round(x * 100)}%`

@@ -9,6 +9,7 @@ import { parseApiDecimal } from "@/lib/money-decimal";
 import {
   explainDestinationCredits,
   factorTransitionAuditTooltip,
+  issModelDisplayLabel,
   type FactorAuditKind,
 } from "@/lib/transition-audit-copy";
 import { cn } from "@/lib/utils";
@@ -102,7 +103,7 @@ function FactorsTable({
     rows.push({
       label: "Modelo ISS",
 
-      display: f.iss_model,
+      display: issModelDisplayLabel(f.iss_model),
 
       kind: "iss_model",
     });

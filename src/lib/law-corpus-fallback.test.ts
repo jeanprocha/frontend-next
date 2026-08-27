@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { FISCAL_LAW_CHANGELOG, LAW_SOURCE_URL } from "@/lib/fiscal-law-changelog"
-import { corpusToChangelogPayload, staticCorpusFallback } from "./corpus-fallback"
+import { corpusToChangelogPayload, staticCorpusFallback } from "./law-corpus-fallback"
 
 describe("staticCorpusFallback", () => {
   it("devolve um único documento espelhando a constante FISCAL_LAW_CHANGELOG", () => {

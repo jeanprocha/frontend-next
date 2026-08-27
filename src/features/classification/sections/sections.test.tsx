@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { render } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { dossieRagSection } from "./dossie-rag"
 import { coberturaLegalAuditoriaSection } from "./cobertura-legal-auditoria"
 import { mesaRastreabilidadeSection } from "./mesa-rastreabilidade"
@@ -39,7 +40,13 @@ const SECTIONS: ReportSection[] = [
 describe("secções classificationReportSections — smoke com registo mínimo/antigo", () => {
   for (const s of SECTIONS) {
     it(`${s.id} não rebenta sem aiMetadata, classifications, expenses ou credit_leaks`, () => {
-      const { container } = render(<s.Component {...baseProps} />)
+      // fundamentacaoCreditosSection chama useLawCorpus() (PR 10) — precisa de QueryClientProvider.
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      const { container } = render(
+        <QueryClientProvider client={queryClient}>
+          <s.Component {...baseProps} />
+        </QueryClientProvider>,
+      )
       expect(container).not.toBeEmptyDOMElement()
     })
   }

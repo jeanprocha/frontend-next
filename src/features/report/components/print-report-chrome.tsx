@@ -1,7 +1,8 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { FISCAL_LAW_CHANGELOG, fiscalLawVersionLabel } from "@/lib/fiscal-law-changelog"
+import { fiscalLawVersionLabel } from "@/lib/fiscal-law-changelog"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 
 function formatPrintDate(iso?: string | null): string {
   if (iso) {
@@ -122,7 +123,7 @@ export interface PrintReportFooterProps {
   freeWatermark?: boolean
   /** True quando há comparativo A/B activo na vista impressa. */
   isComparing?: boolean
-  /** Versão da lei (default changelog). */
+  /** Override explícito; por omissão usa a versão ao vivo de useLawCorpus(). */
   lawVersion?: string
 }
 
@@ -132,9 +133,10 @@ export function PrintReportFooter({
   whiteLabel = false,
   freeWatermark = false,
   isComparing = false,
-  lawVersion = FISCAL_LAW_CHANGELOG.version,
+  lawVersion,
 }: PrintReportFooterProps) {
-  const law = fiscalLawVersionLabel(lawVersion)
+  const { changelog } = useLawCorpus()
+  const law = fiscalLawVersionLabel(lawVersion ?? changelog.version, changelog.label)
   const simLine = isComparing ? "Comparativo A/B (dois cenários)" : "Simulação única"
 
   if (whiteLabel) {
@@ -153,7 +155,7 @@ export function PrintReportFooter({
           Auditoria legislativa assistida por IA (RAG)
         </p>
         <p className="text-xs text-muted-foreground italic leading-relaxed max-w-3xl mx-auto font-board-report">
-          Documento confidencial. Simulação baseada na LC 68/2024 e nos dados fornecidos. Não substitui parecer
+          Documento confidencial. Simulação baseada na {changelog.label} e nos dados fornecidos. Não substitui parecer
           jurídico-contábil formal. Classificação assistida com recuperação legislativa e motor determinístico.
         </p>
       </div>
@@ -198,7 +200,7 @@ export function PrintReportFooter({
       <p className="text-xs font-medium text-muted-foreground font-sans">Auditado via RAG Engine</p>
       <p className="text-xs text-muted-foreground italic leading-relaxed max-w-3xl mx-auto font-board-report">
         O selo indica rastreabilidade de evidências legislativas no fluxo do simulador; não constitui certificação
-        legal nem garantia de resultado fiscal. Este relatório é uma simulação baseada nas premissas da LC 68/2024 e
+        legal nem garantia de resultado fiscal. Este relatório é uma simulação baseada nas premissas da {changelog.label} e
         nos dados fornecidos pelo utilizador. Não substitui parecer jurídico-contábil formal.
       </p>
     </div>

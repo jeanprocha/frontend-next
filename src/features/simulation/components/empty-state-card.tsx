@@ -14,7 +14,7 @@ const COPY = {
   service: {
     title: "Passo 1/3: Identifique suas fontes de receita para o mapeamento IBS/CBS.",
     description:
-      "O TribIA mapeia automaticamente a incidência de ISS e projeta a transição para o IBS/CBS conforme a LC 68/2024.",
+      "O TribIA mapeia automaticamente a incidência de ISS e projeta a transição para o IBS/CBS conforme a legislação vigente.",
     cta: "Adicionar receita",
     aria: "Passo 1 do pipeline: adicionar primeiro serviço ou receita",
   },

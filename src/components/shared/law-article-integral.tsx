@@ -5,6 +5,7 @@ import { BriefingSectionTitle } from "@/components/shared/briefing-section-title
 import { RayXAnchorCallout } from "./ray-x-anchor-callout"
 import { useCapability } from "@/features/plg"
 import { formatArticleLabel, formatLegalCitationFromMetadata } from "@/lib/rag-metadata"
+import { labelForChunkId } from "@/lib/law-document-labels"
 import { cn } from "@/lib/utils"
 import type { ClassificationItem, EvidenceArticle } from "@/types/api"
 
@@ -52,16 +53,20 @@ export function LawArticleIntegral({
     )
   }
 
+  // Mesma fonte que articleLabel usa por baixo (via formatArticleLabel) — o
+  // dispositivo citado e o documento no rótulo nunca podem divergir.
+  const docLabel = labelForChunkId(articleId) || "corpus legal"
+
   return (
     <section className="mt-6 print:block">
       <BriefingSectionTitle>Texto oficial (PDF)</BriefingSectionTitle>
       <p className="mb-3 text-xs leading-relaxed text-muted-foreground print:block">
         Abra o PDF do Diário Oficial na página indexada para este <span className="font-mono">article_id</span>. O
         fragmento <span className="font-mono">#page=N</span> vem da ancoragem servida em{" "}
-        <span className="font-mono">/law/articles/.../pdf-anchor</span> (LC 68 no TribIA).
+        <span className="font-mono">/law/articles/.../pdf-anchor</span> ({docLabel} no TribIA).
       </p>
       <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground print:block">
-        Dispositivo (LC 68/2024)
+        Dispositivo ({docLabel})
       </p>
       <div className="rounded-lg bg-muted/15 print:block">
         <RayXAnchorCallout

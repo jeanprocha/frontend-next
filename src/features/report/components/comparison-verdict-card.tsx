@@ -14,7 +14,7 @@ import {
   confidenceTierShortLabel,
   humanReviewHintFromAggregatedScore01,
 } from "@/lib/confidence-tiers"
-import { FISCAL_LAW_CHANGELOG, fiscalLawVersionLabel } from "@/lib/fiscal-law-changelog"
+import { fiscalLawVersionLabel } from "@/lib/fiscal-law-changelog"
 import { heuristicRagHeroArticle } from "@/lib/rag-hero-article-heuristic"
 import {
   parseNet,
@@ -24,9 +24,10 @@ import {
 import { useTaxStore } from "@/store/useTaxStore"
 import type { AiMetadata, ClassificationItem, SimulationResponse } from "@/types/api"
 import { useCapability } from "@/features/plg"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 
 function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): string {
-  const base = `A simulação assenta nas premissas do modelo TribIA para a ${lawLabel}, com regimes de transição e elegibilidade a créditos conforme o quadro legal aplicável (incluindo Art. 131 da LC 68/2024, no âmbito do modelo).`
+  const base = `A simulação assenta nas premissas do modelo TribIA para a ${lawLabel}, com regimes de transição e elegibilidade a créditos conforme o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
   if (ragSources && ragSources.length > 0) {
     const list = ragSources.slice(0, 6).join(", ")
     const more = ragSources.length > 6 ? ` (+${ragSources.length - 6} outras)` : ""
@@ -69,7 +70,7 @@ export interface ComparisonVerdictCardProps {
 export function ComparisonVerdictCard({
   mode,
   strategyInsight,
-  lawVersion = FISCAL_LAW_CHANGELOG.version,
+  lawVersion,
   currentSimulation,
   baselineSimulation,
   accumulatedDiff = null,
@@ -86,7 +87,8 @@ export function ComparisonVerdictCard({
   const openMacroBriefing = useTaxStore((s) => s.openAnalystBriefingFromMacro)
   const [execTab, setExecTab] = useState<"veredito" | "parecer">("veredito")
   const showLegalTab = useCapability("legalOpinionTab")
-  const lawLabel = fiscalLawVersionLabel(lawVersion)
+  const { changelog } = useLawCorpus()
+  const lawLabel = fiscalLawVersionLabel(lawVersion ?? changelog.version, changelog.label)
 
   const isComparison = mode === "comparison"
   const savingVsA = projectedNetDiff < 0
@@ -104,7 +106,7 @@ export function ComparisonVerdictCard({
     : singleVereditoSentence(currentSimulation)
 
   const racionalBody = isComparison
-    ? `A simulação assenta nas premissas do modelo TribIA para a ${lawLabel}. A elegibilidade a créditos e regimes de transição seguem o quadro legal aplicável (incluindo Art. 131 da LC 68/2024, no âmbito do modelo).`
+    ? `A simulação assenta nas premissas do modelo TribIA para a ${lawLabel}. A elegibilidade a créditos e regimes de transição seguem o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
     : singleRacionalBody(lawLabel, ragSources)
 
   const recomendacao =
@@ -134,7 +136,7 @@ export function ComparisonVerdictCard({
       score01 != null && Number.isFinite(score01) ? confidenceTierFromScore01(score01) : null
     const solidityHint =
       score01 != null && Number.isFinite(score01) ? humanReviewHintFromAggregatedScore01(score01) : null
-    const lawSeal = `Auditado via RAG Engine · LC 68/2024 v${lawVersion}`
+    const lawSeal = `Auditado via RAG Engine · ${lawLabel}`
 
     return (
       <Card
@@ -312,7 +314,7 @@ export function ComparisonVerdictCard({
                     Rascunho assistido — Premium
                   </p>
                   <p className="font-board-report text-foreground/95">
-                    Com base nos resultados simulados e nos artigos da LC 68/2024 recuperados pelo motor RAG, a linha de
+                    Com base nos resultados simulados e nos artigos da {changelog.label} recuperados pelo motor RAG, a linha de
                     defesa fiscal preliminar sustenta que a transição CBS/IBS deve ser interpretada em conjunto com o
                     regime de não-cumulatividade e com as exceções sectoriais aplicáveis ao perfil declarado. Este texto é
                     gerado de forma ilustrativa; exige revisão por profissional habilitado antes de qualquer uso perante
@@ -563,7 +565,7 @@ export function ComparisonVerdictCard({
                   Rascunho assistido — Premium
                 </p>
                 <p className="font-board-report text-foreground/95">
-                  Com base nos resultados simulados e nos artigos da LC 68/2024 recuperados pelo motor RAG, a linha de
+                  Com base nos resultados simulados e nos artigos da {changelog.label} recuperados pelo motor RAG, a linha de
                   defesa fiscal preliminar sustenta que a transição CBS/IBS deve ser interpretada em conjunto com o
                   regime de não-cumulatividade e com as exceções sectoriais aplicáveis ao perfil declarado. Este texto é
                   gerado de forma ilustrativa; exige revisão por profissional habilitado antes de qualquer uso perante

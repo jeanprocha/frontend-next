@@ -45,7 +45,7 @@ export async function fetchLawArticle(chunkArticleId: string): Promise<LawArticl
   return res.json()
 }
 
-/** Ancoragem ao PDF oficial (LC68). Requer plano Pro/Premium e chunk com pdf_page na ingestão. */
+/** Ancoragem ao PDF oficial do corpus legal. Requer plano Pro/Premium e chunk com pdf_page na ingestão. */
 export async function fetchLawPdfAnchor(
   chunkArticleId: string,
   token: string,

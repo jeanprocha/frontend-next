@@ -29,12 +29,12 @@ const COPY: Record<
   rayx: {
     title: "Raio-X completo no contexto e na lei",
     body:
-      "No Pro o trecho do contexto que sustenta a auditoria fica nítido no campo central, com base legal integral na LC 68/2024 e lista de evidências RAG sem desfocagem — trilha completa para consultores e CFO.",
+      "No Pro o trecho do contexto que sustenta a auditoria fica nítido no campo central, com base legal integral na legislação vigente e lista de evidências RAG sem desfocagem — trilha completa para consultores e CFO.",
   },
   generic: {
     title: "TribIA Pro — mais profundidade para o seu fluxo",
     body:
-      "Do retrato isolado ao filme completo da reforma (2026–2033): série temporal, gestão de picos, comparativo A/B, Raio-X na LC 68/2024, histórico rico e Board-Ready — para consultoria e leitura CFO-adjacente, não só uma simulação pontual.",
+      "Do retrato isolado ao filme completo da reforma (2026–2033): série temporal, gestão de picos, comparativo A/B, Raio-X na lei, histórico rico e Board-Ready — para consultoria e leitura CFO-adjacente, não só uma simulação pontual.",
   },
 }
 

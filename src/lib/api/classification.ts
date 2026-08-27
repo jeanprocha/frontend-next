@@ -3,7 +3,7 @@ import type { BatchClassificationResponse } from "@/types/api"
 
 // classifyBatch envia uma lista de descrições de despesas para o endpoint
 // POST /credit-classifications/batch, que usa RAG + LLM para determinar
-// elegibilidade a crédito de IBS/CBS conforme a LC 68/2024.
+// elegibilidade a crédito de IBS/CBS conforme a legislação vigente.
 export async function classifyBatch(
   expenses: { description: string; context?: string; client_id?: string }[],
   maxConcurrency = 5,

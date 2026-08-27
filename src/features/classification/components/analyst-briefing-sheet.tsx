@@ -63,7 +63,7 @@ export function AnalystBriefingSheet() {
       : kind === "chip" && tag
         ? `O perfil estratégico «${tag.label}» corresponde a um padrão textual do contexto da empresa. ` +
           "Esta classificação resulta do reconhecimento imediato no cliente combinado com o vocabulário actualizado pelo servidor após o processamento da simulação. " +
-          "Os chips materializam o vocabulário fiscal do TribIA; a citação integral de dispositivos da LC 68/2024 " +
+          "Os chips materializam o vocabulário fiscal do TribIA; a citação integral de dispositivos da legislação vigente " +
           "liga-se à classificação das despesas com recuperação RAG."
         : "—"
 
@@ -94,7 +94,7 @@ export function AnalystBriefingSheet() {
             Briefing de auditoria
           </SheetTitle>
           <SheetDescription className="text-xs text-muted-foreground leading-relaxed">
-            Nota técnica sintética — trilha entre o dado do cliente, a interpretação do modelo e a LC 68/2024.
+            Nota técnica sintética — trilha entre o dado do cliente, a interpretação do modelo e a legislação vigente.
           </SheetDescription>
         </SheetHeader>
 
@@ -147,7 +147,7 @@ export function AnalystBriefingSheet() {
               {!fullRayx && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/55 px-4 text-center">
                   <p className="text-xs text-foreground/90 max-w-[260px] leading-snug">
-                    O trecho correspondente no contexto aparece desfocado no hub central; no Pro vê o realce nítido. Veja o artigo exacto na LC 68 e a lista de evidências RAG completas — disponível no plano Pro.
+                    O trecho correspondente no contexto aparece desfocado no hub central; no Pro vê o realce nítido. Veja o artigo exacto na lei e a lista de evidências RAG completas — disponível no plano Pro.
                   </p>
                   <Link
                     href="/#planos"

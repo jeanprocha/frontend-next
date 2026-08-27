@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest"
-import { explainDestinationCredits } from "./transition-audit-copy"
+import { explainDestinationCredits, issModelDisplayLabel } from "./transition-audit-copy"
 import type { TransitionSeriesPoint } from "@/types/api"
+
+describe("issModelDisplayLabel", () => {
+  it("nunca deixa o identificador cru do backend (com 'lc68' no nome) chegar à UI", () => {
+    expect(issModelDisplayLabel("municipal_transition_lc68")).not.toContain("lc68")
+    expect(issModelDisplayLabel("municipal_transition_lc68")).toBe("Transição municipal (rampa por ano)")
+  })
+
+  it("traduz input_static", () => {
+    expect(issModelDisplayLabel("input_static")).toBe("Alíquota informada (sem rampa)")
+  })
+
+  it("valor desconhecido cai no próprio texto bruto (expand/contract: backend pode adicionar valores sem quebrar a UI)", () => {
+    expect(issModelDisplayLabel("valor_futuro_desconhecido")).toBe("valor_futuro_desconhecido")
+  })
+})
 
 describe("explainDestinationCredits", () => {
   it("returns ramp explanation for early transition years with low combined rate", () => {

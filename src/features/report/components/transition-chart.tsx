@@ -267,7 +267,7 @@ function TransitionTooltip({
           <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
             {abMode
               ? "Legado a partir do cenário B. A = referência; B = simulação actual."
-              : "Legado: PIS/COFINS/ISS · Novo: CBS/IBS (LC 68/2024)."}
+              : "Legado: PIS/COFINS/ISS · Novo: CBS/IBS."}
           </p>
         </div>
       )}
@@ -501,7 +501,7 @@ export function TransitionChart({
             >
               {abMode
                 ? "CBS/IBS projetado por ano: referência (A, tracejado) vs simulação actual (B, sólido). Legado a partir do cenário B."
-                : "Carga líquida legado (PIS/COFINS/ISS) vs CBS/IBS projetado — escala única para veracidade do cruzamento (LC 68/2024)."}
+                : "Carga líquida legado (PIS/COFINS/ISS) vs CBS/IBS projetado — escala única para veracidade do cruzamento."}
             </p>
 
             {/* Legendas A/B em Board-Ready recebem font-board-report */}

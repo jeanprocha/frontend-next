@@ -4,7 +4,7 @@ const pilares = [
   {
     icon: Scale,
     title: "Conformidade e Segurança de Auditoria",
-    body: "Classifique créditos sem medo de autuações. O motor RAG busca semanticamente na lei exata e fornece a justificativa legal rastreável na LC 68/2024 para cada item simulado.",
+    body: "Classifique créditos sem medo de autuações. O motor RAG busca semanticamente na lei exata e fornece a justificativa legal rastreável na legislação vigente para cada item simulado.",
   },
   {
     icon: Zap,

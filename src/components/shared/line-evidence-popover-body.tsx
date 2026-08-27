@@ -17,13 +17,13 @@ import { cn } from "@/lib/utils"
 import type { ClassificationItem } from "@/types/api"
 
 const footerNote =
-  "Fonte: classificação em lote e chunks LC 68/2024 no TribIA; sujeito a alterações legislativas."
+  "Fonte: classificação em lote e chunks do corpus legal no TribIA; sujeito a alterações legislativas."
 
 const UNIFIED_PANEL_TITLE = "Cédula de auditoria"
 
 /** Uma frase curta; em ecrãs estreitos o <p> usa line-clamp-2. */
 const UNIFIED_PANEL_DESCRIPTION =
-  "Classificação, evidências e texto legal LC 68/2024 remontados nesta simulação — não substitui o texto oficial consolidado."
+  "Classificação, evidências e texto legal remontados nesta simulação — não substitui o texto oficial consolidado."
 
 /** Tipografia operacional (Geist); serif só com `board-ready:*` no documento. */
 const ragBodyTypography =

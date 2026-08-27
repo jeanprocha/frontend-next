@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { fetchLawCorpus, queryKeys } from "@/lib/api"
 import type { LawCorpusResponse } from "@/lib/api/legal"
 import type { FiscalLawChangelogPayload } from "@/lib/fiscal-law-changelog"
-import { corpusToChangelogPayload, staticCorpusFallback } from "./corpus-fallback"
+import { corpusToChangelogPayload, staticCorpusFallback } from "./law-corpus-fallback"
 
 /**
  * W1/PR 8 (docs/plano-evolucao-tribia.md): `GET /law/corpus` está em produção
@@ -21,6 +21,13 @@ export interface UseLawCorpusResult {
   isLive: boolean
 }
 
+/**
+ * Promovido de features/legal-corpus/ para lib/ na PR 10: qualquer feature
+ * que cite o corpus legal (report, classification, simulation) precisa deste
+ * hook, e feature→feature é proibido pela regra de dependência do projeto
+ * (app → features → lib/components/types). features/legal-corpus/ continua
+ * dona da UI (badge, changelog, selo) e reexporta este hook no seu barrel.
+ */
 export function useLawCorpus(): UseLawCorpusResult {
   const { data } = useQuery({
     queryKey: queryKeys.lawCorpus.all,

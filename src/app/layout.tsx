@@ -29,7 +29,7 @@ const sourceSerif4 = Source_Serif_4({
 export const metadata: Metadata = {
   title: "TribIA — Simulador de Reforma Tributária",
   description:
-    "Calcule o impacto da transição CBS/IBS para a sua empresa com classificação de créditos por IA (LC 68/2024).",
+    "Calcule o impacto da transição CBS/IBS para a sua empresa com classificação de créditos por IA.",
 }
 
 export default function RootLayout({

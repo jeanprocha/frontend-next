@@ -43,6 +43,7 @@ import { parseConfidenceScore01 } from "@/lib/confidence-tiers"
 import { cn } from "@/lib/utils"
 import { SolidityAggregateDiagnostic } from "@/components/shared/solidity-aggregate-diagnostic"
 import { SolidityTrafficLight } from "@/components/shared/solidity-traffic-light"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 
 // ─── Allowlist de elementos Markdown seguros ──────────────────────────────────
 // Apenas formatação inline e parágrafos — sem links, imagens ou blocos
@@ -74,7 +75,7 @@ export interface VerdictThesisPanelProps {
   scoreRaw?: number | string | null
   /**
    * `aiMetadata.breakdown.evidence_coverage` (0–1): proporção de linhas com
-   * pelo menos um fragmento recuperado da LC 68/2024.
+   * pelo menos um fragmento recuperado da lei.
    * Alimenta o Y% / Z% no SolidityAggregateDiagnostic (item 2.3.2).
    * Omitir ou `null` quando breakdown não está disponível.
    */
@@ -122,6 +123,7 @@ export function VerdictThesisPanel({
 }: VerdictThesisPanelProps) {
   const hasText = Boolean(markdown?.trim())
   const syncVisualActive = isRecalculating || pendingSimulationSync
+  const { changelog } = useLawCorpus()
   const parsedScore = parseConfidenceScore01(scoreRaw ?? null)
   const parsedCoverage =
     evidenceCoverageRaw != null && Number.isFinite(evidenceCoverageRaw)
@@ -271,7 +273,7 @@ export function VerdictThesisPanel({
       {/* Proveniência — rastro do dado (tribia_core_rules §2 "Demonstrar") */}
       {!pending && hasText && (
         <p className="mt-3 text-[10px] font-medium text-muted-foreground/80 board-ready:hidden print:hidden">
-          Gerado pelo motor semântico · LC 68/2024
+          Gerado pelo motor semântico · {changelog.label}
         </p>
       )}
     </section>

@@ -11,7 +11,7 @@ const etapas = [
   },
   {
     n: 2,
-    short: "RAG / LC 68",
+    short: "RAG / Lei",
     title: "IA RAG rastreia a base legal",
     body: "Cada conclusão é ancorada em trechos recuperados da legislação — com justificativa e redução de alucinação. Transparência que aguenta a mesa de governança.",
     icon: Sparkles,

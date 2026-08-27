@@ -16,6 +16,7 @@ import { StrategyChips } from "./strategy-chips"
 import { ContextHighlightField } from "./context-highlight-field"
 import { useStrategyTags } from "../hooks/use-strategy-tags"
 import { useCapability, PlgUpgradeDialog } from "@/features/plg"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 
 export function ContextHub() {
   const { year, companyContext, companyRegime, setYear, setCompanyContext, setCompanyRegime } =
@@ -29,6 +30,7 @@ export function ContextHub() {
   const analystBriefingKind = useTaxStore((s) => s.analystBriefingKind)
   const fullRayx = useCapability("rayxFull")
   const [rayxUpgradeOpen, setRayxUpgradeOpen] = useState(false)
+  const { changelog } = useLawCorpus()
 
   const hasAnchorSpan =
     contextHighlightRuneRange != null &&
@@ -91,7 +93,7 @@ export function ContextHub() {
             <Landmark className="size-3.5 shrink-0" aria-hidden />
             <span className="text-xs font-medium uppercase tracking-widest">Regime</span>
             <Badge variant="secondary" className="ml-auto shrink-0 text-xs font-normal px-1.5 py-0">
-              LC 68/2024
+              {changelog.label}
             </Badge>
             <RegimeProfileHelp />
           </div>
@@ -136,7 +138,7 @@ export function ContextHub() {
             {rayxCalloutMode === "tease" && (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="min-w-0 flex-1">
-                  O sistema identificou o trecho correspondente; no Pro o realce fica nítido no contexto e o briefing reúne a trilha completa na LC 68/2024 com evidências RAG.
+                  O sistema identificou o trecho correspondente; no Pro o realce fica nítido no contexto e o briefing reúne a trilha completa na {changelog.label} com evidências RAG.
                 </p>
                 <Button
                   type="button"

@@ -16,7 +16,7 @@ export const AUDIT_TRAIL_STEPS: { label: string; detail: string; href: string }[
   },
   {
     label: "Dossiê de Auditoria (RAG)",
-    detail: "Certificado de cobertura, LC 68/2024 e prova documental para o CFO.",
+    detail: "Certificado de cobertura, base legal e prova documental para o CFO.",
     href: "#tribia-dossie-auditoria",
   },
   {

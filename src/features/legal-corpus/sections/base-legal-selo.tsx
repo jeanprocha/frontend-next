@@ -1,6 +1,6 @@
 "use client"
 
-import { useLawCorpus } from "../use-law-corpus"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 import type { ReportSection } from "@/lib/report-contract"
 
 /**

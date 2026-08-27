@@ -48,7 +48,8 @@ import {
   formatBRLCompact,
   formatPct,
 } from "@/lib/format-money"
-import { FISCAL_LAW_CHANGELOG } from "@/lib/fiscal-law-changelog"
+import { fiscalLawVersionLabel } from "@/lib/fiscal-law-changelog"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 import { useCapability } from "@/features/plg"
 import type { SimulationResponse } from "@/types/api"
 
@@ -160,9 +161,11 @@ export function FinancialVerdictHeroCard({
   isRecalculating = false,
   pendingSimulationSync = false,
   className,
-  lawVersion = FISCAL_LAW_CHANGELOG.version,
+  lawVersion,
 }: FinancialVerdictHeroCardProps) {
   const isPro = useCapability("rayxFull")
+  const { changelog } = useLawCorpus()
+  const lawLabel = fiscalLawVersionLabel(lawVersion ?? changelog.version, changelog.label)
 
   // ── Polaridade — fonte exclusiva: simulation.delta (motor Go) ─────────────
   // `deriveFinancialVerdictPolarity` usa Decimal internamente — sem float.
@@ -373,7 +376,7 @@ export function FinancialVerdictHeroCard({
 
             {/* 5. Proveniência — rastro do dado para a lei */}
             <p className="text-[10px] font-medium text-muted-foreground/80">
-              Motor Go · LC 68/2024 v{lawVersion}
+              Motor Go · {lawLabel}
             </p>
           </>
         ) : (

@@ -127,7 +127,7 @@ export function ExpenseTable({
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[min(22rem,calc(100vw-2rem))] text-left text-xs leading-relaxed">
                       <p>
-                        O valor por linha vem da classificação (LC 68/2024, Art. 131):{" "}
+                        O valor por linha vem da classificação (Art. 131 da legislação vigente):{" "}
                         <span className="font-medium text-background">Padrão</span>,{" "}
                         <span className="font-medium text-background">Reduzido 60%</span> ou{" "}
                         <span className="font-medium text-background">Alíquota Zero</span>. Só aparecem os dois últimos

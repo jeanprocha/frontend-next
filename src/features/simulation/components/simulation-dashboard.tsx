@@ -445,7 +445,7 @@ export function SimulationDashboard({
           <div className={cn("space-y-0.5", formResults && "board-ready:hidden")}>
             <h1 className="text-2xl font-bold tracking-tight">Simulador de Reforma Tributária</h1>
             <p className="text-sm text-muted-foreground">
-              Calcule o impacto da transição CBS/IBS com classificação de créditos por IA — LC 68/2024.
+              Calcule o impacto da transição CBS/IBS com classificação de créditos por IA.
             </p>
             {!boardReadyActive && (
               <PipelineStageCompass stage={pipelineStage} className="pt-0.5" />

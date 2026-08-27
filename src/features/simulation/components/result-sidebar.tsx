@@ -56,7 +56,7 @@ const PIPELINE_STEPS = [
   },
   {
     title: "Classificação",
-    hint: "IA consulta a LC 68/2024 via RAG",
+    hint: "IA consulta a legislação vigente via RAG",
     Icon: BrainCircuit,
   },
   {
@@ -210,7 +210,7 @@ export function ResultSidebar({
                 <TransitionChartTeaser />
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Preencha ao menos uma receita válida e simule para ver números, gráficos e créditos com evidências na LC 68/2024.
+                Preencha ao menos uma receita válida e simule para ver números, gráficos e créditos com evidências na legislação vigente.
               </p>
             </div>
           ) : (
@@ -254,7 +254,7 @@ export function ResultSidebar({
                         Inteligência de crédito
                       </p>
                       <p className="text-xs leading-relaxed text-emerald-900/75 dark:text-emerald-100/70">
-                        A IA classifica cada despesa consultando a LC 68/2024 via RAG antes de calcular o impacto.
+                        A IA classifica cada despesa consultando a legislação vigente via RAG antes de calcular o impacto.
                       </p>
                     </div>
                   </div>

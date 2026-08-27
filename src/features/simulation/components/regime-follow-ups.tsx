@@ -55,7 +55,7 @@ export function RegimeFollowUps() {
           </div>
         )}
         <p className="text-sm text-muted-foreground">
-          Valores baseados em alíquotas estimadas da LC 68/2024. Consulte um especialista para decisões fiscais.
+          Valores baseados em alíquotas estimadas da legislação vigente. Consulte um especialista para decisões fiscais.
         </p>
         {companyRegime === "simples_hibrido" && (
           <div
@@ -92,7 +92,7 @@ export function RegimeFollowUps() {
               </h4>
               <p className="mt-1 text-xs leading-relaxed text-indigo-800 dark:text-indigo-200/90">
                 Sociedades de advogados, engenheiros, contadores, arquitetos e demais profissões com registro
-                podem enquadrar-se em benefícios específicos na LC 68/2024. O TribIA aplica na projeção{" "}
+                podem enquadrar-se em benefícios específicos na legislação vigente. O TribIA aplica na projeção{" "}
                 <strong>70% da alíquota CBS+IBS padrão do ano selecionado</strong> (redução ilustrativa de 30%
                 sobre essa alíquota), mantendo <strong>créditos por despesa elegível</strong> conforme o regime
                 de cada fornecedor. Compare com o cenário &quot;Lucro Real / Presumido&quot; para avaliar troca de

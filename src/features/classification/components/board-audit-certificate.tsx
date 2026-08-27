@@ -41,7 +41,7 @@ export function BoardAuditCertificate({
               {literalPct != null ? `${literalPct}%` : "—"}
             </p>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Grau de correspondência entre o dado do cliente e o dispositivo aplicável na LC 68/2024.
+              Grau de correspondência entre o dado do cliente e o dispositivo aplicável na legislação vigente.
             </p>
           </div>
         </li>
