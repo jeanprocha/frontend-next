@@ -1,8 +1,9 @@
 import Link from "next/link"
 import { Show, SignInButton } from "@clerk/nextjs"
 import { ArrowRight, CheckCircle, ExternalLink, Sparkles, Scale } from "lucide-react"
-import { ProductFlowLinear } from "@/components/tax/product-flow-linear"
-import { TechnologyPilarGrid } from "@/components/tax/technology-pilar-grid"
+import { ProductFlowLinear } from "@/components/marketing/product-flow-linear"
+import { TechnologyPilarGrid } from "@/components/marketing/technology-pilar-grid"
+import { ROTAS } from "@/constants/routes"
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ function Hero() {
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Show when="signed-in">
-            <Link href="/dashboard" className={ctaPrimaryClass}>
+            <Link href={ROTAS.clientes} className={ctaPrimaryClass}>
               <span className="inline-flex items-center gap-2">
                 Ir para o Dashboard
                 <ArrowRight className="h-4 w-4" aria-hidden />
@@ -102,7 +103,7 @@ const plans = [
       "Comparativo 2026 e veredito numérico claro",
     ],
     cta: "Começar grátis",
-    href: "/dashboard",
+    href: ROTAS.clientes,
     highlighted: false,
   },
   {
@@ -185,7 +186,7 @@ function Pricing() {
                     </Link>
                   </Show>
                   <Show when="signed-out">
-                    <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
+                    <SignInButton mode="modal" fallbackRedirectUrl={ROTAS.clientes}>
                       <button
                         type="button"
                         className="block w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
@@ -217,7 +218,7 @@ function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <span className="font-mono text-sm font-bold text-foreground">◈ TribIA</span>
           <nav className="flex flex-wrap items-center justify-center gap-5 text-xs text-muted-foreground">
-            <Link href="/dashboard" className="transition-colors hover:text-foreground">
+            <Link href={ROTAS.clientes} className="transition-colors hover:text-foreground">
               Dashboard
             </Link>
             <Link href="/privacidade" className="transition-colors hover:text-foreground">

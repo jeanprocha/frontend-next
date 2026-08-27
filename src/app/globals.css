@@ -463,21 +463,6 @@ main[data-pipeline-stage="verdict"] {
     display: none !important;
   }
 
-  /* Esteira em tabs (Sessão 1): rasto completo no PDF — todas as secções em sequência */
-  .tribia-audit-tabs [data-slot="tabs-list"] {
-    display: none !important;
-  }
-
-  .tribia-audit-tabs [role="tabpanel"][hidden],
-  .tribia-audit-tabs [data-slot="tabs-content"][hidden] {
-    display: block !important;
-    position: static !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
   .report-export-pdf-fab,
   [data-report-pdf-fab] {
     display: none !important;

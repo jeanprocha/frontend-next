@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { useAuth } from "@clerk/nextjs"
-import { useTribiaPlgTier } from "@/hooks/use-tribia-plg-tier"
+import { useAuth } from "@/lib/auth-client"
+import { useCapability, useTribiaPlgTier } from "@/features/plg"
 import { useQuery } from "@tanstack/react-query"
 import {
   Building2,
@@ -42,7 +42,8 @@ import {
   SHORTCUT_KEYS,
   simulateShortcutLabel,
 } from "@/constants/shortcuts"
-import { listCompanies } from "@/lib/api"
+import { ROTAS, ehRotaSimulacoes, ehSuperficieSimulador } from "@/constants/routes"
+import { listCompanies, queryKeys } from "@/lib/api"
 import { getDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { isApplePlatform } from "@/lib/platform"
 import { toggleColorTheme } from "@/lib/theme-preference"
@@ -71,6 +72,7 @@ export function CommandMenu() {
   const pathname = usePathname()
   const { userId, getToken } = useAuth()
   const plgTier = useTribiaPlgTier()
+  const rayxFull = useCapability("rayxFull")
   const mod = modKeyLabel()
   const leaderGRef = useRef<{
     armed: boolean
@@ -78,7 +80,7 @@ export function CommandMenu() {
   }>({ armed: false, timer: null })
 
   const { data: companies } = useQuery({
-    queryKey: ["companies", userId, plgTier],
+    queryKey: queryKeys.companies.list(userId, plgTier),
     queryFn: async () => {
       const token = await getToken()
       if (!token || !userId) throw new Error("Não autenticado")
@@ -125,19 +127,6 @@ export function CommandMenu() {
     [router, close],
   )
 
-  const applyCompany = useCallback(
-    (id: string) => {
-      const company = companies?.find((c) => c.id === id)
-      if (!company) return
-      useTaxStore.getState().applyCompanyTemplate(company)
-      if (pathname !== "/dashboard") {
-        router.push("/dashboard")
-      }
-      close()
-    },
-    [companies, pathname, router, close],
-  )
-
   const focusHistorySearch = useCallback(() => {
     getDashboardCommandBridge().focusHistorySearch?.()
     close()
@@ -163,10 +152,9 @@ export function CommandMenu() {
     close()
   }, [close])
 
-  const onDashboard =
-    pathname === "/dashboard" || pathname === "/dashboard/"
-  const onHistory = pathname.startsWith("/dashboard/history")
-  const onCompanies = pathname.startsWith("/dashboard/companies")
+  const emSimulador = ehSuperficieSimulador(pathname)
+  const emSimulacoes = ehRotaSimulacoes(pathname)
+  const naCarteira = pathname === ROTAS.clientes
 
   const disarmLeaderG = useCallback(() => {
     const r = leaderGRef.current
@@ -220,7 +208,7 @@ export function CommandMenu() {
         ) {
           e.preventDefault()
           disarmLeaderG()
-          router.push("/dashboard/history")
+          router.push(ROTAS.simulacoes)
           return
         }
         disarmLeaderG()
@@ -245,10 +233,10 @@ export function CommandMenu() {
       const b = getDashboardCommandBridge()
       const apple = isApplePlatform()
       const modDown = apple ? e.metaKey : e.ctrlKey
-      const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+      const isProOrPremium = rayxFull
       const proFormResults =
         isProOrPremium &&
-        onDashboard &&
+        emSimulador &&
         b.hasFormResults &&
         !b.isSimulationInputPhase &&
         !b.isLoadingSimulation
@@ -289,7 +277,7 @@ export function CommandMenu() {
       }
 
       const simInput =
-        onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
+        emSimulador && b.isSimulationInputPhase && !b.isLoadingSimulation
       if (simInput) {
         if (e.key === "a" || e.key === "A") {
           if (!e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -323,8 +311,8 @@ export function CommandMenu() {
     return () => document.removeEventListener("keydown", onKey)
   }, [
     open,
-    onDashboard,
-    plgTier,
+    emSimulador,
+    rayxFull,
     addService,
     addExpense,
     router,
@@ -333,17 +321,17 @@ export function CommandMenu() {
 
   const b = getDashboardCommandBridge()
   const canSimActions =
-    onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
+    emSimulador && b.isSimulationInputPhase && !b.isLoadingSimulation
   const canRun = Boolean(b.runSimulation)
   const canBoard = Boolean(b.toggleBoardReady)
   const canPrint = b.hasFormResults && !b.isLoadingSimulation
   const canFocusHistorySearch = Boolean(b.focusHistorySearch)
   const canOpenCompanyForm = Boolean(b.openCompaniesNewForm)
 
-  const isProOrPremium = plgTier === "pro" || plgTier === "premium"
+  const isProOrPremium = rayxFull
   const proFormResultHotkeys =
     isProOrPremium &&
-    onDashboard &&
+    emSimulador &&
     b.hasFormResults &&
     !b.isSimulationInputPhase &&
     !b.isLoadingSimulation
@@ -353,8 +341,8 @@ export function CommandMenu() {
 
   const showQuickActions =
     canSimActions ||
-    (onHistory && canFocusHistorySearch) ||
-    (onCompanies && canOpenCompanyForm)
+    (emSimulacoes && canFocusHistorySearch) ||
+    (naCarteira && canOpenCompanyForm)
 
   return (
     <>
@@ -376,7 +364,7 @@ export function CommandMenu() {
 
           {showQuickActions && (
             <CommandGroup heading="Ações rápidas (esta página)">
-              {onHistory && canFocusHistorySearch && (
+              {emSimulacoes && canFocusHistorySearch && (
                 <CommandItem
                   value="histórico pesquisar filtrar simulações"
                   onSelect={focusHistorySearch}
@@ -385,7 +373,7 @@ export function CommandMenu() {
                   <span>Focar pesquisa no histórico</span>
                 </CommandItem>
               )}
-              {onCompanies && canOpenCompanyForm && (
+              {naCarteira && canOpenCompanyForm && (
                 <CommandItem
                   value="empresa nova cadastro"
                   onSelect={openNewCompanyForm}
@@ -466,37 +454,37 @@ export function CommandMenu() {
 
           <CommandGroup heading="Navegação">
             <CommandItem
-              value={`ir simulador dashboard ${NAV_LINK_LABELS.simulator}`}
-              onSelect={() => go("/dashboard")}
+              value={`clientes carteira ${NAV_LINK_LABELS.clientes}`}
+              onSelect={() => go(ROTAS.clientes)}
+            >
+              <Building2 className="size-4 text-muted-foreground" />
+              <span>{NAV_LINK_LABELS.clientes}</span>
+            </CommandItem>
+            <CommandItem
+              value={`ir simulador avulso ${NAV_LINK_LABELS.simulador}`}
+              onSelect={() => go(ROTAS.simulador)}
             >
               <LayoutDashboard className="size-4 text-muted-foreground" />
               <span>{PALETTE_GO_SIMULATOR_LABEL}</span>
             </CommandItem>
             <CommandItem
-              value={`empresas cadastro ${NAV_LINK_LABELS.companies}`}
-              onSelect={() => go("/dashboard/companies")}
-            >
-              <Building2 className="size-4 text-muted-foreground" />
-              <span>{NAV_LINK_LABELS.companies}</span>
-            </CommandItem>
-            <CommandItem
-              value={`histórico simulações ${NAV_LINK_LABELS.history}`}
-              onSelect={() => go("/dashboard/history")}
+              value={`histórico simulações ${NAV_LINK_LABELS.simulacoes}`}
+              onSelect={() => go(ROTAS.simulacoes)}
             >
               <Library className="size-4 text-muted-foreground" />
-              <span>{NAV_LINK_LABELS.history}</span>
+              <span>{NAV_LINK_LABELS.simulacoes}</span>
             </CommandItem>
           </CommandGroup>
 
           {userId && companies && companies.length > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Aplicar empresa">
+              <CommandGroup heading="Ir para cliente">
                 {companies.map((c) => (
                   <CommandItem
                     key={c.id}
-                    value={`empresa ${c.name} ${c.tax_context ?? ""}`}
-                    onSelect={() => applyCompany(c.id)}
+                    value={`empresa cliente ${c.name} ${c.tax_context ?? ""}`}
+                    onSelect={() => go(ROTAS.cliente(c.id))}
                   >
                     <Building2 className="size-4 text-emerald-600" />
                     <span>{c.name}</span>

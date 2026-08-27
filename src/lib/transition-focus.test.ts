@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
 import { simulationAtFocusYear } from "./transition-focus"
-import { insightYearMismatch } from "./tribia-insight-focus"
 import type { SimulationResponse } from "@/types/api"
 
 function minimalSim(): SimulationResponse {
@@ -72,13 +71,5 @@ describe("simulationAtFocusYear", () => {
     expect(o.current.net_tax).toBe("100.00")
     expect(o.projected.net_tax).toBe("200.00")
     expect(o.delta).toBe("100.00")
-  })
-})
-
-describe("insightYearMismatch", () => {
-  it("detecta quando o ano do resultado difere do ano da execução", () => {
-    expect(insightYearMismatch(2028, 2026)).toBe(true)
-    expect(insightYearMismatch(2026, 2026)).toBe(false)
-    expect(insightYearMismatch(2028, undefined)).toBe(false)
   })
 })

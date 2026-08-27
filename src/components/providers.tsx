@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { CommandMenu } from "@/components/command-menu"
-import { TribiaPlanProvider } from "@/components/tribia/tribia-plan-provider"
+import { TribiaPlanProvider, PlgLimitDialogHost } from "@/features/plg"
 import { initThemeFromStorage } from "@/lib/theme-preference"
 
 // Remove a chave legada do localStorage que era usada pelo Zustand persist.
@@ -53,6 +53,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <TribiaPlanProvider>
         <BfcacheGuard />
         <CommandMenu />
+        <PlgLimitDialogHost />
         {children}
       </TribiaPlanProvider>
       {process.env.NODE_ENV === "development" && (
