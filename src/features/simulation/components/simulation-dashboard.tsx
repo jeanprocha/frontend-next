@@ -167,9 +167,10 @@ export function SimulationDashboard({ renderDossier, importerEntries }: Simulati
     pipeline.actions.reset()
   }
 
+  const machineStatus = formResults ? "ready" : loading ? "running" : "idle"
   const pipelineStage = usePipelineStage({
-    loading,
-    hasFormSimulationResults: Boolean(formResults),
+    machineStatus,
+    runningUiStage: pipeline.runningUiStage,
     services,
     expenses,
   })
@@ -395,7 +396,7 @@ export function SimulationDashboard({ renderDossier, importerEntries }: Simulati
       <div
         className={cn(
           "pointer-events-none fixed inset-0 -z-10 dashboard-pipeline-glow",
-          pipelineStage === "simulation" && "dashboard-pipeline-glow--pulse",
+          machineStatus === "running" && "dashboard-pipeline-glow--pulse",
         )}
         aria-hidden
       />

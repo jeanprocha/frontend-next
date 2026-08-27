@@ -19,8 +19,8 @@ const validExp: FormExpense = { id: "e1", description: "Cloud", amount: "100" }
 
 function base(over: Partial<UsePipelineStageInput> = {}): UsePipelineStageInput {
   return {
-    loading: false,
-    hasFormSimulationResults: false,
+    machineStatus: "idle",
+    runningUiStage: null,
     services: [],
     expenses: [],
     ...over,
@@ -29,81 +29,59 @@ function base(over: Partial<UsePipelineStageInput> = {}): UsePipelineStageInput 
 
 describe("resolvePipelineStage", () => {
   describe("prioridade 1 — verdict", () => {
-    it("retorna verdict quando há resultados de simulação form e não está a carregar", () => {
-      expect(
-        resolvePipelineStage(
-          base({
-            hasFormSimulationResults: true,
-            loading: false,
-          }),
-        ),
-      ).toBe("verdict")
+    it("retorna verdict quando a máquina está ready", () => {
+      expect(resolvePipelineStage(base({ machineStatus: "ready" }))).toBe("verdict")
     })
 
-    it("não retorna verdict enquanto loading com resultados já presentes (precedência simulação)", () => {
+    it("não retorna verdict enquanto running, mesmo com serviços/despesas preenchidos (precedência do passo real)", () => {
       expect(
         resolvePipelineStage(
-          base({
-            hasFormSimulationResults: true,
-            loading: true,
-          }),
+          base({ machineStatus: "running", runningUiStage: "simulation", services: [validSvc], expenses: [validExp] }),
         ),
       ).toBe("simulation")
     })
   })
 
-  describe("prioridade 2 — simulation", () => {
-    it("retorna simulation quando mutation loading no form", () => {
-      expect(
-        resolvePipelineStage(
-          base({
-            loading: true,
-            services: [validSvc],
-            expenses: [validExp],
-          }),
-        ),
-      ).toBe("simulation")
+  describe("prioridade 2 — running reflete o uiStage do passo real", () => {
+    it("retorna o uiStage do passo em execução (ex.: 'classification' durante o classify)", () => {
+      expect(resolvePipelineStage(base({ machineStatus: "running", runningUiStage: "classification" }))).toBe(
+        "classification",
+      )
+    })
+
+    it("retorna 'simulation' durante o passo simulate", () => {
+      expect(resolvePipelineStage(base({ machineStatus: "running", runningUiStage: "simulation" }))).toBe(
+        "simulation",
+      )
+    })
+
+    it("cai em 'simulation' se runningUiStage vier null (rede de segurança, não deveria acontecer com o registry real)", () => {
+      expect(resolvePipelineStage(base({ machineStatus: "running", runningUiStage: null }))).toBe("simulation")
     })
   })
 
-  describe("prioridade 3 — classification", () => {
+  describe("prioridade 3 — classification (fora de running/ready)", () => {
     it("retorna classification no form com ≥1 serviço e ≥1 despesa válidos, sem resultados", () => {
       expect(
-        resolvePipelineStage(
-          base({
-            services: [validSvc],
-            expenses: [validExp],
-            loading: false,
-          }),
-        ),
+        resolvePipelineStage(base({ machineStatus: "idle", services: [validSvc], expenses: [validExp] })),
       ).toBe("classification")
     })
 
     it("não entra em classification só com serviços válidos", () => {
       expect(
-        resolvePipelineStage(
-          base({
-            services: [validSvc],
-            expenses: [emptyExp],
-          }),
-        ),
+        resolvePipelineStage(base({ machineStatus: "idle", services: [validSvc], expenses: [emptyExp] })),
       ).toBe("context")
     })
 
     it("não entra em classification só com despesas válidas", () => {
       expect(
-        resolvePipelineStage(
-          base({
-            services: [emptySvc],
-            expenses: [validExp],
-          }),
-        ),
+        resolvePipelineStage(base({ machineStatus: "idle", services: [emptySvc], expenses: [validExp] })),
       ).toBe("context")
     })
   })
 
   describe("default — context", () => {
-    it("form vazio permanece em context", () => {
+    it("form vazio e máquina idle permanece em context", () => {
       expect(resolvePipelineStage(base())).toBe("context")
     })
   })

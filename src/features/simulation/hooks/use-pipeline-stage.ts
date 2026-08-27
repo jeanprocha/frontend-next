@@ -2,13 +2,19 @@
 
 import { useMemo } from "react"
 import { isFilledLine } from "@/lib/simulation-line-helpers"
+import type { PipelineUiStage } from "../machine/machine-types"
 import type { FormExpense, FormService } from "@/types/api"
 
-export type PipelineStage =
-  | "context"
-  | "classification"
-  | "simulation"
-  | "verdict"
+/**
+ * Alias do vocabulário de estágio da máquina (FE-3, PR 3d) — antes a UI tinha
+ * uma union PRÓPRIA (`"context" | "classification" | "simulation" |
+ * "verdict"`), derivada de booleans achatados sem relação com o estado real
+ * do pipeline; `classifying`/`calculating` colapsavam ambos num único
+ * "simulation" durante todo o run. Agora é o mesmo tipo que cada `Step` do
+ * registry declara em `uiStage` — um passo novo aparece na UI só ao
+ * registrar `{id, run, uiStage}` em step-registry.ts (PR 3b), sem tocar aqui.
+ */
+export type PipelineStage = PipelineUiStage
 
 export const PIPELINE_STAGE_LABEL_PT: Record<PipelineStage, string> = {
   context: "Contexto",
@@ -17,28 +23,27 @@ export const PIPELINE_STAGE_LABEL_PT: Record<PipelineStage, string> = {
   verdict: "Veredito",
 }
 
+export type MachineStatus = "idle" | "running" | "ready"
+
 export interface UsePipelineStageInput {
-  loading: boolean
-  /** Simulação completa (form com motor executado). */
-  hasFormSimulationResults: boolean
+  machineStatus: MachineStatus
+  /** `uiStage` do passo em execução (`null` fora de `running`) — ver use-simulation-pipeline.ts. */
+  runningUiStage: PipelineUiStage | null
   services: FormService[]
   expenses: FormExpense[]
 }
 
 /**
- * Precedência: veredito (só form simulado) > simulação (mutation em curso)
- * > classificação (form com ≥1 receita e ≥1 despesa preenchidas) > contexto.
- *
- * FE-3 (PR 3c): perdeu hasCsvClassificationResults/csvProcessing/inputMode —
- * o fork classify-only do CSV morreu (upload agora só popula o form, ver
- * features/import). A derivação a partir da máquina (stepId real em vez de
- * um "simulation" único durante todo o run) é a PR 3d.
+ * Precedência: veredito (`ready`) > o `uiStage` do passo real em execução
+ * (`running`, com fallback "simulation" — impossível na prática, rede de
+ * segurança se um passo do registry esquecer o `uiStage`) > classificação
+ * (form com ≥1 receita e ≥1 despesa preenchidas) > contexto.
  */
 export function resolvePipelineStage(input: UsePipelineStageInput): PipelineStage {
-  const { loading, hasFormSimulationResults, services, expenses } = input
+  const { machineStatus, runningUiStage, services, expenses } = input
 
-  if (hasFormSimulationResults && !loading) return "verdict"
-  if (loading) return "simulation"
+  if (machineStatus === "ready") return "verdict"
+  if (machineStatus === "running") return runningUiStage ?? "simulation"
 
   const nSvc = services.filter(isFilledLine).length
   const nExp = expenses.filter(isFilledLine).length
@@ -48,10 +53,10 @@ export function resolvePipelineStage(input: UsePipelineStageInput): PipelineStag
 }
 
 export function usePipelineStage(input: UsePipelineStageInput): PipelineStage {
-  const { loading, hasFormSimulationResults, services, expenses } = input
+  const { machineStatus, runningUiStage, services, expenses } = input
   return useMemo(
-    () => resolvePipelineStage({ loading, hasFormSimulationResults, services, expenses }),
-    [loading, hasFormSimulationResults, services, expenses],
+    () => resolvePipelineStage({ machineStatus, runningUiStage, services, expenses }),
+    [machineStatus, runningUiStage, services, expenses],
   )
 }
 
