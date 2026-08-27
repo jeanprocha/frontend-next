@@ -20,6 +20,12 @@ export {
   type LawCorpusDocument,
   type LawCorpusResponse,
 } from "@/lib/api/legal"
+export {
+  fetchEngineValidation,
+  type EngineValidationResponse,
+  type EngineValidationCase,
+  type EngineValidationReference,
+} from "@/lib/api/engine"
 export { listCompanies, createCompany, deleteCompany } from "@/lib/api/companies"
 export {
   simulate,

@@ -17,6 +17,7 @@ import type {
 // bundle do teste.
 import type { PlgQuotaResponse } from "@/lib/api"
 import type { LawCorpusResponse } from "@/lib/api/legal"
+import type { EngineValidationResponse } from "@/lib/api/engine"
 
 export const E2E_RECORD_ID = "11111111-1111-4111-8111-111111111111"
 
@@ -180,6 +181,29 @@ export const LAW_CORPUS_FIXTURE: LawCorpusResponse = {
       desc: "GET /law/corpus mockado — confirma que o badge não depende mais da constante estática.",
     },
   ],
+}
+
+/**
+ * GET /engine/validation (W7/PR 6) — validated:true com evidência sintética,
+ * para provar que motorValidadoSeloSection lê a API mockada e não fabrica
+ * nada quando o backend não sustenta (ver motor-validado-selo.test.tsx para
+ * o caso validated:false).
+ */
+export const ENGINE_VALIDATION_FIXTURE: EngineValidationResponse = {
+  validated: true,
+  reference: {
+    name: "Calculadora de Tributos RFB/Serpro",
+    url: "http://localhost:8080/api",
+    run_at: "2026-08-27",
+  },
+  scope: ["CBS", "IBS"],
+  out_of_scope: ["PIS/COFINS", "ISS", "ICMS", "IPI", "Imposto Seletivo"],
+  tolerance_brl: "0.01",
+  cases: [
+    { year: 2026, cbs_tribia: "90.00", cbs_rfb: "90.00", ibs_tribia: "10.00", ibs_rfb: "10.00", divergente: false },
+  ],
+  cases_total: 8,
+  cases_divergent: 0,
 }
 
 export const RECORD_DETAIL_FIXTURE: SimulationRecordDetailResponse = {

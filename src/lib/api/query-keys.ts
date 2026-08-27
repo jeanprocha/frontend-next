@@ -27,4 +27,7 @@ export const queryKeys = {
   lawCorpus: {
     all: ["law-corpus"] as const,
   },
+  engineValidation: {
+    all: ["engine-validation"] as const,
+  },
 }

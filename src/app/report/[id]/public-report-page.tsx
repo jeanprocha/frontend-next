@@ -14,6 +14,7 @@ import {
 } from "@/features/report"
 import { classificationReportSections } from "@/features/classification"
 import { baseLegalSeloSection } from "@/features/legal-corpus"
+import { motorValidadoSeloSection } from "@/features/engine-validation"
 import type { ReportSection } from "@/lib/report-contract"
 
 // Ordem canónica do dossié — igual à do dashboard logado
@@ -30,6 +31,7 @@ const PUBLIC_REPORT_SECTIONS: ReportSection[] = [
   boardMastheadSection,
   watermarkSection,
   baseLegalSeloSection,
+  motorValidadoSeloSection,
   vereditoSection,
   comparativoABSection,
   anatomiaSection,

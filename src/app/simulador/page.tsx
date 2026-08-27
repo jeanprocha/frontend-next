@@ -19,6 +19,7 @@ import {
 import { AnalystBriefingSheet, classificationReportSections } from "@/features/classification"
 import { getImporterPanelEntries } from "@/features/import"
 import { baseLegalSeloSection } from "@/features/legal-corpus"
+import { motorValidadoSeloSection } from "@/features/engine-validation"
 import type { ReportRenderInput, ReportSection } from "@/lib/report-contract"
 
 // Ordem canónica do dossié logado — mastheads/rodapé de impressão intercalados
@@ -31,6 +32,7 @@ const DASHBOARD_SECTIONS: ReportSection[] = [
   boardMastheadSection,
   watermarkSection,
   baseLegalSeloSection,
+  motorValidadoSeloSection,
   vereditoSection,
   comparativoABSection,
   anatomiaSection,

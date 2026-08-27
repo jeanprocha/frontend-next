@@ -12,8 +12,10 @@ import type {
 } from "@/types/api"
 import type { PlgQuotaResponse } from "@/lib/api"
 import type { LawCorpusResponse } from "@/lib/api/legal"
+import type { EngineValidationResponse } from "@/lib/api/engine"
 import {
   E2E_RECORD_ID,
+  ENGINE_VALIDATION_FIXTURE,
   LAW_CORPUS_FIXTURE,
   QUOTA_FIXTURE,
   RECORD_DETAIL_FIXTURE,
@@ -81,6 +83,8 @@ export interface MockEngineOptions {
   quota?: PlgQuotaResponse
   /** GET /law/corpus (W1/PR 8). Omitido = LAW_CORPUS_FIXTURE. */
   lawCorpus?: LawCorpusResponse
+  /** GET /engine/validation (W7/PR 6). Omitido = ENGINE_VALIDATION_FIXTURE. */
+  engineValidation?: EngineValidationResponse
 }
 
 /** Sintetiza uma linha de listagem a partir do corpo do POST /simulation-records. */
@@ -154,6 +158,9 @@ export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Prom
     }
     if (pathname === "/law/corpus" && req.method() === "GET") {
       return json(route, 200, opts.lawCorpus ?? LAW_CORPUS_FIXTURE)
+    }
+    if (pathname === "/engine/validation" && req.method() === "GET") {
+      return json(route, 200, opts.engineValidation ?? ENGINE_VALIDATION_FIXTURE)
     }
 
     // Rota do motor não mockada: falha alto em vez de deixar a requisição
