@@ -214,7 +214,12 @@ export const simulateStep: Step = {
         expenses: input.expenses,
         ai_metadata: classified.aiMetadata,
         service_classifications: classified.serviceClassifications,
-        meta: { createdAt: new Date().toISOString(), companyContext: input.companyContext, year: input.year },
+        meta: {
+          createdAt: new Date().toISOString(),
+          companyContext: input.companyContext,
+          year: input.year,
+          ...(input.companyId ? { companyId: input.companyId } : {}),
+        },
       }
       return { ok: true, acc: { ...acc, results } }
     } catch (error) {

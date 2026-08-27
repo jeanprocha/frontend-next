@@ -16,7 +16,8 @@ export const queryKeys = {
   },
   simulationRecords: {
     all: ["simulation-records"] as const,
-    list: (userId: UserId, limit: number) => ["simulation-records", "list", userId, limit] as const,
+    list: (userId: UserId, limit: number, companyId?: string) =>
+      ["simulation-records", "list", userId, limit, companyId ?? "todas"] as const,
   },
   strategyTags: {
     all: ["strategy-tags"] as const,

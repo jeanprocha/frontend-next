@@ -109,6 +109,7 @@ export function simulationDetailToRecord(d: SimulationRecordDetailResponse): Sim
     companyContext: d.company_context,
     year: d.year,
     recordId: d.id,
+    ...(d.company_id ? { companyId: d.company_id } : {}),
   })
   const snap = snapshotFromDetail(d)
   return {

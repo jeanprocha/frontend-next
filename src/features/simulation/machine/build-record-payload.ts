@@ -64,6 +64,7 @@ export function buildSimulationRecordCreatePayload(
       })
 
   return {
+    ...(formResults.meta?.companyId ? { company_id: formResults.meta.companyId } : {}),
     company_context: companyContext,
     company_regime: companyRegime ?? "regular",
     year,

@@ -60,8 +60,10 @@ export async function listSimulationRecords(
   token: string,
   userId: string,
   limit = 20,
+  companyId?: string,
 ): Promise<SimulationRecordSummary[]> {
   const q = new URLSearchParams({ limit: String(limit) })
+  if (companyId) q.set("company_id", companyId)
   const res = await fetch(`${API_BASE}/simulation-records?${q}`, {
     headers: authHeaders(token, userId),
   })

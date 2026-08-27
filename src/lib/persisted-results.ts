@@ -11,6 +11,13 @@ export interface ResultMeta {
   year: number
   /** Registo no histórico (API) após gravação bem-sucedida; necessário para dossié /report/[id]. */
   recordId?: string
+  /**
+   * Cliente da carteira (FE-4/W9): presente quando a simulação nasce no
+   * workspace /clientes/[companyId] ou ao reabrir um registo com company_id.
+   * A IDENTIDADE do cliente vive na URL — este campo só transporta o
+   * vínculo do RESULTADO até o persist; nunca é estado global.
+   */
+  companyId?: string
 }
 
 export interface PersistedResults {

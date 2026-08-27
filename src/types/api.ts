@@ -293,6 +293,8 @@ export interface SimulationRecordSummary {
   id: string
   created_at: string
   year: number
+  /** Cliente da carteira (FE-4/W9) — ausente em registos legados (sempre NULL até a FE-4). */
+  company_id?: string | null
   company_context?: string | null
   delta_impact: string
   total_projected_tax: string
@@ -302,7 +304,8 @@ export interface SimulationRecordSummary {
 }
 
 export interface SimulationRecordCreatePayload {
-  organization_id?: string | null
+  /** Cliente da carteira (FE-4/W9) — presente quando a simulação nasce no workspace /clientes/[companyId]. */
+  company_id?: string
   company_context: string
   /** Perfil do simulador (ex.: exportadora, aliquota_zero) para PDF e reidratação. */
   company_regime?: string
@@ -336,6 +339,8 @@ export interface SimulationRecordDetailResponse {
   id: string
   created_at: string
   year: number
+  /** Cliente da carteira (FE-4/W9) — ausente em registos legados (sempre NULL até a FE-4). */
+  company_id?: string | null
   company_context: string
   company_regime?: string
   simulation: SimulationResponse

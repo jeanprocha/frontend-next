@@ -21,6 +21,8 @@ export interface SimulationInput {
   companyContext: string
   companyRegime: CompanyRegimeOption
   imobiliarioRedutorAjusteBrl?: string
+  /** Cliente da carteira (FE-4/W9) — ver ResultMeta.companyId em lib/persisted-results.ts. */
+  companyId?: string
 }
 
 export interface ClassifiedInput {
