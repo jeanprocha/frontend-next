@@ -1,10 +1,9 @@
 "use client"
 
-// Workspace do cliente (FE-4, PR 4d) — a URL carrega a identidade do
-// cliente; nenhum campo de store guarda "empresa selecionada". No mount (ou
-// troca de companyId) semeia o rascunho do form via aplicarContextoDoCliente
-// e limpa resultados anteriores (RESULTS_CLEARED) — substitui o antigo canal
-// templateApplyTick (morto na PR 4e).
+// Workspace do cliente (FE-4) — a URL carrega a identidade do cliente;
+// nenhum campo de store guarda "empresa selecionada". No mount (ou troca de
+// companyId) semeia o rascunho do form via aplicarContextoDoCliente e limpa
+// resultados anteriores explicitamente (clearResults).
 import { use, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { SimulationDashboard, useSimulationPipeline, RegistrosDoCliente } from "@/features/simulation"

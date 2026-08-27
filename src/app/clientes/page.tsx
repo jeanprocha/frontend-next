@@ -1,9 +1,8 @@
 "use client"
 
-// Carteira (FE-4, PR 4d) — home nova para usuários autenticados. Diferente
-// do wrapper transitório de app/dashboard/companies/page.tsx (que ainda
-// aplica template + navega para /simulador): aqui "Usar no simulador" abre
-// o workspace do cliente — a identidade do cliente passa a viver na URL.
+// Carteira (FE-4) — home nova para usuários autenticados. "Abrir workspace"
+// navega para /clientes/[id] — a identidade do cliente vive na URL, nunca
+// num template aplicado ao store.
 import { useRouter } from "next/navigation"
 import { PortfolioPage } from "@/features/portfolio"
 import { ROTAS } from "@/constants/routes"

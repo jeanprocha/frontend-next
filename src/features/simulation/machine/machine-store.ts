@@ -152,18 +152,6 @@ export function createSimulationMachineStore(steps: readonly Step[] = PIPELINE_S
     }
   }
 
-  // Único canal store→máquina: applyCompanyTemplate (chamado de fora do
-  // dashboard, ex. CommandMenu) incrementa templateApplyTick em vez de zerar
-  // `results` diretamente (esse campo saiu do useTaxStore nesta fase).
-  // Morre quando o CommandMenu virar feature-aware (FE-4).
-  let lastTemplateApplyTick = useTaxStore.getState().templateApplyTick
-  useTaxStore.subscribe((state) => {
-    if (state.templateApplyTick !== lastTemplateApplyTick) {
-      lastTemplateApplyTick = state.templateApplyTick
-      dispatch({ type: "RESULTS_CLEARED" })
-    }
-  })
-
   return {
     store,
     dispatch,

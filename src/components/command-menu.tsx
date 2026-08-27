@@ -127,23 +127,6 @@ export function CommandMenu() {
     [router, close],
   )
 
-  // Transitório (FE-4, PR 4d): "Aplicar empresa" ainda usa o template antigo
-  // e aponta para o simulador avulso. Morre na PR 4e — vira "Ir para
-  // cliente" (navegação para /clientes/[id], a identidade do cliente passa
-  // a viver na URL).
-  const applyCompany = useCallback(
-    (id: string) => {
-      const company = companies?.find((c) => c.id === id)
-      if (!company) return
-      useTaxStore.getState().applyCompanyTemplate(company)
-      if (pathname !== ROTAS.simulador) {
-        router.push(ROTAS.simulador)
-      }
-      close()
-    },
-    [companies, pathname, router, close],
-  )
-
   const focusHistorySearch = useCallback(() => {
     getDashboardCommandBridge().focusHistorySearch?.()
     close()
@@ -496,12 +479,12 @@ export function CommandMenu() {
           {userId && companies && companies.length > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Aplicar empresa">
+              <CommandGroup heading="Ir para cliente">
                 {companies.map((c) => (
                   <CommandItem
                     key={c.id}
-                    value={`empresa ${c.name} ${c.tax_context ?? ""}`}
-                    onSelect={() => applyCompany(c.id)}
+                    value={`empresa cliente ${c.name} ${c.tax_context ?? ""}`}
+                    onSelect={() => go(ROTAS.cliente(c.id))}
                   >
                     <Building2 className="size-4 text-emerald-600" />
                     <span>{c.name}</span>

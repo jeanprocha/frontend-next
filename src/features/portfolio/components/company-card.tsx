@@ -84,7 +84,7 @@ export function CompanyCard({
         onClick={() => onUse(company)}
       >
         <Receipt className="size-3" />
-        Usar no simulador
+        Abrir workspace
       </Button>
     </div>
   )

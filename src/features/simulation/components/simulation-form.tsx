@@ -1,19 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Building2, Plus } from "lucide-react"
-import { useAuth } from "@/lib/auth-client"
-import { useQuery } from "@tanstack/react-query"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
-import { useTribiaPlgTier } from "@/features/plg"
-import { listCompanies, queryKeys } from "@/lib/api"
 import type { FormExpense, FormService } from "@/types/api"
 import { ContextHub } from "./context-hub"
 import { RegimeFollowUps } from "./regime-follow-ups"
@@ -81,29 +76,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
     expenses: storedExpenses,
     setServices,
     setExpenses,
-    applyCompanyTemplate,
   } = useTaxStore()
-
-  const { userId, getToken } = useAuth()
-  const plgTier = useTribiaPlgTier()
-  const { data: companies, isPending: companiesLoading } = useQuery({
-    queryKey: queryKeys.companies.list(userId, plgTier),
-    queryFn: async () => {
-      const token = await getToken()
-      if (!token || !userId) throw new Error("Não autenticado")
-      return listCompanies(token, userId, plgTier)
-    },
-    enabled: !!userId,
-    staleTime: 60_000,
-  })
-
-  function handleCompanySelect(e: React.ChangeEvent<HTMLSelectElement>) {
-    const id = e.target.value
-    if (!id) return
-    const company = companies?.find((c) => c.id === id)
-    if (company) applyCompanyTemplate(company)
-    e.target.value = ""
-  }
 
   const services = storedServices
   const expenses = storedExpenses
@@ -151,45 +124,6 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
         <div className="space-y-4 lg:col-span-8">
-          {userId && (
-            <div
-              className={cn(
-                "flex items-center gap-2.5 rounded-2xl border border-dashed border-slate-200/80 bg-muted/30 px-4 py-2.5 backdrop-blur-sm dark:border-border/60",
-              )}
-            >
-              <Building2 className="size-4 shrink-0 text-muted-foreground" />
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
-                  Empresa:
-                </span>
-                {companiesLoading ? (
-                  <Skeleton className="h-7 w-48" />
-                ) : (
-                  <select
-                    onChange={handleCompanySelect}
-                    defaultValue=""
-                    className={cn(
-                      "h-7 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs text-foreground",
-                      "focus:outline-none focus:ring-1 focus:ring-ring",
-                      "disabled:opacity-50",
-                    )}
-                  >
-                    <option value="" disabled>
-                      {companies && companies.length > 0
-                        ? "Selecionar empresa pré-cadastrada…"
-                        : "Nenhuma empresa cadastrada — preencha manualmente"}
-                    </option>
-                    {(companies ?? []).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-          )}
-
           <ContextHub />
           <RegimeFollowUps />
 

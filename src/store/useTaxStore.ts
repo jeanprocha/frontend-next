@@ -52,22 +52,12 @@ interface TaxState {
   setContextHighlightFromClassification: (c: ClassificationItem | null) => void
   closeAnalystBriefing: () => void
   /**
-   * Preenche contexto e serviços a partir de um template. `templateApplyTick`
-   * é o único canal store→máquina (FE-1): features/simulation/machine
-   * assina este contador via subscribe() e despacha RESULTS_CLEARED quando
-   * ele muda — o template é aplicado a partir de components/ (CommandMenu),
-   * que não pode importar a feature (lint de fronteira).
-   */
-  applyCompanyTemplate: (company: CompanyTemplate) => void
-  templateApplyTick: number
-  /**
    * Semeia o rascunho do formulário a partir do cliente da URL
-   * (/clientes/[companyId], FE-4). Diferente do applyCompanyTemplate (que
-   * morre na PR 4e): LIMPA expenses/companyRegime/year/redutor — corrige o
-   * vazamento de contexto entre clientes (o template antigo só sobrescrevia
-   * companyContext/services). Sem tick: quem monta o workspace chama
-   * pipeline.actions.clearResults() explicitamente após semear — a
-   * identidade do cliente vive só na URL, nunca neste store.
+   * (/clientes/[companyId], FE-4). LIMPA expenses/companyRegime/year/redutor
+   * — evita vazamento de contexto entre clientes. Sem tick de propagação:
+   * quem monta o workspace chama pipeline.actions.clearResults()
+   * explicitamente após semear — a identidade do cliente vive só na URL,
+   * nunca neste store.
    */
   aplicarContextoDoCliente: (company: CompanyTemplate) => void
 }
@@ -90,7 +80,6 @@ const DEFAULTS = {
   analystBriefingTag: null as StrategyTag | null,
   analystBriefingAiMeta: null as AiMetadata | null,
   contextHighlightRuneRange: null as { start: number; end: number } | null,
-  templateApplyTick: 0,
 }
 
 // ─── Store (sem persistência — estado vive apenas enquanto a aba está aberta) ──
@@ -158,24 +147,6 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: null,
     }),
-
-  // Preenche contexto e serviços a partir de um template, forçando nova simulação.
-  applyCompanyTemplate: (company) =>
-    set((s) => ({
-      companyContext: company.tax_context ?? "",
-      services: (company.default_services ?? []).map((sv) => ({
-        id: crypto.randomUUID(),
-        description: sv.description ?? "",
-        amount: sv.amount ?? "",
-        iss_rate: sv.iss_rate ?? "0.05",
-      })),
-      templateApplyTick: s.templateApplyTick + 1,
-      analystBriefingOpen: false,
-      analystBriefingKind: null,
-      analystBriefingTag: null,
-      analystBriefingAiMeta: null,
-      contextHighlightRuneRange: null,
-    })),
 
   aplicarContextoDoCliente: (company) =>
     set({
