@@ -3,12 +3,18 @@ import { Scale, Zap } from "lucide-react"
 import type { FiscalLawChangelogPayload } from "@/lib/fiscal-law-changelog"
 import { cn } from "@/lib/utils"
 
+/**
+ * timeZone: "UTC" — o backend emite date.published_at como "YYYY-MM-DD" (meia-noite
+ * UTC); sem isso, toLocaleDateString converte para o fuso local antes de formatar e
+ * qualquer fuso negativo (Brasil, UTC-3) mostra o dia anterior (ver base-legal-selo.tsx).
+ */
 function formatChangelogDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     })
   } catch {
     return iso

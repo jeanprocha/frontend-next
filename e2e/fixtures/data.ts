@@ -164,7 +164,10 @@ export const LAW_CORPUS_FIXTURE: LawCorpusResponse = {
       id: "lc68-2024-e2e",
       label: "LC 68/2024",
       version: "9.9-e2e",
-      published_at: "2026-08-20T00:00:00.000Z",
+      // Formato real do backend (internal/lawcorpus.CatalogEntry.PublishedAt): data pura
+      // "YYYY-MM-DD", sem hora — não usar timestamp completo aqui (ver bug de fuso
+      // corrigido na PR 9 em base-legal-selo.tsx/changelog-fiscal-panel.tsx).
+      published_at: "2026-08-20",
       source_url: "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2430143",
       chunk_prefix: "lc68_",
     },

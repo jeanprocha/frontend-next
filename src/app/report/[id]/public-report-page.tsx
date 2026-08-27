@@ -13,6 +13,7 @@ import {
   watermarkSection,
 } from "@/features/report"
 import { classificationReportSections } from "@/features/classification"
+import { baseLegalSeloSection } from "@/features/legal-corpus"
 import type { ReportSection } from "@/lib/report-contract"
 
 // Ordem canónica do dossié — igual à do dashboard logado
@@ -28,6 +29,7 @@ const PUBLIC_REPORT_SECTIONS: ReportSection[] = [
   printMastheadSection,
   boardMastheadSection,
   watermarkSection,
+  baseLegalSeloSection,
   vereditoSection,
   comparativoABSection,
   anatomiaSection,

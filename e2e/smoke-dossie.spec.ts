@@ -45,4 +45,8 @@ test("demo: formulário → classificação IA → veredito → dossiê", async 
   await page.goto(`/report/${E2E_RECORD_ID}`)
   await expect(page.getByRole("button", { name: /Exportar para PDF/ })).toBeVisible()
   await expect(page.getByRole("heading", { name: /Mesa de operações/ })).toBeVisible()
+
+  // Selo de base legal (W1/PR 9) — só aparece com o corpus ao vivo (LAW_CORPUS_FIXTURE,
+  // publicado 2026-08-20); prova end-to-end que a data-base não sofre off-by-one de fuso.
+  await expect(page.getByRole("note", { name: /Base legal LC 68\/2024 atualizada em 20\/08\/2026/ })).toBeVisible()
 })

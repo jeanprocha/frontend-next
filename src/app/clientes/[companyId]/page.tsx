@@ -21,6 +21,7 @@ import {
 } from "@/features/report"
 import { AnalystBriefingSheet, classificationReportSections } from "@/features/classification"
 import { getImporterPanelEntries } from "@/features/import"
+import { baseLegalSeloSection } from "@/features/legal-corpus"
 import { usePortfolioCompanies } from "@/features/portfolio"
 import { useTaxStore } from "@/store/useTaxStore"
 import { ROTAS } from "@/constants/routes"
@@ -34,6 +35,7 @@ const DASHBOARD_SECTIONS: ReportSection[] = [
   printMastheadSection,
   boardMastheadSection,
   watermarkSection,
+  baseLegalSeloSection,
   vereditoSection,
   comparativoABSection,
   anatomiaSection,

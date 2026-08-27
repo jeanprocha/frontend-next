@@ -2,3 +2,4 @@
 // slot) só consomem daqui — nunca de features/legal-corpus/** diretamente.
 export { LegalVersionIndicator, type LegalVersionIndicatorProps } from "./components/legal-version-indicator"
 export { useLawCorpus, type UseLawCorpusResult } from "./use-law-corpus"
+export { baseLegalSeloSection } from "./sections/base-legal-selo"
