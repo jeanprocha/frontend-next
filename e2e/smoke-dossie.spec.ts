@@ -48,5 +48,8 @@ test("demo: formulário → classificação IA → veredito → dossiê", async 
 
   // Selo de base legal (W1/PR 9) — só aparece com o corpus ao vivo (LAW_CORPUS_FIXTURE,
   // publicado 2026-08-20); prova end-to-end que a data-base não sofre off-by-one de fuso.
+  // Desde a Onda 2/PR 2 o documento vem do PREFIXO das âncoras que este registro
+  // citou (lc68_), não do documento corrente do corpus — por isso os fixtures de
+  // classificação carregam evidência real.
   await expect(page.getByRole("note", { name: /Base legal LC 68\/2024 atualizada em 20\/08\/2026/ })).toBeVisible()
 })

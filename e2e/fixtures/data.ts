@@ -123,6 +123,18 @@ export const RECORDS_LIST_FIXTURE: SimulationRecordSummary[] = [
   },
 ]
 
+/**
+ * Evidência com âncora real do corpus. O PREFIXO do article_id é o que
+ * identifica o documento legal citado (`lc68_`) — e desde a Onda 2/PR 2 é o
+ * que o selo de base legal usa para decidir qual documento o dossiê afirma,
+ * em vez de ler o corpus corrente. Fixture sem evidência = dossiê que não
+ * citou nada = selo ausente, que é o comportamento correto mas não o que o
+ * smoke quer exercitar.
+ */
+function evidenciaLC68(articleId: string) {
+  return [{ article_id: articleId, content: "Trecho normativo (fixture E2E).", similarity: 0.86 }]
+}
+
 const SERVICE_CLASSIFICATION_FIXTURE: ClassificationItem = {
   description: "Consultoria tributária",
   is_eligible: true,
@@ -131,7 +143,7 @@ const SERVICE_CLASSIFICATION_FIXTURE: ClassificationItem = {
   legal_base: "Art. 47, LC 68/2024",
   risk_level: "baixo",
   regime_type: "padrao",
-  evidence: [],
+  evidence: evidenciaLC68("lc68_0047_art_47"),
 }
 
 const EXPENSE_CLASSIFICATION_FIXTURE: ClassificationItem = {
@@ -142,7 +154,7 @@ const EXPENSE_CLASSIFICATION_FIXTURE: ClassificationItem = {
   legal_base: "Art. 47, LC 68/2024",
   risk_level: "baixo",
   regime_type: "padrao",
-  evidence: [],
+  evidence: evidenciaLC68("lc68_0047_art_47"),
 }
 
 const RECORD_SERVICES: FormServiceDTO[] = [

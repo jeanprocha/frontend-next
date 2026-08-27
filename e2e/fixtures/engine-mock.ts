@@ -59,7 +59,10 @@ function classifyEcho(expenses: { client_id?: string; description: string }[]): 
       legal_base: "Art. 47, LC 68/2024",
       risk_level: "baixo",
       regime_type: "padrao",
-      evidence: [],
+      // Âncora real: o prefixo lc68_ é o que o selo de base legal usa para
+      // saber qual documento este dossiê citou (Onda 2/PR 2). Em produção
+      // toda classificação carrega evidência — é o que a torna auditável.
+      evidence: [{ article_id: "lc68_0047_art_47", content: "Trecho normativo (fixture E2E).", similarity: 0.86 }],
     })),
   }
 }
