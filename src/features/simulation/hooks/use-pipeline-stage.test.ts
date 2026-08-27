@@ -21,9 +21,6 @@ function base(over: Partial<UsePipelineStageInput> = {}): UsePipelineStageInput 
   return {
     loading: false,
     hasFormSimulationResults: false,
-    hasCsvClassificationResults: false,
-    csvProcessing: false,
-    inputMode: "form",
     services: [],
     expenses: [],
     ...over,
@@ -67,51 +64,13 @@ describe("resolvePipelineStage", () => {
         ),
       ).toBe("simulation")
     })
-
-    it("retorna simulation quando csvProcessing", () => {
-      expect(
-        resolvePipelineStage(
-          base({
-            inputMode: "csv",
-            csvProcessing: true,
-            hasCsvClassificationResults: false,
-          }),
-        ),
-      ).toBe("simulation")
-    })
-
-    it("csvProcessing prevalece sobre resultados CSV (ainda a processar)", () => {
-      expect(
-        resolvePipelineStage(
-          base({
-            inputMode: "csv",
-            csvProcessing: true,
-            hasCsvClassificationResults: true,
-          }),
-        ),
-      ).toBe("simulation")
-    })
   })
 
   describe("prioridade 3 — classification", () => {
-    it("retorna classification com resultados CSV e sem loading", () => {
-      expect(
-        resolvePipelineStage(
-          base({
-            inputMode: "csv",
-            hasCsvClassificationResults: true,
-            loading: false,
-            csvProcessing: false,
-          }),
-        ),
-      ).toBe("classification")
-    })
-
     it("retorna classification no form com ≥1 serviço e ≥1 despesa válidos, sem resultados", () => {
       expect(
         resolvePipelineStage(
           base({
-            inputMode: "form",
             services: [validSvc],
             expenses: [validExp],
             loading: false,
@@ -146,19 +105,6 @@ describe("resolvePipelineStage", () => {
   describe("default — context", () => {
     it("form vazio permanece em context", () => {
       expect(resolvePipelineStage(base())).toBe("context")
-    })
-
-    it("modo CSV idle sem resultados nem processamento", () => {
-      expect(
-        resolvePipelineStage(
-          base({
-            inputMode: "csv",
-            hasCsvClassificationResults: false,
-            csvProcessing: false,
-            loading: false,
-          }),
-        ),
-      ).toBe("context")
     })
   })
 })

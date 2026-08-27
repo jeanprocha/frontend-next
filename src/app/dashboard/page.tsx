@@ -14,6 +14,7 @@ import {
   watermarkSection,
 } from "@/features/report"
 import { AnalystBriefingSheet, classificationReportSections } from "@/features/classification"
+import { getImporterPanelEntries } from "@/features/import"
 import type { ReportRenderInput, ReportSection } from "@/lib/report-contract"
 
 // Ordem canónica do dossié logado — mastheads/rodapé de impressão intercalados
@@ -34,6 +35,8 @@ const DASHBOARD_SECTIONS: ReportSection[] = [
   rodapeLegalSection,
 ]
 
+const IMPORTER_ENTRIES = getImporterPanelEntries()
+
 export default function DashboardPage() {
   return (
     <>
@@ -41,6 +44,7 @@ export default function DashboardPage() {
         renderDossier={(input: Omit<ReportRenderInput, "sections">) => (
           <ReportRenderer {...input} sections={DASHBOARD_SECTIONS} />
         )}
+        importerEntries={IMPORTER_ENTRIES}
       />
       <AnalystBriefingSheet />
     </>

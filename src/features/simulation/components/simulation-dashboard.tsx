@@ -3,29 +3,28 @@
 // Movido de src/app/dashboard/page.tsx (FE-1, move puro) — container do
 // simulador: estado de UI local, efeitos (board-ready, hidratação de
 // comparação A/B, command bridge) e composição das 3 fases do pipeline
-// (input | loading | results). A árvore de resultados form e a vista CSV
-// vivem em dashboard-results-view.tsx / dashboard-csv-view.tsx.
+// (input | loading | results). A árvore de resultados vive em
+// dashboard-results-view.tsx; o painel de entrada (form + importers) vive em
+// dashboard-input-panel.tsx (FE-3, PR 3c — o fork CSV classify-only que
+// vivia aqui, com dashboard-csv-view.tsx/csv-summary.tsx, foi dissolvido:
+// upload agora só preenche o formulário, ver features/import).
 import { useEffect, useState, useCallback, useMemo, type CSSProperties, type ReactNode } from "react"
 import { useAuth } from "@/lib/auth-client"
 import Link from "next/link"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Monitor } from "lucide-react"
 import { BOARD_READY_SESSION_KEY } from "@/hooks/use-board-ready"
-import { SimulationForm } from "./simulation-form"
 import {
   PipelineStageAnnouncer,
   PipelineStageCompass,
 } from "./pipeline-stage-indicators"
-import {
-  UploadZone,
-  type UploadResult,
-  type UploadZonePipelinePhase,
-} from "./upload-zone"
+import { DashboardInputPanel } from "./dashboard-input-panel"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import { errorDetailsFromUnknown } from "@/lib/api"
+import { isFilledLine } from "@/lib/simulation-line-helpers"
 import { RequestIdSupportRow } from "@/components/ui/request-id-support"
 import { useComparison } from "../hooks/use-comparison"
 import { useBoardReady } from "@/hooks/use-board-ready"
@@ -59,29 +58,18 @@ import { useSimulationPipeline } from "../machine/use-simulation-pipeline"
 import { simulationMachine } from "../machine/machine-store"
 import { deriveSessionCompanyLabel } from "@/lib/session-labels"
 import { DashboardResultsView } from "./dashboard-results-view"
-import { DashboardCsvView } from "./dashboard-csv-view"
-import type {
-  ClassificationItem,
-  FormExpense,
-  FormService,
-} from "@/types/api"
+import type { FormExpense, FormService } from "@/types/api"
+import type { ImporterPanelEntry } from "@/lib/importer-contract"
 import type { ReportRenderInput } from "@/lib/report-contract"
-
-// Resultado de CSV não persiste — depende de arquivo local efêmero.
-interface CsvResults {
-  mode: "csv"
-  expenses: FormExpense[]
-  classifications: ClassificationItem[]
-}
-
-type InputMode = "form" | "csv"
 
 export interface SimulationDashboardProps {
   /** Renderer do dossié (features/report) — injectado por app/dashboard/page.tsx para não criar aresta simulation→report. */
   renderDossier: (input: Omit<ReportRenderInput, "sections">) => ReactNode
+  /** Entries do painel de entrada (features/import) — injectadas por app/dashboard/page.tsx para não criar aresta simulation→import. */
+  importerEntries: ImporterPanelEntry[]
 }
 
-export function SimulationDashboard({ renderDossier }: SimulationDashboardProps) {
+export function SimulationDashboard({ renderDossier, importerEntries }: SimulationDashboardProps) {
   const { userId: clerkUserId } = useAuth()
   const { isBoardReady, setIsBoardReady, toggleBoardReady } = useBoardReady()
   const plgCap = usePlgCapabilities()
@@ -92,12 +80,6 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
   /** Cross-fade ao alternar Board-Ready: sinaliza opacity-0 no contentor de resultados. */
   const [boardFading, setBoardFading] = useState(false)
   const [compareUpgradeOpen, setCompareUpgradeOpen] = useState(false)
-  const [inputMode, setInputMode] = useState<InputMode>("form")
-  const [csvUploadPhase, setCsvUploadPhase] =
-    useState<UploadZonePipelinePhase>("idle")
-
-  // Resultado de CSV: estado local efêmero
-  const [csvResults, setCsvResults] = useState<CsvResults | null>(null)
 
   // Estado de formulário (year/context/regime/serviços/despesas): continua no
   // Zustand — sem persistência, vive só enquanto a aba está aberta.
@@ -137,32 +119,28 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
   const error = failureDetail?.message ?? null
   const mutationRequestId = failureDetail?.requestId
 
-  // Vista unificada: CSV tem prioridade enquanto ativo, senão mostra form
-  const results: typeof formResults | CsvResults | null =
-    csvResults ?? formResults ?? null
-
   // ── Labels do carimbo de autoridade (item 1.2.1) ─────────────────────────
   // Strings primitivas memoizadas: React.memo no carimbo não re-renderiza durante scroll.
   const sessionCompanyLabel = useMemo(() => {
-    if (results?.mode !== "form") return ""
-    return deriveSessionCompanyLabel(formResults?.meta?.companyContext ?? companyContext)
-  }, [results?.mode, formResults?.meta?.companyContext, companyContext])
+    if (!formResults) return ""
+    return deriveSessionCompanyLabel(formResults.meta?.companyContext ?? companyContext)
+  }, [formResults, companyContext])
 
   const sessionScenarioLabel = useMemo(() => {
-    if (results?.mode !== "form") return ""
-    const year = formResults?.meta?.year ?? (results.simulation.year)
+    if (!formResults) return ""
+    const year = formResults.meta?.year ?? formResults.simulation.year
     if (isComparing) return `Comparação A/B — cenário actual · ${year}`
     return `Simulação base · ${year}`
-  }, [results?.mode, results, formResults?.meta?.year, isComparing])
+  }, [formResults, isComparing])
 
+  // Dep escalar (não o objeto inteiro) — evita resetar o ano focado a cada
+  // mudança de referência de formResults sem mudança real de ano (override/recalc).
+  const formYear = formResults?.simulation.year
   useEffect(() => {
-    if (results?.mode === "form") {
-      setFocusYear(results.simulation.year)
+    if (formResults) {
+      setFocusYear(formResults.simulation.year)
     }
-  }, [
-    results?.mode,
-    results && results.mode === "form" ? results.simulation.year : undefined,
-  ])
+  }, [formYear]) // eslint-disable-line react-hooks/exhaustive-deps -- herança: reagir só à mudança de ano, não a toda mudança de referência
 
   // ── Fluxo Formulário ─────────────────────────────────────────────────────
   function handleFormSubmit(
@@ -171,7 +149,6 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
     expenses: FormExpense[],
     companyContext: string,
   ) {
-    setCsvResults(null)
     pipeline.actions.runSimulation({
       year,
       services,
@@ -182,53 +159,17 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
     })
   }
 
-  // ── Fluxo CSV (inalterado) ───────────────────────────────────────────────
-  function handleCsvResult(result: UploadResult) {
-    setCsvResults({
-      mode: "csv",
-      expenses: result.expenses,
-      classifications: result.classifications,
-    })
-    pipeline.actions.reset()
-  }
-
-  function handleCsvError(msg: string) {
-    // Exibe o erro diretamente no JSX via estado local para o CSV
-    setCsvResults(null)
-    // Reutiliza o estado de erro da máquina para exibição uniforme
-    pipeline.actions.reset()
-    // Erro de CSV é tratado abaixo via csvError state
-    setCsvError(msg)
-  }
-
-  const [csvError, setCsvError] = useState<string | null>(null)
-
   // ── Reset ────────────────────────────────────────────────────────────────
   function reset() {
     setIsBoardReady(false)
     setBoardFading(false)
-    setCsvResults(null)
-    setCsvError(null)
     clearComparison()
     pipeline.actions.reset()
   }
 
-  const displayError = error ?? csvError
-
-  useEffect(() => {
-    if (inputMode !== "csv") setCsvUploadPhase("idle")
-  }, [inputMode])
-
-  const csvProcessing =
-    inputMode === "csv" &&
-    (csvUploadPhase === "parsing" || csvUploadPhase === "classifying")
-
   const pipelineStage = usePipelineStage({
     loading,
-    hasFormSimulationResults: results?.mode === "form",
-    hasCsvClassificationResults: results?.mode === "csv",
-    csvProcessing,
-    inputMode,
+    hasFormSimulationResults: Boolean(formResults),
     services,
     expenses,
   })
@@ -238,8 +179,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
     "--tribia-glow-y": glowPos.y,
   } as CSSProperties
 
-  const boardReadyActive =
-    isBoardReady && results?.mode === "form"
+  const boardReadyActive = isBoardReady && Boolean(formResults)
 
   // ── Hidratação Board-Ready a partir de sessionStorage (só no cliente) ─────
   // Executada uma única vez após montagem — valor inicial do store é sempre `false`
@@ -247,7 +187,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(BOARD_READY_SESSION_KEY)
-      if (saved === "1" && plgCap.boardReadyUnlocked && results?.mode === "form") {
+      if (saved === "1" && plgCap.boardReadyUnlocked && formResults) {
         setIsBoardReady(true)
       }
     } catch {
@@ -259,10 +199,10 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
 
   // ── Guardas: desactivar Board-Ready quando condições mudam ────────────────
   useEffect(() => {
-    if (!results || results.mode !== "form") {
+    if (!formResults) {
       setIsBoardReady(false)
     }
-  }, [results, setIsBoardReady])
+  }, [formResults, setIsBoardReady])
 
   useEffect(() => {
     if (!boardReadyUnlocked && isBoardReady) {
@@ -279,7 +219,6 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
     }
     const { baseline: bDetail, current: cDetail } = pendingHistoryComparison
     pipeline.actions.consumeHistoryComparison()
-    setCsvResults(null)
 
     const metaA = {
       createdAt: bDetail.created_at,
@@ -332,7 +271,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
       clearComparison()
       return
     }
-    if (formResults?.mode === "form") {
+    if (formResults) {
       startComparison(formResults)
     }
   }, [
@@ -351,7 +290,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
 
   const handlePresentationMode = useCallback(() => {
     if (boardReadyUnlocked) {
-      if (!shouldReduceMotion && results) {
+      if (!shouldReduceMotion && formResults) {
         // Cross-fade: fade-out → aplica novo modo → fade-in.
         // font-family não é interpolável — a troca Geist↔Serif acontece discretamente;
         // o fade em opacidade mascara o "pulo" visual sem jank.
@@ -368,7 +307,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
     } else {
       setBoardTeaseOpen(true)
     }
-  }, [boardReadyUnlocked, toggleBoardReady, shouldReduceMotion, results])
+  }, [boardReadyUnlocked, toggleBoardReady, shouldReduceMotion, formResults])
 
   const handleOpenDossier = useCallback(async () => {
     if (!formResults || !clerkUserId) return
@@ -379,10 +318,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
     })
   }, [formResults, clerkUserId, pipeline.actions, plgCap.whiteLabelExport, brandingLogoUrl, brandingOrgName])
 
-  const phase = loading ? "loading" : results ? "results" : "input"
-
-  const showCreditsRagLegend =
-    results?.mode === "form" && Boolean(results.ai_metadata)
+  const phase = loading ? "loading" : formResults ? "results" : "input"
 
   const runSimulationFromBridge = useCallback(() => {
     const {
@@ -393,10 +329,9 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
       companyRegime: regime,
       imobiliarioRedutorAjusteBrl: redutor,
     } = useTaxStore.getState()
-    const validServices = services.filter((s) => s.description?.trim() && s.amount?.trim())
-    const validExpenses = expenses.filter((e) => e.description?.trim() && e.amount?.trim())
+    const validServices = services.filter(isFilledLine)
+    const validExpenses = expenses.filter(isFilledLine)
     if (validServices.length === 0) return
-    setCsvResults(null)
     pipeline.actions.runSimulation({
       year,
       services: validServices,
@@ -408,15 +343,19 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
   }, [pipeline.actions])
 
   useEffect(() => {
-    const isFormInput = phase === "input" && inputMode === "form"
-    const canBoard = results?.mode === "form" && !loading
-    const proFormResults =
-      isProOrPremium && results?.mode === "form" && !loading
+    // FE-3 (PR 3c): a distinção form vs. importer saiu daqui — o painel de
+    // entrada agora tem abas internas (DashboardInputPanel). "isInputPhase"
+    // cobre as duas; consequência declarada: os atalhos "a"/"d" (adicionar
+    // serviço/despesa) e as quick actions do CommandMenu ficam disponíveis em
+    // qualquer aba do painel de entrada, não só na aba do formulário.
+    const isInputPhase = phase === "input"
+    const canBoard = Boolean(formResults) && !loading
+    const proFormResults = isProOrPremium && Boolean(formResults) && !loading
     setDashboardCommandBridge({
-      runSimulation: isFormInput && !loading ? runSimulationFromBridge : null,
+      runSimulation: isInputPhase && !loading ? runSimulationFromBridge : null,
       toggleBoardReady: canBoard ? handlePresentationMode : null,
-      isSimulationInputPhase: isFormInput,
-      hasFormResults: results?.mode === "form",
+      isSimulationInputPhase: isInputPhase,
+      hasFormResults: Boolean(formResults),
       isLoadingSimulation: loading,
       focusHistorySearch: null,
       openCompaniesNewForm: null,
@@ -427,9 +366,8 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
     return () => clearDashboardCommandBridge()
   }, [
     phase,
-    inputMode,
     loading,
-    results,
+    formResults,
     runSimulationFromBridge,
     handlePresentationMode,
     isProOrPremium,
@@ -471,7 +409,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
         <div
           className={cn(
             "board-ready:hidden print:hidden",
-            results?.mode === "form" && "no-print",
+            formResults && "no-print",
           )}
         >
           <ShellBreadcrumb items={[{ label: "Simulador" }]} />
@@ -484,12 +422,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
             boardReadyActive ? "sm:justify-end" : "sm:justify-between",
           )}
         >
-          <div
-            className={cn(
-              "space-y-0.5",
-              results?.mode === "form" && "board-ready:hidden",
-            )}
-          >
+          <div className={cn("space-y-0.5", formResults && "board-ready:hidden")}>
             <h1 className="text-2xl font-bold tracking-tight">Simulador de Reforma Tributária</h1>
             <p className="text-sm text-muted-foreground">
               Calcule o impacto da transição CBS/IBS com classificação de créditos por IA — LC 68/2024.
@@ -499,30 +432,10 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
             )}
           </div>
 
-          {/* Segmented control — só aparece quando não há resultado */}
-          {!results && (
-            <div className="inline-flex shrink-0 rounded-lg border bg-muted p-1 gap-0.5">
-              {(["form", "csv"] as InputMode[]).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => { setInputMode(m); reset() }}
-                  className={cn(
-                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-150",
-                    inputMode === m
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {m === "form" ? "Simulação Manual" : "Upload de CSV"}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Botões quando há resultado */}
-          {results && (
+          {formResults && (
             <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
-              {results.mode === "form" && formResults?.meta && (
+              {formResults.meta && (
                 <Link
                   href="/dashboard/history"
                   className={cn(
@@ -539,11 +452,11 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
                 onClick={reset}
                 className="board-ready:hidden no-print print:hidden"
               >
-                ← {results.mode === "form" ? "Nova simulação" : "Novo arquivo"}
+                ← Nova simulação
               </Button>
               {/* Saída de emergência: só visível em Board-Ready (a sticky está oculta).
                   O CTA principal vive agora no toolbar / cabeçalho da página. */}
-              {results.mode === "form" && boardReadyActive && (
+              {boardReadyActive && (
                 <Button
                   type="button"
                   variant="outline"
@@ -556,38 +469,33 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
                 </Button>
               )}
               {boardReadyActive && <PrintButton />}
-              {results.mode === "form" &&
-                formResults &&
-                !isComparing &&
-                !loading && (
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      if (!plgCap.compareAB) {
-                        setCompareUpgradeOpen(true)
-                        return
-                      }
-                      startComparison(formResults)
-                    }}
-                    className="no-print print:hidden gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-                    aria-label="Congelar esta simulação como referência (A) para comparar com uma nova (B)"
-                  >
-                    Comparar cenário
-                  </Button>
-                )}
+              {!isComparing && !loading && (
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    if (!plgCap.compareAB) {
+                      setCompareUpgradeOpen(true)
+                      return
+                    }
+                    startComparison(formResults)
+                  }}
+                  className="no-print print:hidden gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  aria-label="Congelar esta simulação como referência (A) para comparar com uma nova (B)"
+                >
+                  Comparar cenário
+                </Button>
+              )}
             </div>
           )}
         </div>
 
         {/* ── Erro ───────────────────────────────────────────────────────── */}
-        {displayError && (
+        {error && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
-            <strong>Erro:</strong> {displayError}
-            {mutationRequestId && !csvError ? (
-              <RequestIdSupportRow requestId={mutationRequestId} />
-            ) : null}
+            <strong>Erro:</strong> {error}
+            {mutationRequestId ? <RequestIdSupportRow requestId={mutationRequestId} /> : null}
           </div>
         )}
 
@@ -604,34 +512,13 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
               exit="exit"
               className="space-y-6"
             >
-              {inputMode === "form" && (
-                <div id="tribia-sim-input" className="scroll-mt-24 space-y-4">
-                  {isComparing && !formResults && !csvResults && (
-                    <div
-                      className="rounded-xl border border-emerald-500/30 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-500/25 dark:bg-emerald-950/30 dark:text-emerald-100"
-                      role="status"
-                    >
-                      <p className="font-semibold">Comparação A/B ativa</p>
-                      <p className="mt-1 text-xs text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed">
-                        Ajuste ano, regime ou dados e execute uma nova simulação para ver o cenário B ao lado da
-                        referência congelada.
-                      </p>
-                    </div>
-                  )}
-                  <SimulationForm
-                    onSubmit={handleFormSubmit}
-                    loading={loading}
-                  />
-                </div>
-              )}
-              {inputMode === "csv" && (
-                <UploadZone
-                  companyContext="Empresa SaaS B2B, regime regular IBS/CBS"
-                  onResult={handleCsvResult}
-                  onError={handleCsvError}
-                  onPhaseChange={setCsvUploadPhase}
-                />
-              )}
+              <DashboardInputPanel
+                importerEntries={importerEntries}
+                isComparing={isComparing}
+                loading={loading}
+                onFormSubmit={handleFormSubmit}
+                onModeChange={reset}
+              />
             </motion.div>
           )}
 
@@ -669,7 +556,7 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
             </motion.div>
           )}
 
-          {phase === "results" && results && (
+          {phase === "results" && formResults && (
             <motion.div
               key="results"
               variants={CONTAINER_VARIANTS}
@@ -684,45 +571,33 @@ export function SimulationDashboard({ renderDossier }: SimulationDashboardProps)
                 !shouldReduceMotion && "motion-safe:transition-opacity motion-safe:duration-[280ms]",
               )}
             >
-              {results.mode === "form" && formResults && (
-                <DashboardResultsView
-                  formResults={formResults}
-                  isComparing={isComparing}
-                  comparisonBaseline={comparisonBaseline}
-                  clearComparison={clearComparison}
-                  replaceBaselineWith={replaceBaselineWith}
-                  handleRequestSingleView={handleRequestSingleView}
-                  services={services}
-                  expenses={expenses}
-                  focusYear={focusYear}
-                  setFocusYear={setFocusYear}
-                  boardReadyActive={boardReadyActive}
-                  boardReadyUnlocked={boardReadyUnlocked}
-                  sessionCompanyLabel={sessionCompanyLabel}
-                  sessionScenarioLabel={sessionScenarioLabel}
-                  dossierBusy={dossierBusy}
-                  loading={loading}
-                  handleOpenDossier={handleOpenDossier}
-                  setBoardTeaseOpen={setBoardTeaseOpen}
-                  pendingSimulationSync={pendingSimulationSync}
-                  isRecalculating={isRecalculating}
-                  onApplyOverride={pipeline.actions.applyOverride}
-                  onRemoveOverride={pipeline.actions.removeOverride}
-                  onRequestRecalc={pipeline.actions.requestRecalc}
-                  shouldReduceMotion={shouldReduceMotion}
-                  renderDossier={renderDossier}
-                />
-              )}
-
-              {results.mode === "csv" && (
-                <DashboardCsvView
-                  expenses={results.expenses}
-                  classifications={results.classifications}
-                  boardReadyActive={boardReadyActive}
-                  showCreditsRagLegend={showCreditsRagLegend}
-                  shouldReduceMotion={shouldReduceMotion}
-                />
-              )}
+              <DashboardResultsView
+                formResults={formResults}
+                isComparing={isComparing}
+                comparisonBaseline={comparisonBaseline}
+                clearComparison={clearComparison}
+                replaceBaselineWith={replaceBaselineWith}
+                handleRequestSingleView={handleRequestSingleView}
+                services={services}
+                expenses={expenses}
+                focusYear={focusYear}
+                setFocusYear={setFocusYear}
+                boardReadyActive={boardReadyActive}
+                boardReadyUnlocked={boardReadyUnlocked}
+                sessionCompanyLabel={sessionCompanyLabel}
+                sessionScenarioLabel={sessionScenarioLabel}
+                dossierBusy={dossierBusy}
+                loading={loading}
+                handleOpenDossier={handleOpenDossier}
+                setBoardTeaseOpen={setBoardTeaseOpen}
+                pendingSimulationSync={pendingSimulationSync}
+                isRecalculating={isRecalculating}
+                onApplyOverride={pipeline.actions.applyOverride}
+                onRemoveOverride={pipeline.actions.removeOverride}
+                onRequestRecalc={pipeline.actions.requestRecalc}
+                shouldReduceMotion={shouldReduceMotion}
+                renderDossier={renderDossier}
+              />
             </motion.div>
           )}
         </AnimatePresence>

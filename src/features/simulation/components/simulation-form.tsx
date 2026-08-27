@@ -21,7 +21,7 @@ import { ResultSidebar } from "./result-sidebar"
 import { TransactionRow } from "./transaction-row"
 import { EmptyStateCard } from "./empty-state-card"
 import { TermTooltip } from "./term-tooltip"
-import { createBlankExpenseLine, createBlankServiceLine, makeLineId } from "@/lib/simulation-line-helpers"
+import { createBlankExpenseLine, createBlankServiceLine, isFilledLine } from "@/lib/simulation-line-helpers"
 import { SHORTCUT_KEYS } from "@/constants/shortcuts"
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -136,16 +136,16 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const validServices = services.filter((s) => s.description && s.amount)
-    const validExpenses = expenses.filter((ex) => ex.description && ex.amount)
+    const validServices = services.filter(isFilledLine)
+    const validExpenses = expenses.filter(isFilledLine)
     if (validServices.length === 0) return
     onSubmit(year, validServices, validExpenses, companyContext)
   }
 
   const totalReceita = services.reduce((acc, s) => acc + (parseFloat(s.amount) || 0), 0)
   const totalDespesas = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0)
-  const validServices = services.filter((s) => s.description && s.amount)
-  const validExpenses = expenses.filter((e) => e.description && e.amount)
+  const validServices = services.filter(isFilledLine)
+  const validExpenses = expenses.filter(isFilledLine)
 
   return (
     <form onSubmit={handleSubmit}>
