@@ -79,27 +79,32 @@ Regra de dependência: `app → features → lib/components/types`. Feature não
 
 Regra geral aplicada nas PRs 2d–2f: antes de mover um arquivo para dentro de uma feature, `grep` de todos os importadores reais; se algum vive fora da feature-alvo (e fora de `app/`), o arquivo fica em `lib/`/`components/shared/` em vez de migrar — o nome do arquivo não é evidência do domínio.
 
+**Atualização pós-FE-3:** `features/import/` (PR 3c) e `features/legal-corpus/` (PR 3e) deixam de ser aspiracionais — existem. `lib/importer-contract.ts` entra na lista de tipos-contrato acima (mesmo racional do `report-contract.ts`: `features/import` implementa, `features/simulation` renderiza via render-prop, `app/` compõe). `components/legal/` deixou de existir — migrou inteiro para `features/legal-corpus/components/`. Candidato a move futuro (não feito na FE-3, fora de escopo): a cadeia da Cédula de auditoria (`expense-table` e afins) hoje em `components/shared/` só é consumida por `features/classification` desde que o fork CSV de `features/simulation` foi dissolvido (PR 3c) — vale reavaliar se ainda precisa ficar em shared.
+
 ## 4. Camada de dados
 
-- Quebrar `lib/api.ts` (432 linhas) em **clients por domínio** (`features/*/api.ts`) sobre um núcleo comum (`lib/http.ts`): fetch, auth headers, `ApiError`/`request_id`, conversão de erro PLG → capability. Nada disso muda de comportamento — muda de lugar.
-- **Query keys convencionadas:** `[domínio, entidade, id?, params?]` (ex.: `['simulation-records', 'detail', id]`), invalidação por prefixo de domínio.
+**Implementado desde a FE-1** (não é mais trabalho futuro): `lib/api.ts` não existe — foi quebrado em `lib/http.ts` (núcleo: `API_BASE`, `ApiError`, `throwApiError`, `authHeaders`, `tribiaPlanHeader`) + `lib/api/{simulation,companies,legal,classification,plg,strategy-tags,query-keys}.ts` (clients por domínio), com um barrel de compatibilidade em `lib/api/index.ts` (`@/lib/api` continua resolvendo os mesmos símbolos — zero mudança de import nos consumidores). A localização real diverge do `features/*/api.ts` cogitado abaixo — os clients ficaram em `lib/api/`, não migraram para dentro de cada feature; não há indicação de que valha a pena mover agora.
+
+- **Query keys convencionadas:** `[domínio, entidade, ...params]` em `lib/api/query-keys.ts` — única fonte, zero literal espalhado (`queryKeys.companies.all`, `.simulationRecords.list(userId, limit)`, `.lawCorpus.all`, etc.). Diverge do exemplo original (`['simulation-records', 'detail', id]`): não há keys `detail` — `getSimulationRecord`/`getPublicSimulationRecord` são chamados imperativamente, fora do TanStack Query (candidato a alinhamento futuro, não crítico).
+- **Interceptor PLG → capability**: implementado na FE-3 (PR 3a) — `setPlgLimitListener` em `lib/http.ts` (registro de callback; `lib/` não importa `features/plg`) + `features/plg/components/plg-limit-dialog-host.tsx` (monta em `components/providers.tsx`). Um 403 com `code` no corpo (quota/limite) abre o `PlgUpgradeDialog` central, venha do caminho da máquina do pipeline ou de um `useQuery`/mutation. Os diálogos manuais por capability (clique em recurso bloqueado, antes de qualquer request) continuam existindo à parte — caso distinto do 403 de rede.
 - **Contrato:** manter `types/` espelhando os DTOs por ora; quando o backend ampliar o `openapi.yaml` (hoje cobre 2 de ~17 rotas), avaliar geração de tipos a partir do spec — o espelho manual é o maior risco silencioso de drift (decisão em aberto, seção 14).
 - Valores monetários seguem trafegando como **string decimal** — nenhuma feature converte para `number` fora de `lib/` (decimal.js).
 
 ## 5. O pipeline como máquina de estados
 
-Extrair de `dashboard/page.tsx` + `use-simulation.ts` + `simulation-recalc-bridge.tsx` uma máquina única em `features/simulation/machine/`:
+Extraída de `dashboard/page.tsx` + `use-simulation.ts` + `simulation-recalc-bridge.tsx` para `features/simulation/machine/` na FE-1; o registry real de passos chegou na FE-3 (PR 3b). Grafo real:
 
 ```
-idle → importing → classifying → calculating → enriching → saved
-                        ↑______________ recalc (override) ______↓
+idle → running(stepId do PIPELINE_STEPS, acc) → ready
+              ↑______________ recalc (override) ______↓
 ```
 
-- Etapas são **passos registrados** (cada um: `run(input, ctx)`, estado de progresso, erro próprio). Novos passos entram sem tocar nos existentes — ex.: `validating-rfb` (W7), `parsing-xml` (W8).
-- O recálculo debounced do override vira uma **transição** da mesma máquina (o bridge morre).
-- A página consome um hook único: estado atual, progresso por etapa, resultado, ações. Todo `useState` de orquestração sai da rota; o que hoje vive no `useTaxStore` e é estado de pipeline (não de UI) migra para a máquina.
+- **Registry real** (`step-registry.ts`): `PIPELINE_STEPS: readonly Step[]` — hoje `[classifyStep, simulateStep]`. `Step = { id, uiStage, run(input, acc, ctx) }`; `run` devolve `StepOutcome = {ok:true, acc} | {ok:false, error}`. A máquina não conhece nomes de passo — `transition.ts` encadeia pela **ordem do array**, não por literal (provado em `transition.test.ts` com um registry fake de N passos). Um passo novo (`validating-rfb`, W7; `parsing-xml`, W8) é **uma linha** em `PIPELINE_STEPS` + sua implementação em `steps.ts` — nada no reducer, no executor (`machine-store.ts`) ou na página muda.
+- **`PipelineAcc`** é o canal explícito entre passos (`{classified?, discoveredTags?, results?}`) — substitui um canal implícito e frágil que existia em `runtime.ts` (`setLastDiscoveredTags`/`setDossierReportBrand`, com uma ordem de execução documentada em comentário) e que foi removido na PR 3b. `results` é obrigatório no acc devolvido pelo **último** passo do registry — se faltar, o reducer trata como falha de contrato (rede de segurança contra um registry mal configurado).
+- O recálculo debounced do override é uma **transição** da mesma máquina, ortogonal aos passos (nenhum caso de teste de override/recalc cita `classify`/`simulate`) — o bridge original morreu na FE-1.
+- A UI consome um hook único (`use-simulation-pipeline.ts`): estado atual (`isRunning`, `runningStepId`, `runningUiStage`), resultado, falha, ações. `use-pipeline-stage.ts` (PR 3d) deriva o estágio de UI direto de `runningUiStage` — o vocabulário de UI é literalmente o mesmo tipo (`PipelineUiStage`) que cada `Step` declara, não uma union paralela.
 - A máquina é lógica pura + efeitos isolados → testável com vitest sem browser.
-- **Implementação (recomendação):** reducer com union discriminada + registry de passos, à mão — sem XState. O grafo é linear com um ciclo; uma dependência nova não paga o próprio custo aqui (formalizada na seção 14).
+- **Implementação:** reducer com union discriminada + registry de passos, à mão — sem XState (decisão fechada, seção 14). O grafo é linear com um ciclo; uma dependência nova não pagaria o próprio custo aqui.
 
 ## 6. Report engine (dossiê como composição)
 
@@ -141,16 +146,46 @@ interface ReportSection {
 
 ## 7. Importers plugáveis
 
+Implementado na FE-3 (PR 3c). Forma real — diverge do esboço original desta
+seção num ponto de design deliberado: **o formulário manual não é um
+importer**. Um importer produz um **rascunho** (`SimulationDraft`), não um
+`SimulationInput` completo — ele não sabe montar contexto/regime da empresa,
+só dados de linha (serviços/despesas). O usuário sempre completa e simula
+pelo formulário; import é "preencher", não "rodar".
+
 ```ts
-type Importer = {
-  id: 'form' | 'csv' | 'xml-nfe' | 'sped'
-  accepts?: string[]             // extensões/mime
-  parse(input: File[] | FormData): Promise<SimulationInput>
+// lib/importer-contract.ts — camada base, só types/api + tipos React
+interface SimulationDraft {
+  services?: FormService[]
+  expenses?: FormExpense[]
+  companyContext?: string
+  year?: number
+}
+
+type ImporterParseResult =
+  | { ok: true; draft: SimulationDraft; warnings?: string[] }
+  | { ok: false; error: string }
+
+interface ImporterDefinition {
+  id: string                     // "csv" | futuros "xml-nfe" | "sped"
+  label: string                  // rótulo no seletor de modo
+  accepts: readonly string[]     // extensões/mime do <input accept>
+  formatHint?: string
+  parse(content: string, opts?: { fileName?: string }): ImporterParseResult | Promise<ImporterParseResult>
+  Picker?: ComponentType<ImporterPickerProps>   // ausente = zona de upload genérica
+}
+
+interface ImporterPanelEntry {
+  id: string
+  label: string
+  render(props: ImporterPickerProps): ReactNode
 }
 ```
 
-- O CSV atual (papaparse + detecção de colunas) refatora para esse contrato; o formulário manual também é um importer (normaliza tudo para `SimulationInput`).
-- XML NF-e (W8) entra como novo importer que produz o mesmo `SimulationInput` enriquecido (NCM, CFOP, CNPJ do fornecedor) — o pipeline não muda.
+- **Registry** em `features/import/registry.ts` (`IMPORTERS: readonly ImporterDefinition[]`) — hoje só `csvImporter`. Um importer novo (XML NF-e, W8; SPED, W8-etapa-2) é uma linha aqui + a implementação em `importers/`.
+- **`parse` é puro e síncrono/testável sem DOM** — recebe o conteúdo já lido como string (`Papa.parse` em modo string não usa `FileReader`/worker), não um `File`. Quem lê o arquivo é `features/import/components/file-drop-zone.tsx` (zona de upload genérica; um importer com UI própria — ex.: XML NF-e com drag-and-drop de pasta — define `Picker` e a zona genérica não é usada).
+- **`features/simulation` não importa `features/import`** (feature ↛ feature): as entries chegam prontas via `importerEntries: ImporterPanelEntry[]`, injetadas por `app/dashboard/page.tsx` (`getImporterPanelEntries()` do barrel) — mesmo padrão render-prop do `renderDossier` (seção 6). `features/simulation/components/dashboard-input-panel.tsx` só renderiza `entry.render({onApplied})`.
+- **Aplicação do rascunho**: `features/import/lib/apply-draft.ts` (`applyDraftToStore`) escreve no `useTaxStore` — só os campos presentes no draft substituem o valor correspondente; ausentes ficam intactos. Depois disso o fluxo é o formulário normal: usuário completa, roda a simulação, a máquina classifica com contexto real (envia `client_id`, persiste, gera tags) — ao contrário do fork CSV classify-only que existiu até a PR 3c.
 
 ## 8. Entitlements (PLG)
 
@@ -160,7 +195,9 @@ type Importer = {
 - Migram para cá: os ~13 flags de `tribia-plg-flags.ts`, `components/tribia/` (meter, dialog, badge, provider) e os hooks `use-plg-quota`/`use-tribia-plg-tier`.
 - Erros 403-com-código do backend continuam virando diálogo de upgrade, mas num único interceptor do client HTTP (`lib/http.ts`).
 
-**Estado pós-FE-2 (PR 2b):** o interceptor 403→diálogo descrito acima **não existe** — nem antes nem depois da FE-2. A exploração confirmou que nenhum código lê `ApiError.code`; os diálogos de upgrade (`PlgUpgradeDialog`) são hoje disparados manualmente pelos componentes (ex.: ao clicar "Comparar cenário" sem `compareAB`), não por um interceptor central de `lib/http.ts` (que também não existe — ver seção 4, ainda não quebrado em clients por domínio). Registado como trabalho futuro, não escopo da FE-2: a fase entregou `features/plg/` (provider, `useCapability`, `CapabilityProvider`, `RequireCapability`) e a migração dos ~10 `if`s crus de tier + 2 flags mortas religadas (`historyRichPreview`, `legalOpinionTab`), mas não tocou a camada HTTP.
+**Estado pós-FE-2 (PR 2b):** o interceptor 403→diálogo descrito acima **não existia** — nem antes nem depois da FE-2. A exploração confirmou que nenhum código lia `ApiError.code`; os diálogos de upgrade (`PlgUpgradeDialog`) eram disparados só manualmente pelos componentes (ex.: ao clicar "Comparar cenário" sem `compareAB`). Registado então como trabalho futuro, não escopo da FE-2: a fase entregou `features/plg/` (provider, `useCapability`, `CapabilityProvider`, `RequireCapability`) e a migração dos ~10 `if`s crus de tier + 2 flags mortas religadas (`historyRichPreview`, `legalOpinionTab`), mas não tocou a camada HTTP.
+
+**Correção factual (a nota acima citava `lib/http.ts` como inexistente — falso já naquele momento):** `lib/http.ts` existe desde a FE-1 (ver seção 4) — o que faltava era só o interceptor 403→diálogo em si, não o arquivo. **Implementado na FE-3 (PR 3a):** `lib/http.ts` expõe `setPlgLimitListener` (registro de callback — `lib/` não pode importar `features/plg`, a ligação é por callback, não por import); `throwApiError` chama o listener registrado sempre que classifica um 403 como `isPlgLimit`. `features/plg/components/plg-limit-dialog-host.tsx` se auto-registra e abre o `PlgUpgradeDialog` central — montado em `components/providers.tsx`, cobre tanto o caminho da máquina do pipeline quanto `useQuery`/mutations, porque todos os clients passam por `throwApiError`. Os diálogos manuais por capability (upsell clicado antes de qualquer request) continuam existindo à parte — caso distinto do 403 de rede vindo do servidor.
 
 ## 9. Rotas e navegação (preparando W9)
 
@@ -270,16 +307,43 @@ Antes de mover qualquer linha.
 - O Dialog "Certificado de memória de cálculo" (`TransitionAuditPanelBody` num `<Dialog>`, W2) nunca tinha botão que o abrisse — dead-in-practice desde antes da FE-2. Não recriado na dissolução da PR 2c (a máquina do dossiê agora é o registry; reintroduzir UI morta contradiria o próprio objectivo da fase). Fica para quando W2 (memória de cálculo) entrar como secção real.
 - `isLoaded` do `TribiaPlanProvider` (features/plg) nunca é lido por nenhum consumidor — o fallback sem provider já cobre o caso "ainda a carregar". Registado, não removido (é parte do contrato do provider, não dead code isolado).
 
-### FE-3 — Extensibilidade: as portas dos módulos novos
+### FE-3 — Extensibilidade: as portas dos módulos novos ✅ concluída
 
 | Entrega | Detalhe |
 |---|---|
-| Contrato `Importer` | CSV e formulário migram (seção 7); registry em `features/import` |
-| Passos de pipeline plugáveis | `validating-rfb` (W7) e `parsing-xml` (W8) podem entrar sem tocar na máquina |
-| `features/legal-corpus` | consome `GET /law/corpus` quando W1 entregar; `FISCAL_LAW_CHANGELOG` hardcoded morre |
+| Contrato `Importer` | rascunho (`SimulationDraft`) + registry em `features/import` (seção 7) — o CSV vira o primeiro importer real |
+| Passos de pipeline plugáveis | registry real na máquina (`PIPELINE_STEPS`, seção 5) — `validating-rfb` (W7) e `parsing-xml` (W8) entram sem tocar no reducer/executor |
+| `features/legal-corpus` | porta pronta com fallback estático; `GET /law/corpus` ativa com 1 linha quando o W1 entregar |
+| Interceptor 403 PLG | não estava no escopo original da fase (era dívida da FE-1, ver seção 8) — entrou como PR 3a por ser pequeno e de alto valor |
 
-**Gate (prova mecânica):** adicionar uma seção de dossiê fake + um importer fake exige tocar **só** os registries — nenhum diff em shell, máquina ou página.
-**Depende de:** FE-2; a entrega do corpus depende do W1 (backend) — as outras duas não. **Destrava:** Fases 1–3 do plano de evolução (W3, W5, W6, W8-XML entram como `features/` novas seguindo a seção 13 de DoD).
+**Gate (verificado, PR 3f):** 3 probes temporários provaram que uma seção de dossiê fake, um importer fake e um passo de pipeline fake tocam **só o arquivo do registry correspondente** (`git diff --stat` = 1 arquivo cada), com efeito real confirmado sob E2E (aba nova no dossiê, entry nova no seletor de import preenchendo o form, smoke completo passando com o passo extra no meio do pipeline) — os 3 revertidos após a verificação, nunca commitados. Greps de limpeza (papaparse só em `features/import`, `classifyBatch` só na máquina, zero `UploadZone`/`CLASSIFY_SUCCEEDED`/`PIPELINE_STAGES_ORDERED`, `components/legal/` inexistente) todos limpos. Lint/typecheck/testes/build/E2E verdes a cada PR.
+**Depende de:** FE-2. **Destrava:** Fases 1–3 do plano de evolução (W3, W5, W6, W7-selo, W8-XML entram como `features/` novas seguindo a seção 15 de DoD); a entrega efetiva do corpus real ainda depende do W1 no backend.
+
+**As 6 PRs executadas:**
+
+1. **3a — Interceptor 403 PLG → diálogo central** (`481f801`, comportamento pequeno). `setPlgLimitListener` em `lib/http.ts` (registro de callback — lib/ não importa features/plg) + `PlgLimitDialogHost` em `features/plg`, montado em `components/providers.tsx`. Idempotente ao `retry: 1` das mutations.
+2. **3b — Registry de passos na máquina** (`cf86cf4`, neutro). Detalhado na seção 5 — `classifying`/`calculating` viram um único status genérico `running(stepId, acc)`; `CLASSIFY_*`/`SIMULATE_*` viram `STEP_SUCCEEDED`/`STEP_FAILED` parametrizados; o canal implícito de `runtime.ts` morre em favor do `PipelineAcc` explícito. Zero mudança de comportamento observável (a UI já colapsava os dois status num "carregando" só).
+3. **3c — Contrato Importer + CSV vira rascunho no formulário** (`ca9ccd1`, o PR de comportamento grande). Detalhado na seção 7 — o fork classify-only do CSV (`upload-zone.tsx` fundindo parse + `classifyBatch` num callback, contexto hardcoded, sem `client_id`, sem persistir) morre; `dashboard-csv-view.tsx`/`csv-summary.tsx` são deletados. `dashboard-input-panel.tsx` (novo) absorve o seletor de modo + banners, extraído de `simulation-dashboard.tsx` (645→529 linhas).
+4. **3d — `use-pipeline-stage` deriva da máquina** (`74f7487`, comportamento pequeno). `PipelineStage` vira alias de `PipelineUiStage` (o mesmo tipo que cada `Step` declara em `uiStage`) — a UI para de ter um vocabulário de estágio paralelo e desconectado da máquina.
+5. **3e — Porta `features/legal-corpus`** (`d07b504`, neutro). `lib/api/legal.ts` ganha o contrato `LawCorpusResponse`; `features/legal-corpus/use-law-corpus.ts` consome via `useQuery` com `enabled: LAW_CORPUS_API_ENABLED` (`false`) — zero rede, fallback devolve a `FISCAL_LAW_CHANGELOG` de sempre. `components/legal/` migra inteiro (`git mv`); a montagem no shell usa um **slot** (`app/layout.tsx` → `AppChromeShell` → `TribiaTopNav`), porque shell/ não pode importar features/ (exceto plg) — confirmado seguro sob E2E real (a lição da FE-2 era sobre referências de função em objetos, não elementos JSX via prop).
+6. **3f — Gate mecânico + doc.** Os 3 probes (seção acima) + estas atualizações do documento.
+
+**Mudanças de comportamento declaradas** (3a, 3c, 3d — as únicas PRs de comportamento):
+1. Um 403 PLG com `code` abre o `PlgUpgradeDialog` central, venha de onde vier; os diálogos manuais por capability continuam existindo à parte (3a).
+2. Upload de CSV preenche o formulário (rascunho) em vez de mostrar resultado classify-only imediato (3c).
+3. Despesas importadas por CSV passam a ser classificadas com contexto real da empresa + regime, enviam `client_id`, persistem no histórico e geram strategy tags — antes nenhum dos quatro (3c).
+4. Quota PLG de classificação passa a ser consumida no submit, não no upload — importar é grátis agora (3c).
+5. O preview classify-only do CSV morre; erros de parse aparecem na própria zona de upload (3c).
+6. Predicado de "linha preenchida" unificado com `.trim()` (`isFilledLine`) — havia 3 cópias sutilmente diferentes; linha só-espaços deixa de contar em qualquer uma (3c).
+7. Ids de linha importada via `makeLineId()`, não índice (3c).
+8. Atalhos "a"/"d" e quick actions do CommandMenu ficam disponíveis em qualquer aba do painel de entrada (form ou importer), não só na aba do formulário — a distinção que os gatava não existe mais fora do painel (3c).
+9. Durante o run, compass/announcer mostram o passo real ("Classificação" vs. "Simulação") em vez de ambos mostrarem "Simulação" o tempo todo (3d).
+
+**Preservados declarados:**
+- `runRecalc`/`runPersist` continuam relendo `useTaxStore.getState()` em vez do input guardado na máquina — decisão consciente, e agora **consistente por construção**: como o CSV também popula o store (mudança 2 acima), os dois caminhos (form e import) alimentam a mesma fonte de verdade. Corrigir isso é escopo de uma fase futura, não da FE-3.
+- Os 5 bugs preservados da FE-1 (erros de persistência só em `console.error`, sem CTA manual de sync em Board-Ready, `pendingSync` preso em falha de recalc, atalho `⌘Enter` sem checar rota, override durante recalc em voo não reagenda) seguem intocados.
+- Upsell PLG duplo (TeaseSheet vs. `PlgUpgradeDialog`), `fetchLawArticle` (export morto, candidato a virar client de `features/legal-corpus` no W1), `applyCompanyTemplate` com `crypto.randomUUID()` (gerador de id diferente do `makeLineId()` do resto do form) — todos registados na FE-2, seguem como estavam.
+- CSV aceita `.csv,.txt`; sem drag-and-drop real (herdado do `upload-zone.tsx` original).
 
 ### FE-4 — Escala e navegação (carteira)
 
@@ -322,6 +386,7 @@ Antes de mover qualquer linha.
 | Typegen a partir do OpenAPI | Adotar quando o backend cobrir as ~17 rotas no spec; até lá, espelho manual | Quando W10/backend ampliar o spec |
 | `/report/[id]` como Server Component | **Fechada na FE-2 (PR 2c): não adotado.** Decisão prévia do usuário — quebraria o mock de rede do E2E (`mockEngine`, que intercepta `fetch` no cliente) e o Clerk já carrega via `app/layout.tsx` raiz, então não há TTFB a ganhar isolando esta rota. Motivo técnico adicional descoberto na implementação: um Server Component não pode passar `ReportSection[]` (objetos com `Component: ComponentType`, i.e. referências de função) como prop para um Client Component — RSC lança em runtime ("Functions cannot be passed directly to Client Components"), erro que `next build` **não pega** (só análise estática + prerender de rotas estáticas; só apareceu sob Playwright, com o servidor rodando de verdade). Por isso `app/report/[id]/page.tsx` ficou Server Component só para `generateMetadata` + `notFound()`, delegando toda a composição de seções a `public-report-page.tsx` ("use client"), cruzando o boundary só com o `id` (string). | — |
 | `features/history` própria vs. dentro de `simulation` | Dentro de `simulation` (é a lista dos mesmos registros); separar só se ganhar comportamento próprio | FE-2, no move |
+| Ativação de `GET /law/corpus` (`features/legal-corpus`) | **Fechada na FE-3 (PR 3e): mecanismo pronto, desligado.** `LAW_CORPUS_API_ENABLED` (const `false` em `use-law-corpus.ts`) controla o `enabled:` do `useQuery` — vira `true` numa única linha quando o W1 entregar a rota; o resto (fallback, query key, shape de `LawCorpusResponse`, injeção no `financial-verdict-hero-card`) já está pronto e não muda. | Quando o W1 entregar `GET /law/corpus` |
 
 ## 15. Definition of done (por módulo novo)
 
