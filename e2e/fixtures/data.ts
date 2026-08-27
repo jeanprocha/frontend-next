@@ -4,10 +4,12 @@
 // delta = líquido projetado − líquido atual (negativo aqui = economia).
 import type {
   ClassificationItem,
+  CompanyTemplate,
   FormExpenseDTO,
   FormServiceDTO,
   SimulationRecordCreateResponse,
   SimulationRecordDetailResponse,
+  SimulationRecordSummary,
   SimulationResponse,
 } from "@/types/api"
 // PlgQuotaResponse vive em lib/api.ts (não em types/api.ts) — import type-only,
@@ -58,6 +60,65 @@ export const QUOTA_FIXTURE: PlgQuotaResponse = {
   company_limit: 10,
   enforcement_enabled: false,
 }
+
+/** Cota Free com enforcement ligado (FE-4/PR 4f) — condições exatas do PlgLimitMeter. */
+export const QUOTA_FREE_FIXTURE: PlgQuotaResponse = {
+  plan: "free",
+  simulations_today: 3,
+  daily_limit: 5,
+  companies_count: 1,
+  company_limit: 3,
+  enforcement_enabled: true,
+}
+
+export const E2E_COMPANY_ID_A = "22222222-2222-4222-8222-222222222222"
+export const E2E_COMPANY_ID_B = "33333333-3333-4333-8333-333333333333"
+
+/** Carteira com 2 clientes (FE-4/PR 4f) — usada por carteira-workspace.spec.ts. */
+export const COMPANIES_FIXTURE: CompanyTemplate[] = [
+  {
+    id: E2E_COMPANY_ID_A,
+    name: "Consultoria Alfa Ltda",
+    tax_context: "Empresa de consultoria tributária, regime regular, foco em serviços B2B.",
+    default_services: [],
+    created_at: "2026-01-10T12:00:00.000Z",
+  },
+  {
+    id: E2E_COMPANY_ID_B,
+    name: "Beta Comércio Digital Ltda",
+    tax_context: "E-commerce de bens digitais, regime regular, foco em vendas B2C.",
+    default_services: [],
+    created_at: "2026-02-05T09:30:00.000Z",
+  },
+]
+
+/**
+ * Histórico global (FE-4/PR 4f): 1 registro vinculado a E2E_COMPANY_ID_A e 1
+ * legado (company_id nulo) — cobre a listagem de /simulacoes e o upsell A/B
+ * (gating-free.spec.ts precisa de ao menos 2 registros).
+ */
+export const RECORDS_LIST_FIXTURE: SimulationRecordSummary[] = [
+  {
+    id: "44444444-4444-4444-8444-444444444444",
+    created_at: "2026-03-01T10:00:00.000Z",
+    year: 2026,
+    company_id: E2E_COMPANY_ID_A,
+    company_context: COMPANIES_FIXTURE[0].tax_context,
+    delta_impact: "-300.00",
+    total_projected_tax: "900.00",
+    transition_series: [],
+  },
+  {
+    id: "55555555-5555-4555-8555-555555555555",
+    created_at: "2026-02-15T14:20:00.000Z",
+    year: 2026,
+    company_id: null,
+    company_context: "Empresa legada sem cliente vinculado (registro pré-FE-4)",
+    delta_impact: "150.00",
+    total_projected_tax: "1150.00",
+    transition_series: [],
+  },
+]
 
 const SERVICE_CLASSIFICATION_FIXTURE: ClassificationItem = {
   description: "Consultoria tributária",

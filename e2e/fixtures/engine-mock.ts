@@ -3,7 +3,14 @@
 // do app partem do browser (inclusive o dossiê público, same-origin), então
 // um único page.route por origem cobre o fluxo inteiro.
 import type { Page, Route } from "@playwright/test"
-import type { BatchClassificationResponse, SimulationResponse } from "@/types/api"
+import type {
+  BatchClassificationResponse,
+  CompanyTemplate,
+  SimulationRecordCreatePayload,
+  SimulationRecordSummary,
+  SimulationResponse,
+} from "@/types/api"
+import type { PlgQuotaResponse } from "@/lib/api"
 import {
   E2E_RECORD_ID,
   QUOTA_FIXTURE,
@@ -60,6 +67,33 @@ export interface MockEngineOptions {
    * Omitido = sempre SIMULATION_FIXTURE (comportamento do smoke, intocado).
    */
   simulationResponses?: SimulationResponse[]
+  /** GET /companies inicial (FE-4/PR 4f). Omitido = [] (comportamento anterior). */
+  companies?: CompanyTemplate[]
+  /**
+   * GET /simulation-records inicial (FE-4/PR 4f), antes de qualquer POST desta
+   * sessão. Cada POST /simulation-records desta sessão soma uma linha
+   * sintetizada ao estado do mock — GET reflete o que foi persistido.
+   */
+  records?: SimulationRecordSummary[]
+  /** GET /plg/quota. Omitido = QUOTA_FIXTURE (pro, sem enforcement). */
+  quota?: PlgQuotaResponse
+}
+
+/** Sintetiza uma linha de listagem a partir do corpo do POST /simulation-records. */
+function summaryFromCreatePayload(
+  body: SimulationRecordCreatePayload,
+  id: string,
+): SimulationRecordSummary {
+  return {
+    id,
+    created_at: "2026-08-27T12:00:00.000Z",
+    year: body.year,
+    company_id: body.company_id ?? null,
+    company_context: body.company_context,
+    delta_impact: body.simulation?.delta ?? "0.00",
+    total_projected_tax: body.simulation?.projected?.net_tax ?? "0.00",
+    transition_series: [],
+  }
 }
 
 export interface MockEngineHandle {
@@ -70,6 +104,7 @@ export interface MockEngineHandle {
 export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Promise<MockEngineHandle> {
   let simulationsCalls = 0
   let simulationRecordsCalls = 0
+  const records: SimulationRecordSummary[] = [...(opts.records ?? [])]
 
   await page.route(`${API_ORIGIN}/**`, async (route) => {
     const req = route.request()
@@ -77,7 +112,8 @@ export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Prom
       return route.fulfill({ status: 204, headers: CORS_HEADERS })
     }
 
-    const pathname = new URL(req.url()).pathname
+    const url = new URL(req.url())
+    const pathname = url.pathname
 
     if (pathname === "/credit-classifications/batch" && req.method() === "POST") {
       const body = req.postDataJSON() as { expenses: { client_id?: string; description: string }[] }
@@ -93,16 +129,24 @@ export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Prom
     }
     if (pathname === "/simulation-records" && req.method() === "POST") {
       simulationRecordsCalls++
+      const body = req.postDataJSON() as SimulationRecordCreatePayload
+      records.unshift(summaryFromCreatePayload(body, SAVE_RECORD_FIXTURE.id))
       return json(route, 201, SAVE_RECORD_FIXTURE)
     }
+    if (pathname === "/simulation-records" && req.method() === "GET") {
+      const companyId = url.searchParams.get("company_id")
+      const limit = Number(url.searchParams.get("limit") ?? "20")
+      const filtered = companyId ? records.filter((r) => r.company_id === companyId) : records
+      return json(route, 200, filtered.slice(0, limit))
+    }
     if (pathname === "/plg/quota" && req.method() === "GET") {
-      return json(route, 200, QUOTA_FIXTURE)
+      return json(route, 200, opts.quota ?? QUOTA_FIXTURE)
     }
     if (pathname === "/strategy-tags" && req.method() === "GET") {
       return json(route, 200, { tags: [] })
     }
     if (pathname === "/companies" && req.method() === "GET") {
-      return json(route, 200, [])
+      return json(route, 200, opts.companies ?? [])
     }
 
     // Rota do motor não mockada: falha alto em vez de deixar a requisição

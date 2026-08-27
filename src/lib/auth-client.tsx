@@ -1,6 +1,6 @@
 "use client"
 
-import type { ComponentProps } from "react"
+import { useEffect, useState, type ComponentProps } from "react"
 import {
   useAuth as useClerkAuth,
   useUser as useClerkUser,
@@ -36,11 +36,18 @@ const fakeAuth: AppAuthState = {
   getToken: async () => "e2e-fake-token",
 }
 
-const fakeUser: AppUserState = {
+const FAKE_USER_BASE: AppUserState = {
   isLoaded: true,
   isSignedIn: true,
-  // publicMetadata vazia: o tier PLG vem do fallback NEXT_PUBLIC_TRIBIA_PLG_TIER.
+  // publicMetadata vazia: o tier PLG vem do fallback NEXT_PUBLIC_TRIBIA_PLG_TIER
+  // até o useEffect da porta de tier (abaixo) aplicar o cookie, se presente.
   user: { id: E2E_FAKE_USER_ID, publicMetadata: {} },
+}
+
+function readE2eTierCookie(): string | null {
+  if (typeof document === "undefined") return null
+  const match = document.cookie.match(/(?:^|;\s*)e2e_tier=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
 }
 
 function useClerkAuthAdapter(): AppAuthState {
@@ -52,8 +59,28 @@ function useFakeAuth(): AppAuthState {
 function useClerkUserAdapter(): AppUserState {
   return useClerkUser()
 }
+/**
+ * Porta de tier E2E (FE-4/PR 4f): duas passadas, como o resto do bypass.
+ * A primeira renderização devolve `FAKE_USER_BASE` (publicMetadata vazia —
+ * SSR-safe, document.cookie não existe no servidor); o `useEffect` só roda
+ * no cliente e aplica `publicMetadata.tribia_plan` a partir do cookie
+ * `e2e_tier` (definido por e2e/fixtures/tier.ts antes do primeiro goto), se
+ * presente. Mesmo fail-safe do resto do módulo: morto em produção junto com
+ * E2E_AUTH_BYPASS (ver e2e-auth-bypass.ts).
+ */
 function useFakeUser(): AppUserState {
-  return fakeUser
+  const [user, setUser] = useState<AppUserState>(FAKE_USER_BASE)
+  useEffect(() => {
+    const tier = readE2eTierCookie()
+    if (!tier) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- porta E2E: aplica o cookie só após a hidratação (ver comentário acima)
+    setUser({
+      isLoaded: true,
+      isSignedIn: true,
+      user: { id: E2E_FAKE_USER_ID, publicMetadata: { tribia_plan: tier } },
+    })
+  }, [])
+  return user
 }
 
 // Seleção em ESCOPO DE MÓDULO: cada componente chama sempre o mesmo hook
