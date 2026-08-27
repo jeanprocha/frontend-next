@@ -1,6 +1,6 @@
 # Arquitetura do Frontend — Direção de Refatoração
 
-Data-base: 26/08/2026 (rev. 2). Companion do plano de evolução (`../../docs/plano-evolucao-tribia.md`). Objetivo: preparar o `frontend-next` desde a base para tudo o que a plataforma vai ser capaz de fazer (parecer auditável, caixa/split payment, plano de ação, fornecedores, repricing, import XML/SPED, carteira multi-CNPJ), sem big bang.
+Data-base: 27/08/2026 (rev. 3). Companion do plano de evolução (`../../docs/plano-evolucao-tribia.md`). Objetivo: preparar o `frontend-next` desde a base para tudo o que a plataforma vai ser capaz de fazer (parecer auditável, caixa/split payment, plano de ação, fornecedores, repricing, import XML/SPED, carteira multi-CNPJ), sem big bang.
 
 As fases de desenvolvimento estão na seção 12; riscos na 13; decisões em aberto na 14.
 
@@ -37,13 +37,20 @@ As fases de desenvolvimento estão na seção 12; riscos na 13; decisões em abe
 
 ```
 src/
-├─ app/                          # rotas finas, só composição
-│  ├─ dashboard/                 # hoje; evolui para clientes/[companyId]/…
+├─ app/                          # rotas finas, só composição — page↛página (nem
+│  │                              #   alias @/app/**, nem relativo ../**: banido
+│  │                              #   pelo lint; composições cruzadas duplicam
+│  │                              #   entre páginas em vez de um módulo partilhado
+│  ├─ clientes/                  # carteira (home nova); [companyId]/ = workspace
+│  │  └─ [companyId]/simulacoes/[recordId]/  # registro aberto dentro do workspace
+│  ├─ simulador/                 # simulador avulso, sem cliente
+│  ├─ simulacoes/                # histórico global (todos os clientes + legados)
 │  ├─ report/[id]/
 │  └─ api/…                      # proxy público same-origin → features/report/api
 ├─ features/
 │  ├─ simulation/                # máquina do pipeline, formulário, resultados,
-│  │  ├─ machine/                #   histórico de registros (dashboard/history consome daqui)
+│  │  ├─ machine/                #   histórico global (HistoryPageView) e por cliente
+│  │  │                          #   (RegistrosDoCliente) consomem daqui
 │  │  ├─ components/
 │  │  ├─ hooks/
 │  │  └─ api.ts
@@ -54,11 +61,14 @@ src/
 │  ├─ pricing/                   # W6 — repricing/margem
 │  ├─ suppliers/                 # W5 — análise de fornecedores
 │  ├─ action-plan/               # W4 — plano de ação prescritivo
-│  ├─ portfolio/                 # W9 — carteira multi-CNPJ (dashboard/companies evolui p/ cá)
+│  ├─ portfolio/                 # carteira multi-CNPJ (FE-4) — company-card, new-company-form
 │  ├─ legal-corpus/              # W1 — artigos, data-base, changelog vindo da API
 │  └─ plg/                       # entitlements (move de components/tribia + hooks de plano)
 ├─ lib/                          # SÓ lógica pura compartilhada entre 2+ features
 │                                #   (http, money-decimal, format-money, utils, platform, theme)
+├─ constants/                    # camada base (como lib/): routes.ts (ROTAS,
+│                                #   PROTECTED_ROUTE_PATTERNS, predicados de rota
+│                                #   ativa), shortcuts.ts
 ├─ components/
 │  ├─ ui/                        # primitivos shadcn (como está)
 │  └─ shell/                     # chrome do app (como está)
@@ -81,11 +91,13 @@ Regra geral aplicada nas PRs 2d–2f: antes de mover um arquivo para dentro de u
 
 **Atualização pós-FE-3:** `features/import/` (PR 3c) e `features/legal-corpus/` (PR 3e) deixam de ser aspiracionais — existem. `lib/importer-contract.ts` entra na lista de tipos-contrato acima (mesmo racional do `report-contract.ts`: `features/import` implementa, `features/simulation` renderiza via render-prop, `app/` compõe). `components/legal/` deixou de existir — migrou inteiro para `features/legal-corpus/components/`. Candidato a move futuro (não feito na FE-3, fora de escopo): a cadeia da Cédula de auditoria (`expense-table` e afins) hoje em `components/shared/` só é consumida por `features/classification` desde que o fork CSV de `features/simulation` foi dissolvido (PR 3c) — vale reavaliar se ainda precisa ficar em shared.
 
+**Atualização pós-FE-4:** `features/portfolio/` (PR 4c) deixa de ser aspiracional. `src/app/dashboard/` não existe mais — `clientes/`, `simulador/` e `simulacoes/` (PR 4d) tomaram o lugar (seção 9). Descoberta empírica durante a PR 4d, não prevista no plano original: o lint de fronteira bane import file-to-file dentro de `app/` — tanto alias (`@/app/**`) quanto relativo (`../**`, regra `NO_UP_RELATIVE`) — mesmo entre arquivos não-rota colocados ali (confirmado com um probe: `src/app/simulador/_probe.tsx` importando de `@/app/_dashboard-composition` disparou a regra 5, "Página não importa de página"). Consequência: a composição `DASHBOARD_SECTIONS` (lista de `ReportSection[]` do dossiê) duplica literalmente nas 3 páginas que montam `SimulationDashboard` (`simulador/page.tsx`, `clientes/[companyId]/page.tsx`, `clientes/[companyId]/simulacoes/[recordId]/page.tsx`) em vez de um módulo compartilhado — mesma disciplina já aceita para `queryKeys.companies.list` chamado independentemente em vários call sites (deduplicação via TanStack Query resolve o custo de rede; aqui não há custo de rede, só repetição textual de ~15 linhas).
+
 ## 4. Camada de dados
 
 **Implementado desde a FE-1** (não é mais trabalho futuro): `lib/api.ts` não existe — foi quebrado em `lib/http.ts` (núcleo: `API_BASE`, `ApiError`, `throwApiError`, `authHeaders`, `tribiaPlanHeader`) + `lib/api/{simulation,companies,legal,classification,plg,strategy-tags,query-keys}.ts` (clients por domínio), com um barrel de compatibilidade em `lib/api/index.ts` (`@/lib/api` continua resolvendo os mesmos símbolos — zero mudança de import nos consumidores). A localização real diverge do `features/*/api.ts` cogitado abaixo — os clients ficaram em `lib/api/`, não migraram para dentro de cada feature; não há indicação de que valha a pena mover agora.
 
-- **Query keys convencionadas:** `[domínio, entidade, ...params]` em `lib/api/query-keys.ts` — única fonte, zero literal espalhado (`queryKeys.companies.all`, `.simulationRecords.list(userId, limit)`, `.lawCorpus.all`, etc.). Diverge do exemplo original (`['simulation-records', 'detail', id]`): não há keys `detail` — `getSimulationRecord`/`getPublicSimulationRecord` são chamados imperativamente, fora do TanStack Query (candidato a alinhamento futuro, não crítico).
+- **Query keys convencionadas:** `[domínio, entidade, ...params]` em `lib/api/query-keys.ts` — única fonte, zero literal espalhado (`queryKeys.companies.all`, `.simulationRecords.list(userId, limit, companyId?)`, `.lawCorpus.all`, etc.). **Atualização FE-4 (PR 4b/4d):** `simulationRecords.detail(userId, recordId)` existe agora — o workspace do cliente (`/clientes/[companyId]/simulacoes/[recordId]`) usa `useQuery` para abrir um registro. `history-page-view.tsx` (histórico global) segue chamando `getSimulationRecord` imperativamente ao clicar numa linha, e `getPublicSimulationRecord` (dossiê público) segue fora do TanStack Query — nenhum dos dois mudou.
 - **Interceptor PLG → capability**: implementado na FE-3 (PR 3a) — `setPlgLimitListener` em `lib/http.ts` (registro de callback; `lib/` não importa `features/plg`) + `features/plg/components/plg-limit-dialog-host.tsx` (monta em `components/providers.tsx`). Um 403 com `code` no corpo (quota/limite) abre o `PlgUpgradeDialog` central, venha do caminho da máquina do pipeline ou de um `useQuery`/mutation. Os diálogos manuais por capability (clique em recurso bloqueado, antes de qualquer request) continuam existindo à parte — caso distinto do 403 de rede.
 - **Contrato:** manter `types/` espelhando os DTOs por ora; quando o backend ampliar o `openapi.yaml` (hoje cobre 2 de ~17 rotas), avaliar geração de tipos a partir do spec — o espelho manual é o maior risco silencioso de drift (decisão em aberto, seção 14).
 - Valores monetários seguem trafegando como **string decimal** — nenhuma feature converte para `number` fora de `lib/` (decimal.js).
@@ -199,13 +211,15 @@ interface ImporterPanelEntry {
 
 **Correção factual (a nota acima citava `lib/http.ts` como inexistente — falso já naquele momento):** `lib/http.ts` existe desde a FE-1 (ver seção 4) — o que faltava era só o interceptor 403→diálogo em si, não o arquivo. **Implementado na FE-3 (PR 3a):** `lib/http.ts` expõe `setPlgLimitListener` (registro de callback — `lib/` não pode importar `features/plg`, a ligação é por callback, não por import); `throwApiError` chama o listener registrado sempre que classifica um 403 como `isPlgLimit`. `features/plg/components/plg-limit-dialog-host.tsx` se auto-registra e abre o `PlgUpgradeDialog` central — montado em `components/providers.tsx`, cobre tanto o caminho da máquina do pipeline quanto `useQuery`/mutations, porque todos os clients passam por `throwApiError`. Os diálogos manuais por capability (upsell clicado antes de qualquer request) continuam existindo à parte — caso distinto do 403 de rede vindo do servidor.
 
-## 9. Rotas e navegação (preparando W9)
+## 9. Rotas e navegação
 
-- Hoje: `/dashboard`, `/dashboard/history`, `/dashboard/companies`.
-- Alvo: `/clientes` (carteira) → `/clientes/[companyId]` (visão do cliente) → `/clientes/[companyId]/simulacoes/[id]` (dossiê). `/dashboard` mantém redirect.
-- A URL carrega o contexto do cliente — elimina estado global de "empresa selecionada" e prepara comparativos de carteira.
-- Command palette (cmdk) ganha navegação por cliente.
-- Atenção: `src/proxy.ts` (Clerk) protege `/dashboard(.*)` — as rotas novas entram na matcher **antes** do redirect, e `/report/*` segue público.
+**Implementado na FE-4** (não é mais alvo futuro): `/clientes` (carteira, home nova para usuários autenticados) → `/clientes/[companyId]` (workspace do cliente) → `/clientes/[companyId]/simulacoes/[recordId]` (registro aberto dentro do workspace); `/simulador` (avulso, sem cliente); `/simulacoes` (histórico global — todos os clientes + registros legados sem `company_id`). `constants/routes.ts` é a fonte única (`ROTAS`, `PROTECTED_ROUTE_PATTERNS`, predicados `ehRotaClientes`/`ehSuperficieSimulador`/`ehRotaSimulacoes`) — camada base, importável de qualquer lugar sem violar o lint de fronteira (seção 3).
+
+- **`/dashboard/*` aposentado**: `next.config.ts` define `redirects()` (307, `permanent: false`) das 4 rotas antigas para as novas (`/dashboard`→`/simulador`, `/dashboard/history`→`/simulacoes`, `/dashboard/companies`→`/clientes`, catch-all `/dashboard/:path*`→`/simulador`). Redirects do Next rodam **ANTES** do proxy (confirmado em `node_modules/next/dist/docs/`) — o destino já cai numa rota protegida pelo matcher novo, nenhum usuário deslogado vê a rota antiga antes de ir para o sign-in. `e2e/redirects.spec.ts` trava o contrato.
+- **`src/proxy.ts`**: `createRouteMatcher([...PROTECTED_ROUTE_PATTERNS])` — `/clientes(.*)`, `/simulador(.*)`, `/simulacoes(.*)`. Sem `/dashboard(.*)`: como os redirects já rodaram, o matcher só precisa cobrir o destino. `/report/*` segue público. Coberto por teste unitário do matcher (`constants/routes.test.ts`, `createRouteMatcher` real + `NextRequest`) — o bypass E2E torna o proxy passthrough, então a proteção de rota em si não é testável por E2E.
+- **A URL carrega a identidade do cliente — não existe estado global de "empresa selecionada"** (o gate da fase). `useTaxStore` ganha `aplicarContextoDoCliente(company)`: semeia o rascunho do formulário (contexto + serviços) e LIMPA expenses/regime/ano/redutor ao trocar de cliente — corrige um vazamento que o `applyCompanyTemplate` antigo tinha (só sobrescrevia contexto/serviços). O workspace (`app/clientes/[companyId]/page.tsx`) chama essa função no mount/troca de `companyId` (guardado por `useRef`) e `pipeline.actions.clearResults()` explicitamente — substitui o canal `templateApplyTick`/subscription da FE-1, morto na PR 4e junto com `applyCompanyTemplate`.
+- **Command palette** navega por cliente: grupo "Ir para cliente" (`command-menu.tsx`) lista as empresas da carteira (mesma query `queryKeys.companies.list`) e cada item faz `router.push(ROTAS.cliente(c.id))` — não aplica mais template nem empurra para o simulador avulso.
+- **Backend mínimo** (PR 4a, `backend-engine-go`): `company_id` na tabela `simulations` era write-only (gravado, nunca lido de volta). `internal/history/repo.go` passa a expor `CompanyID` em `Summary`/`Detail` e a filtrar `ListByUser` por `company_id::text` quando presente; o handler de save valida formato (UUID, 400 se inválido) e posse via `company.Repo.ExistsForUser` (404 se a empresa não pertence ao usuário). `OrganizationID` (campo legado nunca enviado pelo frontend) foi removido do DTO de criação.
 
 ## 10. Padronização
 
@@ -219,7 +233,7 @@ interface ImporterPanelEntry {
 A rede de segurança vem **antes** da migração, não depois (é a fase FE-0):
 
 - **Vitest em dois projetos** (`projects` no `vitest.config.ts`): o atual (`environment: node`, `src/**/*.test.ts`) intocado — as 16 suites de `lib/` continuam como estão; um novo (`environment: jsdom` + Testing Library, `src/**/*.test.tsx`) para componentes e hooks com DOM. `passWithNoTests` é opção de nível raiz no vitest 4 (não existe por projeto).
-- **E2E:** 1 fluxo Playwright smoke (formulário → classificação → resultado → dossiê) com backend mockado por **interceptação de rede do Playwright** (`page.route`), não MSW — todas as chamadas do app partem do browser (inclusive o dossiê público, que busca same-origin), então um `page.route` por origem cobre o fluxo inteiro sem dependência nova. MSW fica para quando os testes de componente (jsdom) precisarem de handlers reutilizáveis.
+- **E2E:** backend mockado por **interceptação de rede do Playwright** (`page.route`), não MSW — todas as chamadas do app partem do browser (inclusive o dossiê público, que busca same-origin), então um `page.route` por origem cobre qualquer fluxo sem dependência nova. MSW fica para quando os testes de componente (jsdom) precisarem de handlers reutilizáveis. **Atualização FE-4 (PR 4f):** de 1 spec (smoke) para 8 — `smoke-dossie`, `override-recalc`, `import-csv` (FE-0–3) + `redirects`, `carteira-workspace`, `gating-free`, `plg-403`, `dossie-publico` (FE-4). `engine-mock.ts` ganhou estado: `MockEngineOptions.companies`/`records`/`quota` semeiam os GETs iniciais, e todo POST `/simulation-records` soma uma linha sintetizada ao mock — provando que a lista de um cliente reflete o que acabou de ser persistido, não só o fixture inicial. `e2e/fixtures/tier.ts` (`definirTierE2E`) porta o tier PLG por cookie (`e2e_tier`, lido em `lib/auth-client.tsx` sob o bypass) para testar gating Free sem depender do tier fixo por processo (env).
 - **Auth do E2E offline:** bypass de teste (`NEXT_PUBLIC_E2E_AUTH_BYPASS`) que pula `auth.protect()` no `src/proxy.ts` e troca `useAuth`/`useUser`/`SignInButton`/`UserButton` do Clerk por um seam fake em `src/lib/auth-client.tsx` — sem chaves Clerk, sem rede. Fail-safe **estrutural**, não disciplina de configuração: a flag exige `NODE_ENV !== "production"`, e `next build` roda sempre com `NODE_ENV=production`, então o ramo fake é dead code eliminado em qualquer artefato de produção (verificado: os tokens fake não aparecem em nenhum `.js` do build, só em source maps). Consequência aceita: o webServer do Playwright sobe via `next dev`, não `build+start` — o CI valida o build de produção num step à parte. O seam é a única porta para `@clerk/nextjs` fora de `proxy.ts`/`layout.tsx`/`app/page.tsx` (landing, server-side, fora do smoke) — a regra de fronteira (abaixo) bane import direto do Clerk em `hooks/`, `components/`, `app/dashboard/` e `features/`.
 - **Máquina do pipeline:** vitest puro (transições, erros por etapa, recalc) — o teste mais valioso do app, nasce junto com a máquina (FE-1).
 - **Componentes de feature:** mínimo por feature migrada: override→recalc, gating PLG, seções do dossiê.
@@ -345,16 +359,42 @@ Antes de mover qualquer linha.
 - Upsell PLG duplo (TeaseSheet vs. `PlgUpgradeDialog`), `fetchLawArticle` (export morto, candidato a virar client de `features/legal-corpus` no W1), `applyCompanyTemplate` com `crypto.randomUUID()` (gerador de id diferente do `makeLineId()` do resto do form) — todos registados na FE-2, seguem como estavam.
 - CSV aceita `.csv,.txt`; sem drag-and-drop real (herdado do `upload-zone.tsx` original).
 
-### FE-4 — Escala e navegação (carteira)
+### FE-4 — Escala e navegação (carteira) ✅ concluída
 
 | Entrega | Detalhe |
 |---|---|
-| Rotas `/clientes/[companyId]/…` | com redirects de `/dashboard`; matcher do `proxy.ts` atualizada; URL carrega o contexto do cliente |
-| `features/portfolio` | `dashboard/companies` evolui p/ cá; command palette navega por cliente |
-| E2E ampliado | override→recalc, gating PLG, dossiê público, navegação por cliente |
+| Rotas `/clientes/[companyId]/…` | com redirects de `/dashboard`; matcher do `proxy.ts` atualizado; URL carrega o contexto do cliente (seção 9) |
+| `features/portfolio` | `dashboard/companies` evoluiu p/ cá (PR 4c); command palette navega por cliente (PR 4e) |
+| Backend mínimo | `company_id` deixa de ser write-only — leitura, filtro e validação de posse (PR 4a) |
+| E2E ampliado | carteira→workspace, gating PLG por tier via cookie, 403 central, dossiê público cold-load (PR 4f) |
 
-**Gate:** nenhum estado global de "empresa selecionada"; fluxos antigos redirecionam; suíte E2E verde.
+**Gate (verificado, PR 4g):** greps de invariante todos vazios (ou só no allowlist esperado) — `"/dashboard` em `src/` (zero), `/dashboard` em `e2e/`+`playwright.config.ts` (só `redirects.spec.ts`, que testa o próprio redirect), `applyCompanyTemplate`/`templateApplyTick` (zero), `organization_id`/`OrganizationID` nos dois repos (zero fora do teste que prova a ausência), `activeCompany`/`selectedCompany`/`empresaSelecionada` (zero), `companyId` em `useTaxStore.ts` (zero — só um comentário citando a rota), `log.Printf("DEBUG` no backend (zero), literais `"/clientes`/`"/simulador`/`"/simulacoes"` fora de `constants/routes.ts` (zero, só o próprio módulo + seu teste). Lint (0 erros)/typecheck/vitest (258 testes)/build de produção verdes nos dois repos a cada PR; Playwright 8/8 specs (11 casos) verde no frontend.
 **Depende de:** FE-2 (FE-3 não bloqueia). **Destrava:** Fase 4 do plano de evolução (W9 e SPED).
+
+**As 7 PRs executadas** (4a–4c em paralelo; ordem real 4a→4b→4c→4d→4e→4f→4g):
+
+1. **4a — Backend mínimo** (`ee7379c`, `backend-engine-go`, comportamento). `internal/history/repo.go`: `Summary`/`Detail` ganham `CompanyID *string`; `ListByUser` filtra por `company_id::text` (comparação por texto — tipo físico da coluna não está versionado neste repo). `internal/company/repo.go`: `ExistsForUser` valida posse. Handler: `parseOptionalCompanyID` (trim, vazio→nil, `uuid.Parse`→400 se inválido); posse não confirmada → 404 (não revela existência de empresa alheia, consistente com o DELETE). `OrganizationID` (nunca enviado pelo frontend) removido do DTO. `log.Printf("DEBUG: ...")` que imprimia o payload fiscal completo a cada save também removido (achado durante a implementação, não estava no escopo original). Verificação manual contra o Supabase real antes do merge — sem toolchain Go disponível no ambiente de desenvolvimento desta sessão, revisão de código rigorosa em vez de `go build`/`go vet`/`go test` automatizados (usuário instruído a rodar antes do push).
+2. **4b — Espelho + carrier `companyId`** (`09eb4ca`, comportamento pequeno). `types/api.ts` espelha os novos campos; `organization_id` sai do payload de criação. **Carrier, não estado global:** `ResultMeta.companyId` (`lib/persisted-results.ts`) transporta o vínculo do *resultado* até o persist — `SimulationInput.companyId` → `simulateStep` grava no `meta` → `build-record-payload.ts` emite `company_id` → backend valida e persiste → `SimulationRecordDetailResponse.company_id` na leitura → `simulationDetailToPersisted` reconstrói `meta.companyId` na hidratação. Em nenhum ponto desse fluxo o `useTaxStore` guarda "qual cliente está selecionado".
+3. **4c — Moves puros** (`7423ac8`, paralelo a 4a/4b). `features/portfolio/` nasce (de `app/dashboard/companies/page.tsx`, 420 linhas) — `PortfolioPage` recebe `{aoUsarEmpresa, breadcrumbItems}` via prop, o wrapper de então preservava o comportamento antigo (aplicar template) por ora. `features/simulation/components/history-page-view.tsx` nasce (de `app/dashboard/history/page.tsx`, 502 linhas) — fecha a decisão da seção 14 ("`features/history` dentro de `simulation`").
+4. **4d — Rotas, redirects, proxy, navegação, semeadura** (`18f0258`, o maior, comportamento). Árvore nova completa (seção 3/9); `next.config.ts` redirects; `constants/routes.ts` + `proxy.ts` atualizado; `eslint.config.mjs` escopo 6 (`NO_CLERK_DIRECT`) migrado de `src/app/dashboard/**` para as 3 rotas novas (senão a regra some em silêncio nas superfícies novas); `SimulationDashboard` ganha `companyId`/`nomeDoCliente`/`breadcrumbItems`/`historyHref`; `aplicarContextoDoCliente` + `RegistrosDoCliente` (lista por cliente, `?company_id=`); 31 pontos de navegação hardcoded migrados para `ROTAS.*`. Achado durante a implementação (não previsto no plano): tentativa de um módulo `app/_dashboard-composition.tsx` para compartilhar a lista `DASHBOARD_SECTIONS` entre as 3 páginas que montam `SimulationDashboard` foi bloqueada pelo lint de fronteira (seção 3) — revertida em favor de duplicação literal, mesma disciplina do `queryKeys.companies.list`.
+5. **4e — Morte dos templates** (`c2dc508`, comportamento pequeno). `applyCompanyTemplate`/`templateApplyTick` (store) e a subscription store→máquina em `machine-store.ts` removidos — a identidade do cliente é só a URL desde a 4d, este canal já não tinha mais nenhum consumidor de produção (só o `<select>` "Empresa" do formulário avulso e a palette, ambos migrados nesta PR). `<select>` "Empresa:" removido de `simulation-form.tsx`; palette ganha grupo "Ir para cliente" (navega, não aplica template); `CompanyCard` CTA vira "Abrir workspace".
+6. **4f — E2E ampliado** (`5a8ce02`, comportamento em testes). Porta de tier via cookie `e2e_tier` (`lib/auth-client.tsx`, duas passadas — SSR-safe); `engine-mock.ts` ganha estado (companies/records/quota configuráveis, POST soma ao mock); fixtures de carteira (`COMPANIES_FIXTURE`, `RECORDS_LIST_FIXTURE`, `QUOTA_FREE_FIXTURE`); 4 specs novos (seção 11).
+7. **4g — Gate mecânico + doc.** Os greps acima + esta atualização do documento.
+
+**Mudanças de comportamento declaradas:**
+1. `company_id` passa a ser lido e filtrável (antes write-only) — backend (4a).
+2. Save do consultor deixa de imprimir o payload fiscal completo nos logs do servidor (4a, achado durante a implementação — não era escopo original).
+3. Trocar de cliente no workspace agora LIMPA expenses/regime/ano/redutor além de contexto/serviços — o `applyCompanyTemplate` antigo só sobrescrevia contexto/serviços, deixando resíduo de um cliente anterior visível no próximo (4d).
+4. `/dashboard`, `/dashboard/history`, `/dashboard/companies` redirecionam (307) em vez de renderizar — quem tinha um link/favorito salvo é levado à rota nova automaticamente (4d).
+5. A home pós-login deixa de ser o simulador avulso e passa a ser a carteira (`/clientes`) — logo, o CTA "Dashboard"/fallback do Clerk (`tribia-top-nav.tsx`, `app/page.tsx`) aponta para lá, não mais para o simulador (4d).
+6. CTA "Usar no simulador" (carteira) deixa de aplicar template + navegar para o simulador avulso; abre o workspace do cliente — rótulo atualizado para "Abrir workspace" (4e).
+7. Comparação A/B na lista de um cliente específico não existe nesta fase (só na lista global, `/simulacoes`) — limitação registada, não regressão: a lista por cliente é nova (4d).
+
+**Preservados declarados:**
+- Os bugs preservados da FE-1 (persistência do dossiê só em `console.error`, sem CTA manual de sync em Board-Ready, `pendingSync` preso em falha de recalc, atalho `⌘Enter` sem checar rota, override durante recalc em voo não reagenda) seguem intocados.
+- `runRecalc`/`runPersist` continuam relendo `useTaxStore.getState()` — agora inclui `companyId` (via `SimulationInput`), mas o padrão de releitura do store em vez do input guardado na máquina não mudou.
+- Upsell PLG duplo (`PlgUpgradeDialog` vs. `TeaseSheet` do Board-Ready) segue como estava — fora de escopo da FE-4.
+- Teto de 30 empresas no plano Pro (PLG) sem paginação na carteira — a carteira virou a home, mas a listagem ainda é um único `GET /companies` sem cursor; registado como risco (seção 13), não resolvido nesta fase.
 
 ### Mapa fases × plano de evolução
 
@@ -377,6 +417,7 @@ Antes de mover qualquer linha.
 | Lint de fronteira virar ruído (herança de violações) | Implementado: `eslint-disable-next-line no-restricted-imports -- herança FE-0: <aresta>` nas 3 linhas exatas (não `ignores` no arquivo inteiro — isentaria violações novas no mesmo arquivo) + `reportUnusedDisableDirectives: "error"` — o comentário vira erro sozinho quando a violação é corrigida, então a allowlist só encolhe. Auditoria: `grep -rn "herança FE-0" src/` |
 | `react-hooks/set-state-in-effect`/`no-explicit-any` pré-existentes quebrando o gate do CI | 5 violações em 4 arquivos de produto (regra nova do `eslint-config-next` 16.2.2) — mesmo mecanismo acima, não reescrita de comportamento; `npm run lint` sai 0 erros na FE-0 |
 | Detector de design (hook da skill impeccable) reclamando em PRs de move | Moves não alteram UI; se o detector apontar algo num arquivo movido, registrar e corrigir no PR de comportamento seguinte; detector fica fora do CI (decisão FE-0) |
+| Carteira (`/clientes`, home pós-login desde a FE-4) sem paginação — teto de 30 empresas no plano Pro (PLG) | `GET /companies` continua sem cursor; aceitável até o teto ser atingido na prática. Paginação real é trabalho do W9 pleno, não da FE-4 |
 
 ## 14. Decisões em aberto
 
@@ -385,7 +426,7 @@ Antes de mover qualquer linha.
 | Máquina: à mão vs. XState | Reducer + union discriminada + registry de passos, sem dependência nova | FE-1, no PR da máquina |
 | Typegen a partir do OpenAPI | Adotar quando o backend cobrir as ~17 rotas no spec; até lá, espelho manual | Quando W10/backend ampliar o spec |
 | `/report/[id]` como Server Component | **Fechada na FE-2 (PR 2c): não adotado.** Decisão prévia do usuário — quebraria o mock de rede do E2E (`mockEngine`, que intercepta `fetch` no cliente) e o Clerk já carrega via `app/layout.tsx` raiz, então não há TTFB a ganhar isolando esta rota. Motivo técnico adicional descoberto na implementação: um Server Component não pode passar `ReportSection[]` (objetos com `Component: ComponentType`, i.e. referências de função) como prop para um Client Component — RSC lança em runtime ("Functions cannot be passed directly to Client Components"), erro que `next build` **não pega** (só análise estática + prerender de rotas estáticas; só apareceu sob Playwright, com o servidor rodando de verdade). Por isso `app/report/[id]/page.tsx` ficou Server Component só para `generateMetadata` + `notFound()`, delegando toda a composição de seções a `public-report-page.tsx` ("use client"), cruzando o boundary só com o `id` (string). | — |
-| `features/history` própria vs. dentro de `simulation` | Dentro de `simulation` (é a lista dos mesmos registros); separar só se ganhar comportamento próprio | FE-2, no move |
+| `features/history` própria vs. dentro de `simulation` | **Fechada na FE-4 (PR 4c): dentro de `simulation`.** `history-page-view.tsx` (histórico global) e `registros-do-cliente.tsx` (por cliente, PR 4d) vivem em `features/simulation/components/` — são a mesma lista de registros, com filtro diferente; nenhum ganhou comportamento próprio que justificasse uma feature separada. | — |
 | Ativação de `GET /law/corpus` (`features/legal-corpus`) | **Fechada na FE-3 (PR 3e): mecanismo pronto, desligado.** `LAW_CORPUS_API_ENABLED` (const `false` em `use-law-corpus.ts`) controla o `enabled:` do `useQuery` — vira `true` numa única linha quando o W1 entregar a rota; o resto (fallback, query key, shape de `LawCorpusResponse`, injeção no `financial-verdict-hero-card`) já está pronto e não muda. | Quando o W1 entregar `GET /law/corpus` |
 
 ## 15. Definition of done (por módulo novo)
