@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/react-query"
 import type {
   AiMetadata,
   ClassificationItem,
@@ -29,7 +30,44 @@ export interface ClassifiedInput {
   aiMetadata: AiMetadata | null
 }
 
-export type PipelineFailure = { step: "classify" | "simulate"; error: unknown }
+export type ReportBrand = { logo_url?: string | null; org_name?: string | null }
+
+/** Contexto de I/O de um passo — resolvido tardiamente via `getStepCtx()` (runtime.ts). */
+export interface StepCtx {
+  getToken(): Promise<string | null>
+  userId: string | null | undefined
+  plan: string
+  queryClient: QueryClient
+}
+
+export type StepId = string
+
+/** Estágio de UI que o passo representa enquanto roda (ver use-pipeline-stage, PR 3d). */
+export type PipelineUiStage = "context" | "classification" | "simulation" | "verdict"
+
+/**
+ * Acumulador explícito entre passos do registry (FE-3, PR 3b) — substitui o
+ * canal implícito que existia em runtime.ts (setLastDiscoveredTags). Cada
+ * passo recebe o acc do anterior e devolve o seu; um passo que não contribui
+ * dados só repassa o acc recebido. `results` é obrigatório no acc devolvido
+ * pelo ÚLTIMO passo do registry — é o que a máquina usa para transitar a `ready`.
+ */
+export interface PipelineAcc {
+  classified?: ClassifiedInput
+  discoveredTags?: StrategyTag[]
+  results?: FormResults
+}
+
+export type StepOutcome = { ok: true; acc: PipelineAcc } | { ok: false; error: unknown }
+
+/** Um passo do pipeline (FE-3, PR 3b) — ver `step-registry.ts` para a lista canónica. */
+export interface Step {
+  id: StepId
+  uiStage: PipelineUiStage
+  run(input: SimulationInput, acc: PipelineAcc, ctx: StepCtx): Promise<StepOutcome>
+}
+
+export type PipelineFailure = { step: StepId; error: unknown }
 
 export type RecalcStatus = "idle" | "debouncing" | "in-flight"
 
@@ -42,16 +80,13 @@ export interface ReadySync {
 
 export type MachineState =
   | { status: "idle"; failure: PipelineFailure | null }
-  | { status: "classifying"; input: SimulationInput }
-  | { status: "calculating"; input: SimulationInput; classified: ClassifiedInput }
+  | { status: "running"; stepId: StepId; input: SimulationInput; acc: PipelineAcc }
   | { status: "ready"; results: FormResults; sync: ReadySync; dossierBusy: boolean }
 
 export type MachineEvent =
   | { type: "RUN_REQUESTED"; input: SimulationInput }
-  | { type: "CLASSIFY_SUCCEEDED"; classified: ClassifiedInput }
-  | { type: "CLASSIFY_FAILED"; error: unknown }
-  | { type: "SIMULATE_SUCCEEDED"; results: FormResults }
-  | { type: "SIMULATE_FAILED"; error: unknown }
+  | { type: "STEP_SUCCEEDED"; stepId: StepId; acc: PipelineAcc }
+  | { type: "STEP_FAILED"; stepId: StepId; error: unknown }
   | { type: "PERSIST_SUCCEEDED"; recordId: string }
   | { type: "PERSIST_FAILED"; error: unknown }
   | { type: "OVERRIDE_APPLIED"; clientId: string; override: ConsultantClassificationOverride }
@@ -75,16 +110,17 @@ export type OverrideEvent = Extract<
 export type PersistOrigin = "initial" | "recalc" | "dossier"
 
 export type Command =
-  | { kind: "classify"; input: SimulationInput }
-  | { kind: "simulate"; input: SimulationInput; classified: ClassifiedInput }
+  | { kind: "runStep"; stepId: StepId; input: SimulationInput; acc: PipelineAcc }
   | { kind: "recalc" }
-  | { kind: "persist"; origin: PersistOrigin }
+  | { kind: "persist"; origin: PersistOrigin; discoveredTags?: StrategyTag[]; reportBrand?: ReportBrand | null }
   | { kind: "armRecalcDebounce" }
   | { kind: "cancelRecalcDebounce" }
 
 export interface MachineEnv {
   /** Lido do useTaxStore no momento do dispatch (features→store: permitido). */
   presentationMode: boolean
+  /** Registry injetável — testes usam registries fake para provar genericidade (PR 3b). */
+  steps: readonly Step[]
 }
 
 export interface TransitionResult {

@@ -2,17 +2,18 @@
 // regista getToken/userId/plan/queryClient a cada render — os passos assíncronos
 // (steps.ts) e o executor de comandos (machine-store.ts) sempre leem o valor
 // mais recente daqui, nunca capturam uma closure obsoleta.
+//
+// FE-3 (PR 3b): reportBrand/discoveredTags saíram daqui — esses dados agora
+// viajam explicitamente pelo `acc` entre passos e pelo payload do comando
+// "persist" (machine-types.ts), não por um canal mutável de módulo.
 import type { QueryClient } from "@tanstack/react-query"
-import type { StrategyTag } from "@/types/api"
-import type { StepCtx } from "./steps"
+import type { StepCtx } from "./machine-types"
 
 interface MutableRuntimeCtx {
   getToken(): Promise<string | null>
   userId: string | null | undefined
   plan: string
   queryClient: QueryClient | null
-  reportBrand: { logo_url?: string | null; org_name?: string | null } | null
-  discoveredTags: StrategyTag[] | undefined
 }
 
 const ctx: MutableRuntimeCtx = {
@@ -20,8 +21,6 @@ const ctx: MutableRuntimeCtx = {
   userId: null,
   plan: "free",
   queryClient: null,
-  reportBrand: null,
-  discoveredTags: undefined,
 }
 
 export function setRuntimeCtx(next: {
@@ -46,15 +45,5 @@ export function getStepCtx(): StepCtx {
     userId: ctx.userId,
     plan: ctx.plan,
     queryClient: ctx.queryClient,
-    reportBrand: ctx.reportBrand,
-    discoveredTags: ctx.discoveredTags,
   }
-}
-
-export function setDossierReportBrand(reportBrand: MutableRuntimeCtx["reportBrand"]): void {
-  ctx.reportBrand = reportBrand
-}
-
-export function setLastDiscoveredTags(tags: StrategyTag[] | undefined): void {
-  ctx.discoveredTags = tags
 }

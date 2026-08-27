@@ -1,8 +1,13 @@
 // Passos assíncronos da máquina — port de use-simulation.ts (classify+simulate)
 // e use-simulation-recalc.ts (recalc), unificados no persist único (build-record-payload).
-// Cada função devolve o MachineEvent a despachar; I/O e efeitos colaterais
-// (setQueryData, highlights, telemetria) ficam aqui, na mesma ordem do original.
-import type { QueryClient } from "@tanstack/react-query"
+// classifyStep/simulateStep (FE-3, PR 3b) são os passos do registry
+// (step-registry.ts) — devolvem StepOutcome, não MachineEvent; o executor
+// (machine-store.ts) traduz para STEP_SUCCEEDED/STEP_FAILED. runRecalc/
+// runPersist continuam funções soltas: não são passos do pipeline (recalc é
+// ciclo do estado `ready`, persist é sempre um comando emitido por outro
+// passo/evento) e por isso continuam devolvendo MachineEvent diretamente.
+// I/O e efeitos colaterais (setQueryData, highlights, telemetria) ficam
+// aqui, na mesma ordem do original.
 import { classifyBatch } from "@/lib/api/classification"
 import { simulate, saveSimulationRecord } from "@/lib/api/simulation"
 import { queryKeys } from "@/lib/api/query-keys"
@@ -14,21 +19,16 @@ import { useTaxStore } from "@/store/useTaxStore"
 import { isImobiliarioRegime } from "@/lib/company-regime"
 import type { StrategyTag, StrategyTagsListResponse } from "@/types/api"
 import { buildSimulationRecordCreatePayload } from "./build-record-payload"
-import type { ClassifiedInput, FormResults, MachineEvent, PersistOrigin, SimulationInput } from "./machine-types"
-
-export interface StepCtx {
-  getToken(): Promise<string | null>
-  userId: string | null | undefined
-  plan: string
-  queryClient: QueryClient
-  /** Branding white-label (PLG) — só lido pelo persist origin "dossier". */
-  reportBrand?: { logo_url?: string | null; org_name?: string | null } | null
-  /**
-   * Tags descobertas no último classify — só o persist origin "initial" as
-   * grava no snapshot (é o único caminho que sabe o que a classificação achou).
-   */
-  discoveredTags?: StrategyTag[]
-}
+import type {
+  ClassifiedInput,
+  FormResults,
+  MachineEvent,
+  PersistOrigin,
+  ReportBrand,
+  SimulationInput,
+  Step,
+  StepCtx,
+} from "./machine-types"
 
 // ─── Prefixos de contexto por regime (verbatim de use-simulation.ts) ─────────
 
@@ -100,117 +100,127 @@ async function resolvePlgAuth(ctx: StepCtx) {
 
 // ─── classify ─────────────────────────────────────────────────────────────
 
-export async function runClassify(input: SimulationInput, ctx: StepCtx): Promise<MachineEvent> {
-  try {
-    const plgAuth = await resolvePlgAuth(ctx)
-    const ctxForClassify = classificationContextForAI(input.companyContext, input.companyRegime)
+/** Primeiro passo do registry (step-registry.ts) — classifica serviços e despesas. */
+export const classifyStep: Step = {
+  id: "classify",
+  uiStage: "classification",
+  async run(input, acc, ctx) {
+    try {
+      const plgAuth = await resolvePlgAuth(ctx)
+      const ctxForClassify = classificationContextForAI(input.companyContext, input.companyRegime)
 
-    // Serviços → regime_type; Despesas → is_eligible + regime_type. Em paralelo,
-    // como no original — dois POSTs concorrentes ao classificador RAG+LLM.
-    const [svcClassResult, expClassResult] = await Promise.all([
-      classifyBatch(
-        input.services.map((s) => ({ client_id: s.id, description: s.description, context: ctxForClassify })),
-        5,
-        plgAuth,
-      ),
-      classifyBatch(
-        input.expenses.map((e) => ({ client_id: e.id, description: e.description, context: ctxForClassify })),
-        5,
-        plgAuth,
-      ),
-    ])
+      // Serviços → regime_type; Despesas → is_eligible + regime_type. Em paralelo,
+      // como no original — dois POSTs concorrentes ao classificador RAG+LLM.
+      const [svcClassResult, expClassResult] = await Promise.all([
+        classifyBatch(
+          input.services.map((s) => ({ client_id: s.id, description: s.description, context: ctxForClassify })),
+          5,
+          plgAuth,
+        ),
+        classifyBatch(
+          input.expenses.map((e) => ({ client_id: e.id, description: e.description, context: ctxForClassify })),
+          5,
+          plgAuth,
+        ),
+      ])
 
-    const discoveredTags = mergeDiscoveredStrategyTags(svcClassResult, expClassResult)
-    if (discoveredTags.length > 0) {
-      ctx.queryClient.setQueryData<StrategyTagsListResponse>(queryKeys.strategyTags.all, (old) => {
-        const cur = old?.tags ?? []
-        const seen = new Set(cur.map((t) => normalizeText(t.pattern)))
-        const next = [...cur]
-        for (const d of discoveredTags) {
-          const p = normalizeText(d.pattern)
-          if (seen.has(p)) continue
-          seen.add(p)
-          next.push({ pattern: p, label: d.label, category: d.category, color_scheme: d.color_scheme || "emerald" })
-        }
-        return { tags: dedupeStrategyTagsByPattern(next) }
-      })
+      const discoveredTags = mergeDiscoveredStrategyTags(svcClassResult, expClassResult)
+      if (discoveredTags.length > 0) {
+        ctx.queryClient.setQueryData<StrategyTagsListResponse>(queryKeys.strategyTags.all, (old) => {
+          const cur = old?.tags ?? []
+          const seen = new Set(cur.map((t) => normalizeText(t.pattern)))
+          const next = [...cur]
+          for (const d of discoveredTags) {
+            const p = normalizeText(d.pattern)
+            if (seen.has(p)) continue
+            seen.add(p)
+            next.push({ pattern: p, label: d.label, category: d.category, color_scheme: d.color_scheme || "emerald" })
+          }
+          return { tags: dedupeStrategyTagsByPattern(next) }
+        })
+      }
+
+      const classified: ClassifiedInput = {
+        serviceClassifications: svcClassResult.results,
+        expenseClassifications: expClassResult.results,
+        discoveredTags,
+        aiMetadata: aggregateRagMetadata(svcClassResult.results, expClassResult.results),
+      }
+      return { ok: true, acc: { ...acc, classified, discoveredTags } }
+    } catch (error) {
+      return { ok: false, error }
     }
-
-    const classified: ClassifiedInput = {
-      serviceClassifications: svcClassResult.results,
-      expenseClassifications: expClassResult.results,
-      discoveredTags,
-      aiMetadata: aggregateRagMetadata(svcClassResult.results, expClassResult.results),
-    }
-    return { type: "CLASSIFY_SUCCEEDED", classified }
-  } catch (error) {
-    return { type: "CLASSIFY_FAILED", error }
-  }
+  },
 }
 
 // ─── simulate ─────────────────────────────────────────────────────────────
 
-export async function runSimulate(
-  input: SimulationInput,
-  classified: ClassifiedInput,
-  ctx: StepCtx,
-): Promise<MachineEvent> {
-  try {
-    const plgAuth = await resolvePlgAuth(ctx)
-    const svcClassMap = mapByClientId(classified.serviceClassifications)
-    const expClassMap = mapByClientId(classified.expenseClassifications)
-    const redutorTrim = input.imobiliarioRedutorAjusteBrl?.trim() ?? ""
+/** Segundo passo do registry — calcula a simulação a partir do classify anterior. */
+export const simulateStep: Step = {
+  id: "simulate",
+  uiStage: "simulation",
+  async run(input, acc, ctx) {
+    if (!acc.classified) {
+      return { ok: false, error: new Error("[TribIA] simulate exige o `classified` de um passo anterior.") }
+    }
+    const classified = acc.classified
+    try {
+      const plgAuth = await resolvePlgAuth(ctx)
+      const svcClassMap = mapByClientId(classified.serviceClassifications)
+      const expClassMap = mapByClientId(classified.expenseClassifications)
+      const redutorTrim = input.imobiliarioRedutorAjusteBrl?.trim() ?? ""
 
-    const simResult = await simulate(
-      {
-        year: input.year,
-        ...(input.companyRegime !== "regular" ? { company_regime: input.companyRegime } : {}),
-        company_context: input.companyContext,
-        ...(isImobiliarioRegime(input.companyRegime) && redutorTrim !== ""
-          ? { imobiliario_redutor_ajuste_brl: redutorTrim }
-          : {}),
-        services: input.services.map((s) => ({
-          description: s.description,
-          amount: s.amount,
-          iss_rate: s.iss_rate,
-          regime_type: svcClassMap.get(s.id)?.regime_type ?? "padrao",
-        })),
-        expenses: input.expenses.map((e) => ({
-          description: e.description,
-          amount: e.amount,
-          is_eligible: expClassMap.get(e.id)?.is_eligible ?? false,
-          regime_type: expClassMap.get(e.id)?.regime_type ?? "padrao",
-        })),
-      },
-      plgAuth,
-    )
+      const simResult = await simulate(
+        {
+          year: input.year,
+          ...(input.companyRegime !== "regular" ? { company_regime: input.companyRegime } : {}),
+          company_context: input.companyContext,
+          ...(isImobiliarioRegime(input.companyRegime) && redutorTrim !== ""
+            ? { imobiliario_redutor_ajuste_brl: redutorTrim }
+            : {}),
+          services: input.services.map((s) => ({
+            description: s.description,
+            amount: s.amount,
+            iss_rate: s.iss_rate,
+            regime_type: svcClassMap.get(s.id)?.regime_type ?? "padrao",
+          })),
+          expenses: input.expenses.map((e) => ({
+            description: e.description,
+            amount: e.amount,
+            is_eligible: expClassMap.get(e.id)?.is_eligible ?? false,
+            regime_type: expClassMap.get(e.id)?.regime_type ?? "padrao",
+          })),
+        },
+        plgAuth,
+      )
 
-    // Efeitos gated na simulação inteira ter sucesso (como o onSuccess original).
-    if (classified.discoveredTags.length > 0) {
-      const { appendStrategyTagHighlightPatterns, setStrategyTagsDiscoveryMessage } = useTaxStore.getState()
-      appendStrategyTagHighlightPatterns(classified.discoveredTags.map((d) => normalizeText(d.pattern)))
-      setStrategyTagsDiscoveryMessage("Novo padrão integrado ao vocabulário TribIA para consultas futuras.")
-      for (const d of classified.discoveredTags) {
-        emitStrategyTagConfirmed({
-          pattern_key: normalizeText(d.pattern),
-          label_key: normalizeText(d.label).slice(0, 64),
-        })
+      // Efeitos gated na simulação inteira ter sucesso (como o onSuccess original).
+      if (classified.discoveredTags.length > 0) {
+        const { appendStrategyTagHighlightPatterns, setStrategyTagsDiscoveryMessage } = useTaxStore.getState()
+        appendStrategyTagHighlightPatterns(classified.discoveredTags.map((d) => normalizeText(d.pattern)))
+        setStrategyTagsDiscoveryMessage("Novo padrão integrado ao vocabulário TribIA para consultas futuras.")
+        for (const d of classified.discoveredTags) {
+          emitStrategyTagConfirmed({
+            pattern_key: normalizeText(d.pattern),
+            label_key: normalizeText(d.label).slice(0, 64),
+          })
+        }
       }
-    }
 
-    const results: FormResults = {
-      mode: "form",
-      simulation: simResult,
-      classifications: classified.expenseClassifications,
-      expenses: input.expenses,
-      ai_metadata: classified.aiMetadata,
-      service_classifications: classified.serviceClassifications,
-      meta: { createdAt: new Date().toISOString(), companyContext: input.companyContext, year: input.year },
+      const results: FormResults = {
+        mode: "form",
+        simulation: simResult,
+        classifications: classified.expenseClassifications,
+        expenses: input.expenses,
+        ai_metadata: classified.aiMetadata,
+        service_classifications: classified.serviceClassifications,
+        meta: { createdAt: new Date().toISOString(), companyContext: input.companyContext, year: input.year },
+      }
+      return { ok: true, acc: { ...acc, results } }
+    } catch (error) {
+      return { ok: false, error }
     }
-    return { type: "SIMULATE_SUCCEEDED", results }
-  } catch (error) {
-    return { type: "SIMULATE_FAILED", error }
-  }
+  },
 }
 
 // ─── recalc (simulate-only, sem reclassificar) ───────────────────────────────
@@ -267,7 +277,12 @@ export async function runRecalc(results: FormResults, ctx: StepCtx): Promise<Mac
 // deliberada (FE-1, #2): erro de persist sempre chega a PERSIST_FAILED (log),
 // nunca fica em catch{} silencioso como o recalc original.
 
-export async function runPersist(origin: PersistOrigin, results: FormResults, ctx: StepCtx): Promise<MachineEvent> {
+export async function runPersist(
+  origin: PersistOrigin,
+  results: FormResults,
+  extra: { discoveredTags?: StrategyTag[]; reportBrand?: ReportBrand | null },
+  ctx: StepCtx,
+): Promise<MachineEvent> {
   if (!ctx.userId) return { type: "PERSIST_FAILED", error: new Error("Sem usuário autenticado.") }
   try {
     const token = await ctx.getToken()
@@ -288,8 +303,8 @@ export async function runPersist(origin: PersistOrigin, results: FormResults, ct
       },
       {
         useInitialExpenseEligibility: origin === "initial",
-        discoveredTags: origin === "initial" ? ctx.discoveredTags : undefined,
-        reportBrand: origin === "dossier" ? ctx.reportBrand : undefined,
+        discoveredTags: origin === "initial" ? extra.discoveredTags : undefined,
+        reportBrand: origin === "dossier" ? extra.reportBrand : undefined,
       },
     )
     const created = await saveSimulationRecord(token, ctx.userId, payload)

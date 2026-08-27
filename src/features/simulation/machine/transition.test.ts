@@ -1,10 +1,24 @@
 import { describe, expect, it } from "vitest"
 import type { ClassificationItem, SimulationResponse } from "@/types/api"
 import { transition } from "./transition"
-import type { ClassifiedInput, FormResults, MachineEnv, MachineState, SimulationInput } from "./machine-types"
+import type {
+  ClassifiedInput,
+  FormResults,
+  MachineEnv,
+  MachineState,
+  PipelineAcc,
+  SimulationInput,
+  Step,
+} from "./machine-types"
 
-const ENV_NORMAL: MachineEnv = { presentationMode: false }
-const ENV_PRESENTATION: MachineEnv = { presentationMode: true }
+/** Passos fake — a transition() só olha `.id`, nunca chama `.run` (isso é o executor). */
+function fakeStep(id: string): Step {
+  return { id, uiStage: "context", run: async (_input, acc) => ({ ok: true, acc }) }
+}
+const STEPS: Step[] = [fakeStep("classify"), fakeStep("simulate")]
+
+const ENV_NORMAL: MachineEnv = { presentationMode: false, steps: STEPS }
+const ENV_PRESENTATION: MachineEnv = { presentationMode: true, steps: STEPS }
 
 const IDLE: MachineState = { status: "idle", failure: null }
 
@@ -61,57 +75,98 @@ function readyState(over: Partial<MachineState & { status: "ready" }> = {}): Mac
   }
 }
 
-describe("transition — fluxo feliz", () => {
-  it("idle + RUN_REQUESTED → classifying, dispara [classify]", () => {
+describe("transition — fluxo feliz (registry de passos)", () => {
+  it("idle + RUN_REQUESTED → running no primeiro passo do registry, dispara [runStep]", () => {
     const { state, commands } = transition(IDLE, { type: "RUN_REQUESTED", input: INPUT }, ENV_NORMAL)
-    expect(state).toEqual({ status: "classifying", input: INPUT })
-    expect(commands).toEqual([{ kind: "classify", input: INPUT }])
+    expect(state).toEqual({ status: "running", stepId: "classify", input: INPUT, acc: {} })
+    expect(commands).toEqual([{ kind: "runStep", stepId: "classify", input: INPUT, acc: {} }])
   })
 
-  it("classifying + CLASSIFY_SUCCEEDED → calculating, dispara [simulate]", () => {
-    const classifying: MachineState = { status: "classifying", input: INPUT }
-    const { state, commands } = transition(
-      classifying,
-      { type: "CLASSIFY_SUCCEEDED", classified: CLASSIFIED },
-      ENV_NORMAL,
-    )
-    expect(state).toEqual({ status: "calculating", input: INPUT, classified: CLASSIFIED })
-    expect(commands).toEqual([{ kind: "simulate", input: INPUT, classified: CLASSIFIED }])
+  it("running(classify) + STEP_SUCCEEDED → running(simulate), acc propagado, dispara [runStep]", () => {
+    const running: MachineState = { status: "running", stepId: "classify", input: INPUT, acc: {} }
+    const acc: PipelineAcc = { classified: CLASSIFIED }
+    const { state, commands } = transition(running, { type: "STEP_SUCCEEDED", stepId: "classify", acc }, ENV_NORMAL)
+    expect(state).toEqual({ status: "running", stepId: "simulate", input: INPUT, acc })
+    expect(commands).toEqual([{ kind: "runStep", stepId: "simulate", input: INPUT, acc }])
   })
 
-  it("calculating + SIMULATE_SUCCEEDED → ready sincronizado, dispara [persist initial]", () => {
-    const calculating: MachineState = { status: "calculating", input: INPUT, classified: CLASSIFIED }
-    const { state, commands } = transition(calculating, { type: "SIMULATE_SUCCEEDED", results: RESULTS }, ENV_NORMAL)
+  it("running(simulate), último passo, + STEP_SUCCEEDED com acc.results → ready sincronizado, dispara [persist initial]", () => {
+    const running: MachineState = {
+      status: "running",
+      stepId: "simulate",
+      input: INPUT,
+      acc: { classified: CLASSIFIED },
+    }
+    const acc: PipelineAcc = { classified: CLASSIFIED, discoveredTags: [], results: RESULTS }
+    const { state, commands } = transition(running, { type: "STEP_SUCCEEDED", stepId: "simulate", acc }, ENV_NORMAL)
     expect(state).toEqual({
       status: "ready",
       results: RESULTS,
       sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
       dossierBusy: false,
     })
-    expect(commands).toEqual([{ kind: "persist", origin: "initial" }])
+    expect(commands).toEqual([{ kind: "persist", origin: "initial", discoveredTags: [] }])
+  })
+})
+
+describe("transition — genericidade do registry (a máquina não conhece nomes de passo)", () => {
+  function fakeStepN(id: string): Step {
+    return { id, uiStage: "context", run: async (_input, acc) => ({ ok: true, acc }) }
+  }
+  const THREE_STEPS: Step[] = [fakeStepN("a"), fakeStepN("b"), fakeStepN("c")]
+  const ENV_3: MachineEnv = { presentationMode: false, steps: THREE_STEPS }
+  const ENV_1: MachineEnv = { presentationMode: false, steps: [fakeStepN("only")] }
+
+  it("encadeia N passos pela ORDEM do registry, não por nome hardcoded", () => {
+    const step1 = transition(IDLE, { type: "RUN_REQUESTED", input: INPUT }, ENV_3)
+    expect(step1.state).toEqual({ status: "running", stepId: "a", input: INPUT, acc: {} })
+
+    const step2 = transition(step1.state, { type: "STEP_SUCCEEDED", stepId: "a", acc: {} }, ENV_3)
+    expect(step2.state).toEqual({ status: "running", stepId: "b", input: INPUT, acc: {} })
+
+    const step3 = transition(step2.state, { type: "STEP_SUCCEEDED", stepId: "b", acc: {} }, ENV_3)
+    expect(step3.state).toEqual({ status: "running", stepId: "c", input: INPUT, acc: {} })
+
+    const final = transition(step3.state, { type: "STEP_SUCCEEDED", stepId: "c", acc: { results: RESULTS } }, ENV_3)
+    expect(final.state.status).toBe("ready")
+    expect(final.commands).toEqual([{ kind: "persist", origin: "initial", discoveredTags: undefined }])
+  })
+
+  it("passo final sem acc.results vira falha de contrato — rede de segurança de um registry mal configurado", () => {
+    const running: MachineState = { status: "running", stepId: "only", input: INPUT, acc: {} }
+    const { state, commands } = transition(running, { type: "STEP_SUCCEEDED", stepId: "only", acc: {} }, ENV_1)
+    expect(state.status).toBe("idle")
+    if (state.status !== "idle") throw new Error("unreachable")
+    expect(state.failure?.step).toBe("only")
+    expect(commands).toEqual([])
   })
 })
 
 describe("transition — falha por passo", () => {
-  it("classifying + CLASSIFY_FAILED → idle com failure.step='classify'", () => {
-    const classifying: MachineState = { status: "classifying", input: INPUT }
+  it("running(classify) + STEP_FAILED → idle com failure.step='classify'", () => {
+    const running: MachineState = { status: "running", stepId: "classify", input: INPUT, acc: {} }
     const err = new Error("boom")
-    const { state, commands } = transition(classifying, { type: "CLASSIFY_FAILED", error: err }, ENV_NORMAL)
+    const { state, commands } = transition(running, { type: "STEP_FAILED", stepId: "classify", error: err }, ENV_NORMAL)
     expect(state).toEqual({ status: "idle", failure: { step: "classify", error: err } })
     expect(commands).toEqual([])
   })
 
-  it("calculating + SIMULATE_FAILED → idle com failure.step='simulate'", () => {
-    const calculating: MachineState = { status: "calculating", input: INPUT, classified: CLASSIFIED }
+  it("running(simulate) + STEP_FAILED → idle com failure.step='simulate'", () => {
+    const running: MachineState = {
+      status: "running",
+      stepId: "simulate",
+      input: INPUT,
+      acc: { classified: CLASSIFIED },
+    }
     const err = new Error("boom")
-    const { state } = transition(calculating, { type: "SIMULATE_FAILED", error: err }, ENV_NORMAL)
+    const { state } = transition(running, { type: "STEP_FAILED", stepId: "simulate", error: err }, ENV_NORMAL)
     expect(state).toEqual({ status: "idle", failure: { step: "simulate", error: err } })
   })
 
   it("novo RUN_REQUESTED a partir de idle com failure limpa a falha anterior", () => {
     const idleWithFailure: MachineState = { status: "idle", failure: { step: "classify", error: "x" } }
     const { state } = transition(idleWithFailure, { type: "RUN_REQUESTED", input: INPUT }, ENV_NORMAL)
-    expect(state).toEqual({ status: "classifying", input: INPUT })
+    expect(state).toEqual({ status: "running", stepId: "classify", input: INPUT, acc: {} })
   })
 })
 
@@ -264,22 +319,29 @@ describe("transition — reset / clear", () => {
   })
 
   it("RESET a partir de qualquer estado volta para idle limpo", () => {
-    const { state } = transition({ status: "classifying", input: INPUT }, { type: "RESET" }, ENV_NORMAL)
+    const { state } = transition({ status: "running", stepId: "classify", input: INPUT, acc: {} }, { type: "RESET" }, ENV_NORMAL)
     expect(state).toEqual({ status: "idle", failure: null })
   })
 })
 
 describe("transition — eventos impossíveis (no-op por referência)", () => {
-  it("RUN_REQUESTED enquanto já classifying não reinicia o pipeline", () => {
-    const classifying: MachineState = { status: "classifying", input: INPUT }
-    const { state, commands } = transition(classifying, { type: "RUN_REQUESTED", input: INPUT }, ENV_NORMAL)
-    expect(state).toBe(classifying)
+  it("RUN_REQUESTED enquanto já running não reinicia o pipeline", () => {
+    const running: MachineState = { status: "running", stepId: "classify", input: INPUT, acc: {} }
+    const { state, commands } = transition(running, { type: "RUN_REQUESTED", input: INPUT }, ENV_NORMAL)
+    expect(state).toBe(running)
     expect(commands).toEqual([])
   })
 
-  it("CLASSIFY_SUCCEEDED fora de classifying é no-op", () => {
-    const { state, commands } = transition(IDLE, { type: "CLASSIFY_SUCCEEDED", classified: CLASSIFIED }, ENV_NORMAL)
+  it("STEP_SUCCEEDED fora de running é no-op", () => {
+    const { state, commands } = transition(IDLE, { type: "STEP_SUCCEEDED", stepId: "classify", acc: {} }, ENV_NORMAL)
     expect(state).toBe(IDLE)
+    expect(commands).toEqual([])
+  })
+
+  it("STEP_SUCCEEDED com stepId diferente do passo em execução é no-op (evento tardio, ex.: pós-RESET)", () => {
+    const running: MachineState = { status: "running", stepId: "simulate", input: INPUT, acc: {} }
+    const { state, commands } = transition(running, { type: "STEP_SUCCEEDED", stepId: "classify", acc: {} }, ENV_NORMAL)
+    expect(state).toBe(running)
     expect(commands).toEqual([])
   })
 

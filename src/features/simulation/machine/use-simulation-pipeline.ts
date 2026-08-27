@@ -8,7 +8,8 @@ import { useTribiaPlgTier } from "@/features/plg"
 import type { ConsultantClassificationOverride } from "@/types/api"
 import { simulationMachine } from "./machine-store"
 import { setRuntimeCtx } from "./runtime"
-import type { FormResults, PipelineFailure, SimulationInput } from "./machine-types"
+import { PIPELINE_STEPS, stepById } from "./step-registry"
+import type { FormResults, PipelineFailure, PipelineUiStage, SimulationInput, StepId } from "./machine-types"
 
 export interface SimulationPipelineActions {
   /** Dispara o pipeline completo: classificar → calcular → salvar. */
@@ -30,6 +31,10 @@ export interface SimulationPipelineActions {
 export interface SimulationPipeline {
   results: FormResults | null
   isRunning: boolean
+  /** Id do passo em execução, ou `null` fora de `running` (PR 3b — consumido por use-pipeline-stage na 3d). */
+  runningStepId: StepId | null
+  /** Estágio de UI do passo em execução — `null` fora de `running`. */
+  runningUiStage: PipelineUiStage | null
   failure: PipelineFailure | null
   pendingSync: boolean
   isRecalculating: boolean
@@ -74,7 +79,9 @@ export function useSimulationPipeline(): SimulationPipeline {
   )
 
   const results = fsm.status === "ready" ? fsm.results : null
-  const isRunning = fsm.status === "classifying" || fsm.status === "calculating"
+  const isRunning = fsm.status === "running"
+  const runningStepId = fsm.status === "running" ? fsm.stepId : null
+  const runningUiStage = runningStepId ? (stepById(PIPELINE_STEPS, runningStepId)?.uiStage ?? null) : null
   const failure = fsm.status === "idle" ? fsm.failure : null
   const pendingSync = fsm.status === "ready" && fsm.sync.pendingSync
   const isRecalculating = fsm.status === "ready" && fsm.sync.recalc === "in-flight"
@@ -83,6 +90,8 @@ export function useSimulationPipeline(): SimulationPipeline {
   return {
     results,
     isRunning,
+    runningStepId,
+    runningUiStage,
     failure,
     pendingSync,
     isRecalculating,

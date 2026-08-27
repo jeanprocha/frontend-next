@@ -8,8 +8,10 @@ import type { SimulationResponse } from "@/types/api"
 import type { FormResults, MachineState } from "./machine-types"
 
 vi.mock("./steps", () => ({
-  runClassify: vi.fn(),
-  runSimulate: vi.fn(),
+  // step-registry.ts importa classifyStep/simulateStep de "./steps" — o mock
+  // aqui é visto por todo o grafo do módulo, incluindo o registry.
+  classifyStep: { id: "classify", uiStage: "classification", run: vi.fn() },
+  simulateStep: { id: "simulate", uiStage: "simulation", run: vi.fn() },
   runRecalc: vi.fn(),
   runPersist: vi.fn(),
 }))

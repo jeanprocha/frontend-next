@@ -10,41 +10,52 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
   switch (event.type) {
     case "RUN_REQUESTED": {
       if (state.status !== "idle") return NO_OP(state)
+      const first = env.steps[0]
       return {
-        state: { status: "classifying", input: event.input },
-        commands: [{ kind: "classify", input: event.input }],
+        state: { status: "running", stepId: first.id, input: event.input, acc: {} },
+        commands: [{ kind: "runStep", stepId: first.id, input: event.input, acc: {} }],
       }
     }
 
-    case "CLASSIFY_SUCCEEDED": {
-      if (state.status !== "classifying") return NO_OP(state)
-      return {
-        state: { status: "calculating", input: state.input, classified: event.classified },
-        commands: [{ kind: "simulate", input: state.input, classified: event.classified }],
+    case "STEP_SUCCEEDED": {
+      if (state.status !== "running" || state.stepId !== event.stepId) return NO_OP(state)
+      const idx = env.steps.findIndex((s) => s.id === event.stepId)
+      const next = env.steps[idx + 1]
+      if (next) {
+        return {
+          state: { status: "running", stepId: next.id, input: state.input, acc: event.acc },
+          commands: [{ kind: "runStep", stepId: next.id, input: state.input, acc: event.acc }],
+        }
       }
-    }
-
-    case "CLASSIFY_FAILED": {
-      if (state.status !== "classifying") return NO_OP(state)
-      return { state: { status: "idle", failure: { step: "classify", error: event.error } }, commands: [] }
-    }
-
-    case "SIMULATE_SUCCEEDED": {
-      if (state.status !== "calculating") return NO_OP(state)
+      // Último passo do registry: precisa ter produzido `results` — rede de
+      // segurança contra um registry mal configurado (ex.: probe fake sem
+      // encadear até um passo que devolva resultados).
+      if (!event.acc.results) {
+        return {
+          state: {
+            status: "idle",
+            failure: {
+              step: event.stepId,
+              error: new Error("Passo final do pipeline não produziu resultados."),
+            },
+          },
+          commands: [],
+        }
+      }
       return {
         state: {
           status: "ready",
-          results: event.results,
+          results: event.acc.results,
           sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
           dossierBusy: false,
         },
-        commands: [{ kind: "persist", origin: "initial" }],
+        commands: [{ kind: "persist", origin: "initial", discoveredTags: event.acc.discoveredTags }],
       }
     }
 
-    case "SIMULATE_FAILED": {
-      if (state.status !== "calculating") return NO_OP(state)
-      return { state: { status: "idle", failure: { step: "simulate", error: event.error } }, commands: [] }
+    case "STEP_FAILED": {
+      if (state.status !== "running" || state.stepId !== event.stepId) return NO_OP(state)
+      return { state: { status: "idle", failure: { step: event.stepId, error: event.error } }, commands: [] }
     }
 
     case "OVERRIDE_APPLIED":

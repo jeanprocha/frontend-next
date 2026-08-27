@@ -8,9 +8,10 @@ import { createStore } from "zustand/vanilla"
 import type { SimulationRecordDetailResponse } from "@/types/api"
 import { useTaxStore } from "@/store/useTaxStore"
 import { transition } from "./transition"
-import { runClassify, runPersist, runRecalc, runSimulate } from "./steps"
-import { getStepCtx, setDossierReportBrand, setLastDiscoveredTags } from "./runtime"
-import type { Command, FormResults, MachineEvent, MachineState } from "./machine-types"
+import { runPersist, runRecalc } from "./steps"
+import { PIPELINE_STEPS, stepById } from "./step-registry"
+import { getStepCtx } from "./runtime"
+import type { Command, FormResults, MachineEvent, MachineState, Step } from "./machine-types"
 
 const DEBOUNCE_MS = 800
 
@@ -26,8 +27,12 @@ interface MachineStoreState {
 
 const INITIAL_STATE: MachineState = { status: "idle", failure: null }
 
-/** Exportada só para testes (machine-store.test.ts) — instância isolada por teste. */
-export function createSimulationMachineStore() {
+/**
+ * Exportada só para testes (machine-store.test.ts) — instância isolada por
+ * teste. `steps` é injetável (default: o registry real) para provar a
+ * genericidade da máquina com um registry fake.
+ */
+export function createSimulationMachineStore(steps: readonly Step[] = PIPELINE_STEPS) {
   const store = createStore<MachineStoreState>(() => ({
     fsm: INITIAL_STATE,
     pendingHistoryComparison: null,
@@ -51,7 +56,7 @@ export function createSimulationMachineStore() {
   }
 
   function dispatchSync(event: MachineEvent): Command[] {
-    const env = { presentationMode: useTaxStore.getState().presentationMode }
+    const env = { presentationMode: useTaxStore.getState().presentationMode, steps }
     const { state, commands } = transition(store.getState().fsm, event, env)
     store.setState({ fsm: state })
     return commands
@@ -59,17 +64,16 @@ export function createSimulationMachineStore() {
 
   async function runCommand(cmd: Command): Promise<void> {
     switch (cmd.kind) {
-      case "classify": {
-        const event = await runClassify(cmd.input, getStepCtx())
-        await dispatchAndAwait(event)
-        return
-      }
-      case "simulate": {
-        // Registado ANTES de despachar SIMULATE_SUCCEEDED: se esse evento
-        // encadear um comando "persist" (origem initial), o executor precisa
-        // já ver as tags descobertas neste classify.
-        setLastDiscoveredTags(cmd.classified.discoveredTags)
-        const event = await runSimulate(cmd.input, cmd.classified, getStepCtx())
+      case "runStep": {
+        const step = stepById(steps, cmd.stepId)
+        // Impossível com o registry real (o reducer só emite runStep para
+        // ids do próprio `steps`) — rede de segurança contra um registry mal
+        // configurado (ex.: probe fake removido a meio de um run em curso).
+        if (!step) return
+        const outcome = await step.run(cmd.input, cmd.acc, getStepCtx())
+        const event: MachineEvent = outcome.ok
+          ? { type: "STEP_SUCCEEDED", stepId: cmd.stepId, acc: outcome.acc }
+          : { type: "STEP_FAILED", stepId: cmd.stepId, error: outcome.error }
         await dispatchAndAwait(event)
         return
       }
@@ -83,7 +87,12 @@ export function createSimulationMachineStore() {
       case "persist": {
         const current = store.getState().fsm
         if (current.status !== "ready") return
-        const event = await runPersist(cmd.origin, current.results, getStepCtx())
+        const event = await runPersist(
+          cmd.origin,
+          current.results,
+          { discoveredTags: cmd.discoveredTags, reportBrand: cmd.reportBrand },
+          getStepCtx(),
+        )
         await dispatchAndAwait(event)
         return
       }
@@ -128,9 +137,7 @@ export function createSimulationMachineStore() {
       const current = store.getState().fsm
       if (current.status !== "ready") return
       if (!current.results.meta?.recordId) {
-        setDossierReportBrand(opts.reportBrand)
-        await runCommand({ kind: "persist", origin: "dossier" })
-        setDossierReportBrand(null)
+        await runCommand({ kind: "persist", origin: "dossier", reportBrand: opts.reportBrand })
       }
 
       const afterPersist = store.getState().fsm
