@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { ROTAS } from "@/constants/routes"
 
 export const metadata: Metadata = {
   title: "Privacidade e dados — TribIA",
@@ -87,7 +88,7 @@ export default function PrivacidadePage() {
         </Link>
         {" · "}
         <Link
-          href="/dashboard"
+          href={ROTAS.simulador}
           className="text-accent underline-offset-4 hover:underline"
         >
           Simulador

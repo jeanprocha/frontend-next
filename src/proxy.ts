@@ -1,10 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import { E2E_AUTH_BYPASS } from "@/lib/e2e-auth-bypass"
+import { PROTECTED_ROUTE_PATTERNS } from "@/constants/routes"
 
-// Rotas que exigem autenticação — qualquer sub-rota de /dashboard
-// (Dossiés públicos em /report/* permanecem acessíveis sem sessão; dados servidos via GET /public/simulation-records/{id} no engine.)
-const isProtected = createRouteMatcher(["/dashboard(.*)"])
+// Rotas que exigem autenticação (FE-4: clientes/simulador/simulacoes — os
+// redirects de /dashboard/* em next.config.ts rodam ANTES do proxy, então o
+// destino já cai numa destas). Dossiés públicos em /report/* permanecem
+// acessíveis sem sessão; dados servidos via GET /public/simulation-records/{id} no engine.
+const isProtected = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS])
 
 const clerkProxy = clerkMiddleware(async (auth, req) => {
   if (isProtected(req)) await auth.protect()

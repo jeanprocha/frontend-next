@@ -31,12 +31,12 @@ export const LEADER_G_MS = 900
 
 /** Rótulos da navegação principal (navbar + palette) — fonte única. */
 export const NAV_LINK_LABELS = {
-  simulator: "Simulador",
-  companies: "Empresas",
-  history: "Histórico",
+  clientes: "Clientes",
+  simulador: "Simulador",
+  simulacoes: "Simulações",
 } as const
 
-/** Texto do `CommandItem` na palette (ir para `/dashboard`). */
+/** Texto do `CommandItem` na palette (ir para `ROTAS.simulador`). */
 export const PALETTE_GO_SIMULATOR_LABEL = "Ir para o Simulador"
 
 /** Teclas mostradas na UI (devem coincidir com `onKey` em `command-menu.tsx`). */

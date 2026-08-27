@@ -12,6 +12,11 @@ export type { SimulationDashboardProps } from "./components/simulation-dashboard
 export { HistoryPageView } from "./components/history-page-view"
 export type { HistoryPageViewProps } from "./components/history-page-view"
 
+// FE-4 (PR 4d): lista de simulações de UM cliente — usada no workspace
+// /clientes/[companyId], distinta do histórico global (HistoryPageView).
+export { RegistrosDoCliente } from "./components/registros-do-cliente"
+export type { RegistrosDoClienteProps } from "./components/registros-do-cliente"
+
 export type {
   ClassifiedInput,
   FormResults,

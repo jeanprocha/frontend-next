@@ -15,7 +15,7 @@ test("demo: override do consultor dispara recálculo debounced", async ({ page }
     simulationResponses: [SIMULATION_FIXTURE, RECALC_SIMULATION_FIXTURE],
   })
 
-  await page.goto("/dashboard")
+  await page.goto("/simulador")
   await expect(
     page.getByRole("heading", { name: "Simulador de Reforma Tributária" }),
   ).toBeVisible()

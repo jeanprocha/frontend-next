@@ -57,19 +57,36 @@ import { SHELL_INNER_CLASS } from "@/lib/shell-layout"
 import { useSimulationPipeline } from "../machine/use-simulation-pipeline"
 import { simulationMachine } from "../machine/machine-store"
 import { deriveSessionCompanyLabel } from "@/lib/session-labels"
+import { ROTAS } from "@/constants/routes"
 import { DashboardResultsView } from "./dashboard-results-view"
 import type { FormExpense, FormService } from "@/types/api"
 import type { ImporterPanelEntry } from "@/lib/importer-contract"
 import type { ReportRenderInput } from "@/lib/report-contract"
+import type { ShellBreadcrumbItem } from "@/components/shell/shell-breadcrumb"
 
 export interface SimulationDashboardProps {
-  /** Renderer do dossié (features/report) — injectado por app/dashboard/page.tsx para não criar aresta simulation→report. */
+  /** Renderer do dossié (features/report) — injectado por app/ para não criar aresta simulation→report. */
   renderDossier: (input: Omit<ReportRenderInput, "sections">) => ReactNode
-  /** Entries do painel de entrada (features/import) — injectadas por app/dashboard/page.tsx para não criar aresta simulation→import. */
+  /** Entries do painel de entrada (features/import) — injectadas por app/ para não criar aresta simulation→import. */
   importerEntries: ImporterPanelEntry[]
+  /** Cliente da carteira (FE-4) — presente no workspace /clientes/[companyId]; ausente no simulador avulso. */
+  companyId?: string
+  /** Nome real do cliente (FE-4) — sobrepõe a heurística deriveSessionCompanyLabel quando presente. */
+  nomeDoCliente?: string
+  /** Default: [{label: "Simulador"}] — o workspace do cliente injeta [Clientes → <nome>]. */
+  breadcrumbItems?: ShellBreadcrumbItem[]
+  /** Default: ROTAS.simulacoes (histórico global) — o workspace injeta ROTAS.cliente(companyId). */
+  historyHref?: string
 }
 
-export function SimulationDashboard({ renderDossier, importerEntries }: SimulationDashboardProps) {
+export function SimulationDashboard({
+  renderDossier,
+  importerEntries,
+  companyId,
+  nomeDoCliente,
+  breadcrumbItems = [{ label: "Simulador" }],
+  historyHref = ROTAS.simulacoes,
+}: SimulationDashboardProps) {
   const { userId: clerkUserId } = useAuth()
   const { isBoardReady, setIsBoardReady, toggleBoardReady } = useBoardReady()
   const plgCap = usePlgCapabilities()
@@ -123,8 +140,8 @@ export function SimulationDashboard({ renderDossier, importerEntries }: Simulati
   // Strings primitivas memoizadas: React.memo no carimbo não re-renderiza durante scroll.
   const sessionCompanyLabel = useMemo(() => {
     if (!formResults) return ""
-    return deriveSessionCompanyLabel(formResults.meta?.companyContext ?? companyContext)
-  }, [formResults, companyContext])
+    return nomeDoCliente ?? deriveSessionCompanyLabel(formResults.meta?.companyContext ?? companyContext)
+  }, [formResults, companyContext, nomeDoCliente])
 
   const sessionScenarioLabel = useMemo(() => {
     if (!formResults) return ""
@@ -156,6 +173,7 @@ export function SimulationDashboard({ renderDossier, importerEntries }: Simulati
       companyContext,
       companyRegime,
       imobiliarioRedutorAjusteBrl,
+      companyId,
     })
   }
 
@@ -340,8 +358,9 @@ export function SimulationDashboard({ renderDossier, importerEntries }: Simulati
       companyContext,
       companyRegime: regime,
       imobiliarioRedutorAjusteBrl: redutor,
+      companyId,
     })
-  }, [pipeline.actions])
+  }, [pipeline.actions, companyId])
 
   useEffect(() => {
     // FE-3 (PR 3c): a distinção form vs. importer saiu daqui — o painel de
@@ -413,7 +432,7 @@ export function SimulationDashboard({ renderDossier, importerEntries }: Simulati
             formResults && "no-print",
           )}
         >
-          <ShellBreadcrumb items={[{ label: "Simulador" }]} />
+          <ShellBreadcrumb items={breadcrumbItems} />
         </div>
 
         {/* ── Page header ────────────────────────────────────────────────── */}
@@ -438,13 +457,13 @@ export function SimulationDashboard({ renderDossier, importerEntries }: Simulati
             <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
               {formResults.meta && (
                 <Link
-                  href="/dashboard/history"
+                  href={historyHref}
                   className={cn(
                     buttonVariants({ variant: "outline", size: "sm" }),
                     "board-ready:hidden no-print print:hidden",
                   )}
                 >
-                  Voltar ao histórico
+                  {companyId ? "Voltar ao cliente" : "Voltar ao histórico"}
                 </Link>
               )}
               <Button

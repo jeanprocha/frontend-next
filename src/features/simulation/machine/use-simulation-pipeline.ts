@@ -26,6 +26,13 @@ export interface SimulationPipelineActions {
   openDossier(opts: { reportBrand: { logo_url?: string | null; org_name?: string | null } | null }): Promise<void>
   /** Consome pendingHistoryComparison — quem chama já leu o valor. */
   consumeHistoryComparison(): void
+  /**
+   * Reidrata a máquina a partir de um registo já carregado (abrir do
+   * histórico global ou do workspace do cliente, FE-4) — pula classify/
+   * simulate direto para `ready`. app/ não pode deep-importar machine-store,
+   * daí a action aqui em vez de um free function no barrel.
+   */
+  hydrateResults(results: FormResults): void
 }
 
 export interface SimulationPipeline {
@@ -74,6 +81,7 @@ export function useSimulationPipeline(): SimulationPipeline {
       requestRecalc: () => simulationMachine.dispatch({ type: "RECALC_REQUESTED" }),
       openDossier: (opts) => simulationMachine.openDossier(opts),
       consumeHistoryComparison: () => simulationMachine.setPendingHistoryComparison(null),
+      hydrateResults: (results) => simulationMachine.hydrateResults(results),
     }),
     [],
   )

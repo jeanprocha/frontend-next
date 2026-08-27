@@ -9,7 +9,7 @@ import { mockEngine } from "./fixtures/engine-mock"
 test("demo: upload de CSV preenche o formulário e simula (persiste)", async ({ page }) => {
   const engine = await mockEngine(page)
 
-  await page.goto("/dashboard")
+  await page.goto("/simulador")
   await expect(
     page.getByRole("heading", { name: "Simulador de Reforma Tributária" }),
   ).toBeVisible()

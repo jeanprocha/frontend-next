@@ -1,5 +1,8 @@
 "use client"
 
+// Movido de app/dashboard/page.tsx (FE-4, PR 4d — move puro): simulador
+// avulso, sem cliente da carteira. companyId/nomeDoCliente ficam ausentes
+// (defaults de SimulationDashboardProps assumem o caminho avulso).
 import { SimulationDashboard } from "@/features/simulation"
 import {
   ReportRenderer,
@@ -37,7 +40,7 @@ const DASHBOARD_SECTIONS: ReportSection[] = [
 
 const IMPORTER_ENTRIES = getImporterPanelEntries()
 
-export default function DashboardPage() {
+export default function SimuladorPage() {
   return (
     <>
       <SimulationDashboard

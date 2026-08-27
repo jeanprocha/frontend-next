@@ -42,6 +42,7 @@ import {
   SHORTCUT_KEYS,
   simulateShortcutLabel,
 } from "@/constants/shortcuts"
+import { ROTAS, ehRotaSimulacoes, ehSuperficieSimulador } from "@/constants/routes"
 import { listCompanies, queryKeys } from "@/lib/api"
 import { getDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { isApplePlatform } from "@/lib/platform"
@@ -126,13 +127,17 @@ export function CommandMenu() {
     [router, close],
   )
 
+  // Transitório (FE-4, PR 4d): "Aplicar empresa" ainda usa o template antigo
+  // e aponta para o simulador avulso. Morre na PR 4e — vira "Ir para
+  // cliente" (navegação para /clientes/[id], a identidade do cliente passa
+  // a viver na URL).
   const applyCompany = useCallback(
     (id: string) => {
       const company = companies?.find((c) => c.id === id)
       if (!company) return
       useTaxStore.getState().applyCompanyTemplate(company)
-      if (pathname !== "/dashboard") {
-        router.push("/dashboard")
+      if (pathname !== ROTAS.simulador) {
+        router.push(ROTAS.simulador)
       }
       close()
     },
@@ -164,10 +169,9 @@ export function CommandMenu() {
     close()
   }, [close])
 
-  const onDashboard =
-    pathname === "/dashboard" || pathname === "/dashboard/"
-  const onHistory = pathname.startsWith("/dashboard/history")
-  const onCompanies = pathname.startsWith("/dashboard/companies")
+  const emSimulador = ehSuperficieSimulador(pathname)
+  const emSimulacoes = ehRotaSimulacoes(pathname)
+  const naCarteira = pathname === ROTAS.clientes
 
   const disarmLeaderG = useCallback(() => {
     const r = leaderGRef.current
@@ -221,7 +225,7 @@ export function CommandMenu() {
         ) {
           e.preventDefault()
           disarmLeaderG()
-          router.push("/dashboard/history")
+          router.push(ROTAS.simulacoes)
           return
         }
         disarmLeaderG()
@@ -249,7 +253,7 @@ export function CommandMenu() {
       const isProOrPremium = rayxFull
       const proFormResults =
         isProOrPremium &&
-        onDashboard &&
+        emSimulador &&
         b.hasFormResults &&
         !b.isSimulationInputPhase &&
         !b.isLoadingSimulation
@@ -290,7 +294,7 @@ export function CommandMenu() {
       }
 
       const simInput =
-        onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
+        emSimulador && b.isSimulationInputPhase && !b.isLoadingSimulation
       if (simInput) {
         if (e.key === "a" || e.key === "A") {
           if (!e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -324,7 +328,7 @@ export function CommandMenu() {
     return () => document.removeEventListener("keydown", onKey)
   }, [
     open,
-    onDashboard,
+    emSimulador,
     rayxFull,
     addService,
     addExpense,
@@ -334,7 +338,7 @@ export function CommandMenu() {
 
   const b = getDashboardCommandBridge()
   const canSimActions =
-    onDashboard && b.isSimulationInputPhase && !b.isLoadingSimulation
+    emSimulador && b.isSimulationInputPhase && !b.isLoadingSimulation
   const canRun = Boolean(b.runSimulation)
   const canBoard = Boolean(b.toggleBoardReady)
   const canPrint = b.hasFormResults && !b.isLoadingSimulation
@@ -344,7 +348,7 @@ export function CommandMenu() {
   const isProOrPremium = rayxFull
   const proFormResultHotkeys =
     isProOrPremium &&
-    onDashboard &&
+    emSimulador &&
     b.hasFormResults &&
     !b.isSimulationInputPhase &&
     !b.isLoadingSimulation
@@ -354,8 +358,8 @@ export function CommandMenu() {
 
   const showQuickActions =
     canSimActions ||
-    (onHistory && canFocusHistorySearch) ||
-    (onCompanies && canOpenCompanyForm)
+    (emSimulacoes && canFocusHistorySearch) ||
+    (naCarteira && canOpenCompanyForm)
 
   return (
     <>
@@ -377,7 +381,7 @@ export function CommandMenu() {
 
           {showQuickActions && (
             <CommandGroup heading="Ações rápidas (esta página)">
-              {onHistory && canFocusHistorySearch && (
+              {emSimulacoes && canFocusHistorySearch && (
                 <CommandItem
                   value="histórico pesquisar filtrar simulações"
                   onSelect={focusHistorySearch}
@@ -386,7 +390,7 @@ export function CommandMenu() {
                   <span>Focar pesquisa no histórico</span>
                 </CommandItem>
               )}
-              {onCompanies && canOpenCompanyForm && (
+              {naCarteira && canOpenCompanyForm && (
                 <CommandItem
                   value="empresa nova cadastro"
                   onSelect={openNewCompanyForm}
@@ -467,25 +471,25 @@ export function CommandMenu() {
 
           <CommandGroup heading="Navegação">
             <CommandItem
-              value={`ir simulador dashboard ${NAV_LINK_LABELS.simulator}`}
-              onSelect={() => go("/dashboard")}
+              value={`clientes carteira ${NAV_LINK_LABELS.clientes}`}
+              onSelect={() => go(ROTAS.clientes)}
+            >
+              <Building2 className="size-4 text-muted-foreground" />
+              <span>{NAV_LINK_LABELS.clientes}</span>
+            </CommandItem>
+            <CommandItem
+              value={`ir simulador avulso ${NAV_LINK_LABELS.simulador}`}
+              onSelect={() => go(ROTAS.simulador)}
             >
               <LayoutDashboard className="size-4 text-muted-foreground" />
               <span>{PALETTE_GO_SIMULATOR_LABEL}</span>
             </CommandItem>
             <CommandItem
-              value={`empresas cadastro ${NAV_LINK_LABELS.companies}`}
-              onSelect={() => go("/dashboard/companies")}
-            >
-              <Building2 className="size-4 text-muted-foreground" />
-              <span>{NAV_LINK_LABELS.companies}</span>
-            </CommandItem>
-            <CommandItem
-              value={`histórico simulações ${NAV_LINK_LABELS.history}`}
-              onSelect={() => go("/dashboard/history")}
+              value={`histórico simulações ${NAV_LINK_LABELS.simulacoes}`}
+              onSelect={() => go(ROTAS.simulacoes)}
             >
               <Library className="size-4 text-muted-foreground" />
-              <span>{NAV_LINK_LABELS.history}</span>
+              <span>{NAV_LINK_LABELS.simulacoes}</span>
             </CommandItem>
           </CommandGroup>
 

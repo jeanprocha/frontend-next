@@ -1,14 +1,14 @@
 // Smoke que protege a demo (FE-0): formulário → classificação IA → veredito
 // → dossiê público. Offline total — mockEngine intercepta toda chamada ao
 // motor Go; o bypass de auth (NEXT_PUBLIC_E2E_AUTH_BYPASS, injetado pelo
-// webServer do playwright.config.ts) libera /dashboard sem sessão Clerk.
+// webServer do playwright.config.ts) libera /simulador sem sessão Clerk.
 import { expect, test } from "@playwright/test"
 import { E2E_RECORD_ID, mockEngine } from "./fixtures/engine-mock"
 
 test("demo: formulário → classificação IA → veredito → dossiê", async ({ page }) => {
   await mockEngine(page)
 
-  await page.goto("/dashboard")
+  await page.goto("/simulador")
   await expect(
     page.getByRole("heading", { name: "Simulador de Reforma Tributária" }),
   ).toBeVisible()

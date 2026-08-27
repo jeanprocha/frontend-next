@@ -18,6 +18,8 @@ export const queryKeys = {
     all: ["simulation-records"] as const,
     list: (userId: UserId, limit: number, companyId?: string) =>
       ["simulation-records", "list", userId, limit, companyId ?? "todas"] as const,
+    /** FE-4: getSimulationRecord passa a rodar dentro do TanStack Query no workspace do cliente. */
+    detail: (userId: UserId, recordId: string) => ["simulation-records", "detail", userId, recordId] as const,
   },
   strategyTags: {
     all: ["strategy-tags"] as const,

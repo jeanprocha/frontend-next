@@ -1,9 +1,9 @@
 // O motor da máquina (FE-1): store zustand vanilla em escopo de MÓDULO — não
-// de componente. Isso é o que dá sobrevivência a navegação (history/page.tsx
-// hidrata e faz router.push("/dashboard"); useReducer da página morreria no
-// unmount). Timer de debounce ÚNICO aqui — elimina a corrida entre a instância
-// da página e a do bridge que existia no código original (mudança deliberada
-// FE-1 #4).
+// de componente. Isso é o que dá sobrevivência a navegação (HistoryPageView
+// hidrata e navega para ROTAS.simulador/ROTAS.cliente; useReducer da página
+// morreria no unmount). Timer de debounce ÚNICO aqui — elimina a corrida
+// entre a instância da página e a do bridge que existia no código original
+// (mudança deliberada FE-1 #4).
 import { createStore } from "zustand/vanilla"
 import type { SimulationRecordDetailResponse } from "@/types/api"
 import { useTaxStore } from "@/store/useTaxStore"

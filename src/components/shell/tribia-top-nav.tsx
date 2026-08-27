@@ -15,16 +15,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { NAV_LINK_LABELS } from "@/constants/shortcuts"
+import { ROTAS, ehRotaClientes, ehRotaSimulacoes, ehSuperficieSimulador } from "@/constants/routes"
 import { cn } from "@/lib/utils"
 
-type NavKey = "simulator" | "companies" | "history"
+type NavKey = "clientes" | "simulador" | "simulacoes"
 
 function navActive(pathname: string, key: NavKey): boolean {
-  if (key === "simulator") {
-    return pathname === "/dashboard" || pathname === "/dashboard/"
-  }
-  if (key === "companies") return pathname.startsWith("/dashboard/companies")
-  return pathname.startsWith("/dashboard/history")
+  if (key === "clientes") return ehRotaClientes(pathname)
+  if (key === "simulador") return ehSuperficieSimulador(pathname)
+  return ehRotaSimulacoes(pathname)
 }
 
 function navLinkClass(active: boolean) {
@@ -51,15 +50,15 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
   const { isSignedIn, isLoaded } = useAuth()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
-  const logoHref = isLoaded && isSignedIn ? "/dashboard" : "/"
+  const logoHref = isLoaded && isSignedIn ? ROTAS.clientes : ROTAS.inicio
   const logoAria =
     isLoaded && isSignedIn
-      ? "TribIA — ir para o simulador"
+      ? "TribIA — ir para Clientes"
       : "TribIA — início"
 
-  const simActive = navActive(pathname, "simulator")
-  const coActive = navActive(pathname, "companies")
-  const hiActive = navActive(pathname, "history")
+  const clientesActive = navActive(pathname, "clientes")
+  const simuladorActive = navActive(pathname, "simulador")
+  const simulacoesActive = navActive(pathname, "simulacoes")
 
   return (
     <div className="flex h-full w-full min-w-0 items-center justify-between gap-2">
@@ -81,26 +80,26 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
               className="flex items-center gap-1 shrink-0"
             >
               <Link
-                href="/dashboard"
-                className={navLinkClass(simActive)}
-                aria-current={simActive ? "page" : undefined}
+                href={ROTAS.clientes}
+                className={navLinkClass(clientesActive)}
+                aria-current={clientesActive ? "page" : undefined}
               >
-                {NAV_LINK_LABELS.simulator}
+                {NAV_LINK_LABELS.clientes}
               </Link>
               <div className="hidden items-center gap-1 md:flex">
                 <Link
-                  href="/dashboard/companies"
-                  className={navLinkClass(coActive)}
-                  aria-current={coActive ? "page" : undefined}
+                  href={ROTAS.simulador}
+                  className={navLinkClass(simuladorActive)}
+                  aria-current={simuladorActive ? "page" : undefined}
                 >
-                  {NAV_LINK_LABELS.companies}
+                  {NAV_LINK_LABELS.simulador}
                 </Link>
                 <Link
-                  href="/dashboard/history"
-                  className={navLinkClass(hiActive)}
-                  aria-current={hiActive ? "page" : undefined}
+                  href={ROTAS.simulacoes}
+                  className={navLinkClass(simulacoesActive)}
+                  aria-current={simulacoesActive ? "page" : undefined}
                 >
-                  {NAV_LINK_LABELS.history}
+                  {NAV_LINK_LABELS.simulacoes}
                 </Link>
               </div>
               <div className="md:hidden">
@@ -124,23 +123,23 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
                     </SheetHeader>
                     <div className="flex flex-col gap-1 p-4">
                       <Link
-                        href="/dashboard/companies"
-                        className={cn(navLinkClass(coActive), "w-full justify-start")}
-                        aria-current={coActive ? "page" : undefined}
+                        href={ROTAS.simulador}
+                        className={cn(navLinkClass(simuladorActive), "w-full justify-start")}
+                        aria-current={simuladorActive ? "page" : undefined}
                         onClick={() => setMobileNavOpen(false)}
                       >
-                        {NAV_LINK_LABELS.companies}
+                        {NAV_LINK_LABELS.simulador}
                       </Link>
                       <Link
-                        href="/dashboard/history"
-                        className={cn(navLinkClass(hiActive), "w-full justify-start")}
-                        aria-current={hiActive ? "page" : undefined}
+                        href={ROTAS.simulacoes}
+                        className={cn(navLinkClass(simulacoesActive), "w-full justify-start")}
+                        aria-current={simulacoesActive ? "page" : undefined}
                         onClick={() => setMobileNavOpen(false)}
                       >
-                        {NAV_LINK_LABELS.history}
+                        {NAV_LINK_LABELS.simulacoes}
                       </Link>
                       <Link
-                        href="/privacidade"
+                        href={ROTAS.privacidade}
                         className={cn(navLinkClass(false), "w-full justify-start")}
                         onClick={() => setMobileNavOpen(false)}
                       >
@@ -164,7 +163,7 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
           CBS · IBS · IS
         </span>
         <Link
-          href="/privacidade"
+          href={ROTAS.privacidade}
           className="hidden shrink-0 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:inline"
         >
           Privacidade e dados
@@ -179,7 +178,7 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
         ) : isSignedIn ? (
           <UserButton />
         ) : (
-          <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
+          <SignInButton mode="modal" fallbackRedirectUrl={ROTAS.clientes}>
             <button
               type="button"
               className="tribia-touch-target rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"

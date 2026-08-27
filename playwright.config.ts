@@ -20,11 +20,11 @@ export default defineConfig({
     // `next build` (NODE_ENV=production) — ver src/lib/e2e-auth-bypass.ts.
     // O CI valida o build de produção num step próprio (sem o bypass).
     command: `npm run dev -- -p ${PORT}`,
-    // Probe em /dashboard, não na raiz: `/` é a landing (Server Component
+    // Probe em /simulador, não na raiz: `/` é a landing (Server Component
     // com <Show>/<SignInButton> do Clerk lado servidor) — fora do seam
     // client-side da FE-0, ela sempre 500 sob o bypass (limitação conhecida,
-    // ver docs/arquitetura-frontend.md). /dashboard é a rota real do smoke.
-    url: `${BASE_URL}/dashboard`,
+    // ver docs/arquitetura-frontend.md). /simulador é a rota real do smoke.
+    url: `${BASE_URL}/simulador`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {

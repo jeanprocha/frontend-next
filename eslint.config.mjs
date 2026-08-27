@@ -140,9 +140,10 @@ const eslintConfig = defineConfig([
     ),
   },
 
-  // 6. app/dashboard/: idem 5 + seam de auth obrigatório (PR-3).
+  // 6. Rotas autenticadas (FE-4: clientes/simulador/simulacoes — antes só
+  // app/dashboard/): idem 5 + seam de auth obrigatório.
   {
-    files: ["src/app/dashboard/**"],
+    files: ["src/app/clientes/**", "src/app/simulador/**", "src/app/simulacoes/**"],
     rules: restrict(
       { group: ["@/app/**"], message: "Página não importa de página." },
       { group: ["@/features/*/**"], message: "app/ só importa a raiz pública de uma feature." },

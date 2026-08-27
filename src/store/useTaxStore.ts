@@ -60,6 +60,16 @@ interface TaxState {
    */
   applyCompanyTemplate: (company: CompanyTemplate) => void
   templateApplyTick: number
+  /**
+   * Semeia o rascunho do formulário a partir do cliente da URL
+   * (/clientes/[companyId], FE-4). Diferente do applyCompanyTemplate (que
+   * morre na PR 4e): LIMPA expenses/companyRegime/year/redutor — corrige o
+   * vazamento de contexto entre clientes (o template antigo só sobrescrevia
+   * companyContext/services). Sem tick: quem monta o workspace chama
+   * pipeline.actions.clearResults() explicitamente após semear — a
+   * identidade do cliente vive só na URL, nunca neste store.
+   */
+  aplicarContextoDoCliente: (company: CompanyTemplate) => void
 }
 
 // ─── Valores padrão ───────────────────────────────────────────────────────────
@@ -166,4 +176,24 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: null,
     })),
+
+  aplicarContextoDoCliente: (company) =>
+    set({
+      companyContext: company.tax_context ?? "",
+      services: (company.default_services ?? []).map((sv) => ({
+        id: crypto.randomUUID(),
+        description: sv.description ?? "",
+        amount: sv.amount ?? "",
+        iss_rate: sv.iss_rate ?? "0.05",
+      })),
+      expenses: [],
+      companyRegime: "regular",
+      year: 2026,
+      imobiliarioRedutorAjusteBrl: "",
+      analystBriefingOpen: false,
+      analystBriefingKind: null,
+      analystBriefingTag: null,
+      analystBriefingAiMeta: null,
+      contextHighlightRuneRange: null,
+    }),
 }))
