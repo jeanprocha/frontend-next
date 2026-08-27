@@ -33,10 +33,19 @@ function formatRunAt(iso?: string): string {
  * validado" genérico — a calculadora oficial não cobre PIS/COFINS, ISS,
  * ICMS, IPI, Simples, MEI nem as premissas ilustrativas do TribIA
  * (ver validation.out_of_scope, acessível no payload para quem quiser).
+ *
+ * O texto nomeia a VERSÃO da calculadora: ela é beta e muda de versão, então
+ * "validado" sem dizer contra o quê é afirmação mais forte do que a evidência
+ * sustenta (risco mapeado no plano do W7). Sem versão não há selo — o backend
+ * já recusa validated:true nesse caso (internal/enginevalidation.Build), e a
+ * guarda abaixo cobre um backend antigo que ainda não carimbe a versão.
  */
 function MotorValidadoSeloSection() {
   const { validation, isLive } = useEngineValidation()
   if (!isLive || !validation) return null
+
+  const versao = validation.reference.version?.trim()
+  if (!versao) return null
 
   const dataExecucao = formatRunAt(validation.reference.run_at)
   const escopo = validation.scope.join(" + ")
@@ -44,12 +53,12 @@ function MotorValidadoSeloSection() {
   return (
     <p
       role="note"
-      aria-label={`${escopo} validados contra a Calculadora de Tributos RFB — ${validation.cases_total} casos, ${dataExecucao}`}
+      aria-label={`${escopo} validados contra a Calculadora de Tributos RFB versão ${versao} — ${validation.cases_total} casos, ${dataExecucao}`}
       className="flex items-center gap-1.5 px-1 pb-2 text-[11px] leading-none text-muted-foreground"
     >
       <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
-      <span className="font-medium text-foreground">{escopo}</span> validados contra a Calculadora de Tributos RFB —{" "}
-      {validation.cases_total} casos, {dataExecucao}
+      <span className="font-medium text-foreground">{escopo}</span> validados contra a Calculadora de Tributos RFB versão{" "}
+      {versao} — {validation.cases_total} casos, {dataExecucao}
     </p>
   )
 }

@@ -194,6 +194,10 @@ export const ENGINE_VALIDATION_FIXTURE: EngineValidationResponse = {
   reference: {
     name: "Calculadora de Tributos RFB/Serpro",
     url: "http://localhost:8080/api",
+    // Versão da calculadora: sem ela o backend não devolve validated:true e o
+    // selo não monta (a calculadora é beta e muda de versão — ver
+    // motor-validado-selo.tsx).
+    version: "1.0.0-beta",
     run_at: "2026-08-27",
   },
   scope: ["CBS", "IBS"],

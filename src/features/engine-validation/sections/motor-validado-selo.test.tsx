@@ -32,6 +32,7 @@ const VALIDATED_FIXTURE: EngineValidationResponse = {
   reference: {
     name: "Calculadora de Tributos RFB/Serpro",
     url: "http://localhost:8080/api",
+    version: "1.0.0-beta",
     // Formato "YYYY-MM-DD" sem hora — mesma regressão de fuso corrigida em
     // base-legal-selo.tsx (timeZone: "UTC").
     run_at: "2026-08-27",
@@ -78,10 +79,22 @@ describe("motorValidadoSeloSection", () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it("com validação ao vivo, mostra escopo, contagem de casos e data em pt-BR", () => {
+  it("com validação ao vivo, mostra escopo, versão da calculadora, contagem de casos e data em pt-BR", () => {
     renderWithQueryData(VALIDATED_FIXTURE)
     expect(screen.getByRole("note")).toHaveTextContent(
-      "CBS + IBS validados contra a Calculadora de Tributos RFB — 8 casos, 27/08/2026",
+      "CBS + IBS validados contra a Calculadora de Tributos RFB versão 1.0.0-beta — 8 casos, 27/08/2026",
     )
+  })
+
+  // A calculadora é beta e muda de versão: "validado" sem dizer contra qual
+  // versão afirma mais do que a evidência sustenta. O backend já barra isso
+  // (enginevalidation.Build exige calculadora_versao); a guarda no componente
+  // cobre um backend antigo ainda em produção.
+  it("validated:true mas sem versão da calculadora, não renderiza nada", () => {
+    const { container } = renderWithQueryData({
+      ...VALIDATED_FIXTURE,
+      reference: { ...VALIDATED_FIXTURE.reference, version: undefined },
+    })
+    expect(container).toBeEmptyDOMElement()
   })
 })

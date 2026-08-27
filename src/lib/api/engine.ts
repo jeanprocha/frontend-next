@@ -12,6 +12,15 @@ export interface EngineValidationCase {
 export interface EngineValidationReference {
   name?: string
   url?: string
+  /**
+   * Versão da Calculadora RFB contra a qual a suíte cruzada rodou. A
+   * calculadora é beta e muda de versão: o selo do dossiê diz "validado
+   * contra a versão X", nunca só "validado". O backend só devolve
+   * `validated: true` com a versão carimbada na evidência
+   * (internal/enginevalidation.Build) — opcional aqui só porque toda a
+   * `reference` vem vazia quando não há validação.
+   */
+  version?: string
   run_at?: string
 }
 
