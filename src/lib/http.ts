@@ -41,6 +41,29 @@ interface RawErrorBody {
   plan?: string
 }
 
+/** Info repassada ao listener PLG (ver `setPlgLimitListener`) num 403 de quota/limite. */
+export interface PlgLimitErrorInfo {
+  message: string
+  code?: string
+  status: number
+  limit?: number
+  used?: number
+  plan?: string
+  requestId?: string
+}
+
+let plgLimitListener: ((info: PlgLimitErrorInfo) => void) | null = null
+
+/**
+ * Registra o handler central de 403 PLG (FE-3, PR 3a) — `features/plg` monta
+ * o host que abre `PlgUpgradeDialog`. `lib/` não importa `features/plg`
+ * (regra de fronteira), então a ligação é por callback, não por import.
+ * Passar `null` desregistra.
+ */
+export function setPlgLimitListener(fn: ((info: PlgLimitErrorInfo) => void) | null): void {
+  plgLimitListener = fn
+}
+
 /**
  * Interceptor PLG único: todo endpoint chama isto no `!res.ok`. Um 403 com
  * `code` no corpo (quota/limite de plano) usa o fallback "Limite do plano
@@ -53,15 +76,22 @@ export function throwApiError(res: Response, raw: unknown, fallback: string): ne
   const isPlgLimit = res.status === 403 && raw !== null && typeof raw === "object" && "code" in raw
   const effectiveFallback = isPlgLimit ? "Limite do plano atingido" : fallback
   const msg = (typeof o?.error === "string" && o.error.trim()) || effectiveFallback
-  throw new ApiError(msg, {
-    requestId:
-      typeof o?.request_id === "string" && o.request_id.trim() ? o.request_id.trim() : undefined,
-    code: typeof o?.code === "string" ? o.code : undefined,
-    status: res.status,
-    limit: typeof o?.limit === "number" ? o.limit : undefined,
-    used: typeof o?.used === "number" ? o.used : undefined,
-    plan: typeof o?.plan === "string" ? o.plan : undefined,
-  })
+  const requestId =
+    typeof o?.request_id === "string" && o.request_id.trim() ? o.request_id.trim() : undefined
+  const code = typeof o?.code === "string" ? o.code : undefined
+  const limit = typeof o?.limit === "number" ? o.limit : undefined
+  const used = typeof o?.used === "number" ? o.used : undefined
+  const plan = typeof o?.plan === "string" ? o.plan : undefined
+
+  if (isPlgLimit && plgLimitListener) {
+    try {
+      plgLimitListener({ message: msg, code, status: res.status, limit, used, plan, requestId })
+    } catch {
+      // O listener nunca deve mascarar o erro original abaixo.
+    }
+  }
+
+  throw new ApiError(msg, { requestId, code, status: res.status, limit, used, plan })
 }
 
 /** Mensagem e `request_id` para UI (erros de mutação / fetch). */

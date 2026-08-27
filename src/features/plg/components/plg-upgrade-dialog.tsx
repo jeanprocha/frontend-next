@@ -42,10 +42,13 @@ export function PlgUpgradeDialog({
   open,
   onOpenChange,
   feature,
+  details,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   feature: PlgUpgradeFeature
+  /** Linha extra opcional (ex.: "Uso atual: 8 de 5 no plano free") — hoje só o interceptor 403 a passa. */
+  details?: string
 }) {
   const c = COPY[feature]
   const lastFocusRef = useRef<HTMLElement | null>(null)
@@ -83,6 +86,7 @@ export function PlgUpgradeDialog({
             {c.body}
           </DialogDescription>
         </DialogHeader>
+        {details && <p className="text-sm font-medium">{details}</p>}
         <p className="text-xs text-muted-foreground">
           O plano da sua conta define os limites e funcionalidades disponíveis. Para subir de plano ou resolver
           inconsistências, contacte o suporte ou o administrador da sua organização.

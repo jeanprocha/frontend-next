@@ -16,4 +16,5 @@ export type { TribiaPlgTier, TribiaPlgCapabilities, CapabilityName } from "./cap
 
 export { PlgLimitMeter } from "./components/plg-limit-meter"
 export { PlgUpgradeDialog, type PlgUpgradeFeature } from "./components/plg-upgrade-dialog"
+export { PlgLimitDialogHost } from "./components/plg-limit-dialog-host"
 export { TribiaPlanBadge } from "./components/tribia-plan-badge"
