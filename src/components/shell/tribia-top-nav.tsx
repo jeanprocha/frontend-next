@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth, SignInButton, UserButton } from "@/lib/auth-client"
 import { Menu } from "lucide-react"
-import { LegalVersionIndicator } from "@/components/legal/legal-version-indicator"
 import { PlgLimitMeter, TribiaPlanBadge } from "@/features/plg"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,7 +36,17 @@ function navLinkClass(active: boolean) {
   )
 }
 
-export function TribiaTopNav() {
+export interface TribiaTopNavProps {
+  /**
+   * Slot para o indicador de versão legal (features/legal-corpus) — shell/
+   * não importa features/ (exceto @/features/plg), então quem monta o
+   * elemento é app/layout.tsx (Server Component; o slot é um ReactNode, não
+   * uma referência de função — passar isso por prop é suportado).
+   */
+  legalIndicatorSlot?: ReactNode
+}
+
+export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
   const pathname = usePathname()
   const { isSignedIn, isLoaded } = useAuth()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -150,7 +159,7 @@ export function TribiaTopNav() {
         ) : null}
 
         <PlgLimitMeter />
-        <LegalVersionIndicator />
+        {legalIndicatorSlot}
         <span className="hidden sm:inline-flex shrink-0 items-center rounded-full border border-border/80 bg-muted/80 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
           CBS · IBS · IS
         </span>

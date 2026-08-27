@@ -5,6 +5,7 @@ import { AppChromeShell } from "@/components/shell/app-chrome-shell"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Providers } from "@/components/providers"
 import { E2E_AUTH_BYPASS } from "@/lib/e2e-auth-bypass"
+import { LegalVersionIndicator } from "@/features/legal-corpus"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -42,7 +43,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>
           <TooltipProvider>
-            <AppChromeShell>{children}</AppChromeShell>
+            <AppChromeShell legalIndicatorSlot={<LegalVersionIndicator />}>{children}</AppChromeShell>
           </TooltipProvider>
         </Providers>
       </body>

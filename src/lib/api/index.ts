@@ -13,7 +13,13 @@ export {
 export { fetchPlgQuota, type PlgQuotaResponse } from "@/lib/api/plg"
 export { classifyBatch } from "@/lib/api/classification"
 export { fetchStrategyTags } from "@/lib/api/strategy-tags"
-export { fetchLawArticle, fetchLawPdfAnchor } from "@/lib/api/legal"
+export {
+  fetchLawArticle,
+  fetchLawPdfAnchor,
+  fetchLawCorpus,
+  type LawCorpusDocument,
+  type LawCorpusResponse,
+} from "@/lib/api/legal"
 export { listCompanies, createCompany, deleteCompany } from "@/lib/api/companies"
 export {
   simulate,

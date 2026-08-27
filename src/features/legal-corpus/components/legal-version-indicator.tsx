@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Radar, Scale } from "lucide-react"
 
-import { ChangelogFiscalPanel } from "@/components/legal/changelog-fiscal-panel"
+import { ChangelogFiscalPanel } from "./changelog-fiscal-panel"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Sheet,
@@ -11,25 +11,22 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { FISCAL_LAW_CHANGELOG } from "@/lib/fiscal-law-changelog"
 import { cn } from "@/lib/utils"
 import { usePlgCapabilities } from "@/features/plg"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
+import { useLawCorpus } from "../use-law-corpus"
 
 export interface LegalVersionIndicatorProps {
   /** Quando true, mostra ponto de alerta (ex.: lei mudou e pode invalidar simulações salvas). */
   criticalAlert?: boolean
-  /** Versão em vigor no cliente; default = dados estáticos. */
-  version?: string
 }
 
-export function LegalVersionIndicator({
-  criticalAlert = false,
-  version = FISCAL_LAW_CHANGELOG.version,
-}: LegalVersionIndicatorProps) {
+export function LegalVersionIndicator({ criticalAlert = false }: LegalVersionIndicatorProps) {
   const cap = usePlgCapabilities()
   const touchMeeting = useTouchMeetingMode()
   const [open, setOpen] = useState(false)
+  const { changelog } = useLawCorpus()
+  const version = changelog.version
 
   const ariaLabel = `Legislação LC 68/2024 versão ${version}. Abrir changelog fiscal.`
 
@@ -63,7 +60,7 @@ export function LegalVersionIndicator({
   const panel = (
     <>
       {plgRibbon}
-      <ChangelogFiscalPanel data={FISCAL_LAW_CHANGELOG} embedded={touchMeeting} />
+      <ChangelogFiscalPanel data={changelog} embedded={touchMeeting} />
     </>
   )
 

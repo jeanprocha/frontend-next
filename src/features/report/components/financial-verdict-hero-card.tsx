@@ -79,6 +79,7 @@ export interface FinancialVerdictHeroCardProps {
    */
   pendingSimulationSync?: boolean
   className?: string
+  lawVersion?: string
 }
 
 // ─── Mapa visual por estado ───────────────────────────────────────────────────
@@ -159,6 +160,7 @@ export function FinancialVerdictHeroCard({
   isRecalculating = false,
   pendingSimulationSync = false,
   className,
+  lawVersion = FISCAL_LAW_CHANGELOG.version,
 }: FinancialVerdictHeroCardProps) {
   const isPro = useCapability("rayxFull")
 
@@ -179,8 +181,6 @@ export function FinancialVerdictHeroCard({
   const absCents = deltaValid ? decimalStringToCents(absStr) : null
   const showCompact =
     absCents !== null && absCents >= 100_000_000n && !isNeutral
-
-  const lawVersion = FISCAL_LAW_CHANGELOG.version
 
   // ── Mapa visual memoizado ─────────────────────────────────────────────────
   // Deps estáveis: delta trim, tier PRO.

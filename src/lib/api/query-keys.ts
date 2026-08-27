@@ -21,4 +21,7 @@ export const queryKeys = {
   strategyTags: {
     all: ["strategy-tags"] as const,
   },
+  lawCorpus: {
+    all: ["law-corpus"] as const,
+  },
 }
