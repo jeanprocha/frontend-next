@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRight, ShieldAlert } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ROTAS } from "@/constants/routes"
+import { RfbValidationBadge } from "@/components/marketing/rfb-validation-badge"
 
 /**
  * Dobra 1 — "o dossiê é a página" (docs/product/04-landing.md §2/§3).
@@ -46,6 +47,7 @@ export function DocumentHero() {
             <span className="text-xs text-muted-foreground">
               Dossiê real, dados ilustrativos. Sem login.
             </span>
+            <RfbValidationBadge />
           </div>
 
           {/* Anotações ancoradas ao documento */}
