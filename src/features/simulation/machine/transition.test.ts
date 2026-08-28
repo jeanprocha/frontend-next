@@ -65,11 +65,19 @@ const RESULTS: FormResults = {
   meta: { createdAt: "2026-01-01T00:00:00.000Z", companyContext: "Empresa SaaS B2B", year: 2026 },
 }
 
+const IDLE_SYNC = {
+  pendingSync: false,
+  recalc: "idle" as const,
+  lastRecalcError: null,
+  lastPersistError: null,
+  lastPersistRetry: null,
+}
+
 function readyState(over: Partial<MachineState & { status: "ready" }> = {}): MachineState {
   return {
     status: "ready",
     results: RESULTS,
-    sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
+    sync: IDLE_SYNC,
     dossierBusy: false,
     ...over,
   }
@@ -102,7 +110,7 @@ describe("transition — fluxo feliz (registry de passos)", () => {
     expect(state).toEqual({
       status: "ready",
       results: RESULTS,
-      sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
+      sync: IDLE_SYNC,
       dossierBusy: false,
     })
     expect(commands).toEqual([{ kind: "persist", origin: "initial", discoveredTags: [] }])
@@ -196,7 +204,7 @@ describe("transition — override em ready (guardas do bridge original)", () => 
   })
 
   it("bug preservado (FE-1): override chegado com recalc já em voo não reagenda o debounce", () => {
-    const inFlight = readyState({ sync: { pendingSync: false, recalc: "in-flight", lastRecalcError: null } })
+    const inFlight = readyState({ sync: { ...IDLE_SYNC, recalc: "in-flight" } })
     const { state, commands } = transition(
       inFlight,
       { type: "OVERRIDE_APPLIED", clientId: "e1", override: { is_eligible: false, regime_type: "padrao", overridden_at: "now" } },
@@ -217,7 +225,7 @@ describe("transition — override em ready (guardas do bridge original)", () => 
 })
 
 describe("transition — debounce e recálculo", () => {
-  const pendingReady = readyState({ sync: { pendingSync: true, recalc: "debouncing", lastRecalcError: null } })
+  const pendingReady = readyState({ sync: { ...IDLE_SYNC, pendingSync: true, recalc: "debouncing" } })
 
   it("RECALC_DEBOUNCE_FIRED com pendingSync=true dispara [recalc] e marca in-flight", () => {
     const { state, commands } = transition(pendingReady, { type: "RECALC_DEBOUNCE_FIRED" }, ENV_NORMAL)
@@ -241,17 +249,17 @@ describe("transition — debounce e recálculo", () => {
   })
 
   it("RECALC_SUCCEEDED substitui a simulação, limpa pendingSync e dispara [persist recalc]", () => {
-    const inFlight = readyState({ sync: { pendingSync: true, recalc: "in-flight", lastRecalcError: null } })
+    const inFlight = readyState({ sync: { ...IDLE_SYNC, pendingSync: true, recalc: "in-flight" } })
     const newSim: SimulationResponse = { ...SIMULATION, delta: "-500.00" }
     const { state, commands } = transition(inFlight, { type: "RECALC_SUCCEEDED", simulation: newSim }, ENV_NORMAL)
     if (state.status !== "ready") throw new Error("unreachable")
     expect(state.results.simulation.delta).toBe("-500.00")
-    expect(state.sync).toEqual({ pendingSync: false, recalc: "idle", lastRecalcError: null })
+    expect(state.sync).toEqual(IDLE_SYNC)
     expect(commands).toEqual([{ kind: "persist", origin: "recalc" }])
   })
 
   it("bug preservado (FE-1): RECALC_FAILED mantém pendingSync=true para sempre (sem retry)", () => {
-    const inFlight = readyState({ sync: { pendingSync: true, recalc: "in-flight", lastRecalcError: null } })
+    const inFlight = readyState({ sync: { ...IDLE_SYNC, pendingSync: true, recalc: "in-flight" } })
     const err = new Error("falhou")
     const { state, commands } = transition(inFlight, { type: "RECALC_FAILED", error: err }, ENV_NORMAL)
     if (state.status !== "ready") throw new Error("unreachable")
@@ -263,15 +271,66 @@ describe("transition — debounce e recálculo", () => {
 })
 
 describe("transition — persist", () => {
-  it("PERSIST_SUCCEEDED grava recordId em meta existente", () => {
-    const { state } = transition(readyState(), { type: "PERSIST_SUCCEEDED", recordId: "rec-1" }, ENV_NORMAL)
+  it("PERSIST_SUCCEEDED grava recordId em meta existente e limpa lastPersistError/lastPersistRetry", () => {
+    const dirty = readyState({
+      sync: { ...IDLE_SYNC, lastPersistError: new Error("anterior"), lastPersistRetry: { origin: "initial" } },
+    })
+    const { state } = transition(dirty, { type: "PERSIST_SUCCEEDED", recordId: "rec-1" }, ENV_NORMAL)
     if (state.status !== "ready") throw new Error("unreachable")
     expect(state.results.meta?.recordId).toBe("rec-1")
+    expect(state.sync.lastPersistError).toBeNull()
+    expect(state.sync.lastPersistRetry).toBeNull()
   })
 
-  it("PERSIST_FAILED não muda o estado (erro sem superfície de UI — bug preservado)", () => {
+  it("PERSIST_FAILED (Etapa M/PR 8) grava lastPersistError e lembra origin/extra para o retry", () => {
     const base = readyState()
-    const { state, commands } = transition(base, { type: "PERSIST_FAILED", error: new Error("x") }, ENV_NORMAL)
+    const err = new Error("falha ao salvar")
+    const { state, commands } = transition(
+      base,
+      { type: "PERSIST_FAILED", error: err, origin: "recalc", extra: {} },
+      ENV_NORMAL,
+    )
+    if (state.status !== "ready") throw new Error("unreachable")
+    expect(state.sync.lastPersistError).toBe(err)
+    expect(state.sync.lastPersistRetry).toEqual({ origin: "recalc" })
+    expect(commands).toEqual([])
+  })
+
+  it("PERSIST_RETRY_REQUESTED reemite a MESMA origem que falhou — nunca 'initial' a esmo", () => {
+    // Um persist de origem "recalc" carrega o override do consultor já
+    // aplicado (useInitialExpenseEligibility=false). Reemitir como "initial"
+    // recalcularia a elegibilidade bruta da IA e descartaria esse override
+    // em silêncio — exatamente o bug que lastPersistRetry evita.
+    const failedRecalcPersist = readyState({
+      sync: { ...IDLE_SYNC, lastPersistError: new Error("x"), lastPersistRetry: { origin: "recalc" } },
+    })
+    const { state, commands } = transition(failedRecalcPersist, { type: "PERSIST_RETRY_REQUESTED" }, ENV_NORMAL)
+    if (state.status !== "ready") throw new Error("unreachable")
+    expect(state.sync.lastPersistError).toBeNull()
+    expect(commands).toEqual([{ kind: "persist", origin: "recalc" }])
+  })
+
+  it("PERSIST_RETRY_REQUESTED de um persist 'dossier' reemite reportBrand junto", () => {
+    const reportBrand = { logo_url: "https://x/logo.png", org_name: "Acme" }
+    const failedDossierPersist = readyState({
+      sync: { ...IDLE_SYNC, lastPersistError: new Error("x"), lastPersistRetry: { origin: "dossier", reportBrand } },
+    })
+    const { commands } = transition(failedDossierPersist, { type: "PERSIST_RETRY_REQUESTED" }, ENV_NORMAL)
+    expect(commands).toEqual([{ kind: "persist", origin: "dossier", reportBrand }])
+  })
+
+  it("PERSIST_RETRY_REQUESTED de um persist 'initial' reemite discoveredTags junto", () => {
+    const discoveredTags = [{ pattern: "software", label: "Software", category: "tech", color_scheme: "emerald" }]
+    const failedInitialPersist = readyState({
+      sync: { ...IDLE_SYNC, lastPersistError: new Error("x"), lastPersistRetry: { origin: "initial", discoveredTags } },
+    })
+    const { commands } = transition(failedInitialPersist, { type: "PERSIST_RETRY_REQUESTED" }, ENV_NORMAL)
+    expect(commands).toEqual([{ kind: "persist", origin: "initial", discoveredTags }])
+  })
+
+  it("PERSIST_RETRY_REQUESTED sem lastPersistRetry é no-op (nada para reemitir)", () => {
+    const base = readyState()
+    const { state, commands } = transition(base, { type: "PERSIST_RETRY_REQUESTED" }, ENV_NORMAL)
     expect(state).toBe(base)
     expect(commands).toEqual([])
   })
@@ -295,18 +354,20 @@ describe("transition — hidratação do histórico", () => {
     expect(state).toEqual({
       status: "ready",
       results: RESULTS,
-      sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
+      sync: IDLE_SYNC,
       dossierBusy: false,
     })
     expect(commands).toEqual([{ kind: "cancelRecalcDebounce" }])
   })
 
   it("mudança deliberada (FE-1 #3): HYDRATED a partir de ready com pendingSync=true reseta o sync", () => {
-    const dirty = readyState({ sync: { pendingSync: true, recalc: "debouncing", lastRecalcError: "x" } })
+    const dirty = readyState({
+      sync: { ...IDLE_SYNC, pendingSync: true, recalc: "debouncing", lastRecalcError: "x" },
+    })
     const other: FormResults = { ...RESULTS, meta: { ...RESULTS.meta!, recordId: "outro" } }
     const { state } = transition(dirty, { type: "HYDRATED", results: other }, ENV_NORMAL)
     if (state.status !== "ready") throw new Error("unreachable")
-    expect(state.sync).toEqual({ pendingSync: false, recalc: "idle", lastRecalcError: null })
+    expect(state.sync).toEqual(IDLE_SYNC)
     expect(state.results.meta?.recordId).toBe("outro")
   })
 })

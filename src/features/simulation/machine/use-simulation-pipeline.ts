@@ -23,6 +23,8 @@ export interface SimulationPipelineActions {
   clearAllOverrides(): void
   /** CTA manual "Recalcular impacto". */
   requestRecalc(): void
+  /** Retry manual após lastPersistError (Etapa M/PR 8) — reemite a mesma origem que falhou. */
+  retryPersist(): void
   openDossier(opts: { reportBrand: { logo_url?: string | null; org_name?: string | null } | null }): Promise<void>
   /** Consome pendingHistoryComparison — quem chama já leu o valor. */
   consumeHistoryComparison(): void
@@ -46,6 +48,9 @@ export interface SimulationPipeline {
   pendingSync: boolean
   isRecalculating: boolean
   dossierBusy: boolean
+  /** Etapa M/PR 8 — antes existia no estado interno da máquina, sem chegar à UI. */
+  lastRecalcError: unknown | null
+  lastPersistError: unknown | null
   pendingHistoryComparison: ReturnType<typeof simulationMachine.store.getState>["pendingHistoryComparison"]
   actions: SimulationPipelineActions
 }
@@ -79,6 +84,7 @@ export function useSimulationPipeline(): SimulationPipeline {
       removeOverride: (clientId) => simulationMachine.dispatch({ type: "OVERRIDE_REMOVED", clientId }),
       clearAllOverrides: () => simulationMachine.dispatch({ type: "OVERRIDES_CLEARED" }),
       requestRecalc: () => simulationMachine.dispatch({ type: "RECALC_REQUESTED" }),
+      retryPersist: () => simulationMachine.dispatch({ type: "PERSIST_RETRY_REQUESTED" }),
       openDossier: (opts) => simulationMachine.openDossier(opts),
       consumeHistoryComparison: () => simulationMachine.setPendingHistoryComparison(null),
       hydrateResults: (results) => simulationMachine.hydrateResults(results),
@@ -94,6 +100,8 @@ export function useSimulationPipeline(): SimulationPipeline {
   const pendingSync = fsm.status === "ready" && fsm.sync.pendingSync
   const isRecalculating = fsm.status === "ready" && fsm.sync.recalc === "in-flight"
   const dossierBusy = fsm.status === "ready" && fsm.dossierBusy
+  const lastRecalcError = fsm.status === "ready" ? fsm.sync.lastRecalcError : null
+  const lastPersistError = fsm.status === "ready" ? fsm.sync.lastPersistError : null
 
   return {
     results,
@@ -104,6 +112,8 @@ export function useSimulationPipeline(): SimulationPipeline {
     pendingSync,
     isRecalculating,
     dossierBusy,
+    lastRecalcError,
+    lastPersistError,
     pendingHistoryComparison,
     actions,
   }

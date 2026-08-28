@@ -46,7 +46,13 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
         state: {
           status: "ready",
           results: event.acc.results,
-          sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
+          sync: {
+            pendingSync: false,
+            recalc: "idle",
+            lastRecalcError: null,
+            lastPersistError: null,
+            lastPersistRetry: null,
+          },
           dossierBusy: false,
         },
         commands: [{ kind: "persist", origin: "initial", discoveredTags: event.acc.discoveredTags }],
@@ -112,7 +118,7 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
         state: {
           ...state,
           results: { ...state.results, simulation: event.simulation },
-          sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
+          sync: { ...state.sync, pendingSync: false, recalc: "idle", lastRecalcError: null },
         },
         commands: [{ kind: "persist", origin: "recalc" }],
       }
@@ -120,8 +126,10 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
 
     case "RECALC_FAILED": {
       if (state.status !== "ready") return NO_OP(state)
-      // Bug preservado (FE-1, não corrigido): pendingSync continua true —
-      // sem retry nem transição de erro visível (recalcError original era órfão).
+      // Corrigido na Etapa M/PR 8: pendingSync continua true de propósito — é
+      // o que mantém "Recalcular impacto" visível como retry — mas agora
+      // lastRecalcError chega à UI (use-simulation-pipeline → banner na Mesa)
+      // em vez de morrer sem superfície nenhuma.
       return {
         state: { ...state, sync: { ...state.sync, recalc: "idle", lastRecalcError: event.error } },
         commands: [],
@@ -138,13 +146,46 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
             year: state.results.simulation.year,
             recordId: event.recordId,
           }
-      return { state: { ...state, results: { ...state.results, meta } }, commands: [] }
+      return {
+        state: {
+          ...state,
+          results: { ...state.results, meta },
+          sync: { ...state.sync, lastPersistError: null, lastPersistRetry: null },
+        },
+        commands: [],
+      }
     }
 
     case "PERSIST_FAILED": {
-      // Bug preservado (FE-1, não corrigido): erro de persistência não tem
-      // superfície na UI — só log (ver runtime.ts / steps.ts).
-      return NO_OP(state)
+      // Corrigido na Etapa M/PR 8: antes NO_OP puro — a simulação inteira
+      // parecia salva (o veredito já estava na tela) e não tinha sido, sem
+      // nenhum sinal ao usuário. Agora fica em lastPersistError, com retry
+      // manual via PERSIST_RETRY_REQUESTED — que reemite a MESMA origem
+      // (lastPersistRetry), nunca "initial" a esmo: um persist de origem
+      // "recalc" que falhe carrega um override de consultor já aplicado, e
+      // reemitir como "initial" recalcularia a elegibilidade bruta da IA,
+      // descartando esse override em silêncio.
+      if (state.status !== "ready") return NO_OP(state)
+      return {
+        state: {
+          ...state,
+          sync: {
+            ...state.sync,
+            lastPersistError: event.error,
+            lastPersistRetry: { origin: event.origin, ...event.extra },
+          },
+        },
+        commands: [],
+      }
+    }
+
+    case "PERSIST_RETRY_REQUESTED": {
+      if (state.status !== "ready" || !state.sync.lastPersistRetry) return NO_OP(state)
+      const retry = state.sync.lastPersistRetry
+      return {
+        state: { ...state, sync: { ...state.sync, lastPersistError: null } },
+        commands: [{ kind: "persist", ...retry }],
+      }
     }
 
     case "DOSSIER_STARTED": {
@@ -164,7 +205,13 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
         state: {
           status: "ready",
           results: event.results,
-          sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
+          sync: {
+            pendingSync: false,
+            recalc: "idle",
+            lastRecalcError: null,
+            lastPersistError: null,
+            lastPersistRetry: null,
+          },
           dossierBusy: false,
         },
         commands: [{ kind: "cancelRecalcDebounce" }],

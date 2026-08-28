@@ -32,11 +32,19 @@ const RESULTS: FormResults = {
   meta: { createdAt: "2026-01-01T00:00:00.000Z", companyContext: "x", year: 2026 },
 }
 
+const IDLE_SYNC = {
+  pendingSync: false,
+  recalc: "idle" as const,
+  lastRecalcError: null,
+  lastPersistError: null,
+  lastPersistRetry: null,
+}
+
 function readyState(over: Partial<Extract<MachineState, { status: "ready" }>> = {}): MachineState {
   return {
     status: "ready",
     results: RESULTS,
-    sync: { pendingSync: false, recalc: "idle", lastRecalcError: null },
+    sync: IDLE_SYNC,
     dossierBusy: false,
     ...over,
   }
@@ -138,7 +146,7 @@ describe("machine-store — timer de debounce único", () => {
     const machine = createSimulationMachineStore()
     // pendingSync=true simula um override recém-aplicado ainda não sincronizado.
     machine.store.setState({
-      fsm: readyState({ sync: { pendingSync: true, recalc: "debouncing", lastRecalcError: null } }),
+      fsm: readyState({ sync: { ...IDLE_SYNC, pendingSync: true, recalc: "debouncing" } }),
     })
 
     // window.open não existe no ambiente node do vitest — stub mínimo (o

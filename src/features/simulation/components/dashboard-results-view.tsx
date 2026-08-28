@@ -42,6 +42,8 @@ export interface DashboardResultsViewProps {
   setBoardTeaseOpen: (v: boolean) => void
   pendingSimulationSync: boolean
   isRecalculating: boolean
+  /** Etapa M/PR 8 — mensagem da última falha de recálculo, já formatada. */
+  recalcErrorMessage?: string | null
   onApplyOverride: (clientId: string, override: ConsultantClassificationOverride) => void
   onRemoveOverride: (clientId: string) => void
   onRequestRecalc: () => void
@@ -70,6 +72,7 @@ export function DashboardResultsView({
   setBoardTeaseOpen,
   pendingSimulationSync,
   isRecalculating,
+  recalcErrorMessage,
   onApplyOverride,
   onRemoveOverride,
   onRequestRecalc,
@@ -112,6 +115,7 @@ export function DashboardResultsView({
             onRequestRecalc,
             pendingSimulationSync,
             isRecalculating,
+            recalcErrorMessage,
           },
           comparison:
             isComparing && comparisonBaseline

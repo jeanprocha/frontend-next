@@ -88,6 +88,16 @@ export interface MockEngineOptions {
   lawCorpus?: LawCorpusResponse
   /** GET /engine/validation (W7/PR 6). Omitido = ENGINE_VALIDATION_FIXTURE. */
   engineValidation?: EngineValidationResponse
+  /**
+   * Chamadas de POST /simulations (1-indexed, na ordem de chegada) que devem
+   * falhar com 500 — cobre o retry de recálculo visível (Etapa M/PR 8).
+   */
+  failSimulationCalls?: number[]
+  /**
+   * Chamadas de POST /simulation-records (1-indexed) que devem falhar com
+   * 500 — cobre o retry de persistência visível (Etapa M/PR 8).
+   */
+  failSimulationRecordCalls?: number[]
 }
 
 /** Sintetiza uma linha de listagem a partir do corpo do POST /simulation-records. */
@@ -131,15 +141,21 @@ export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Prom
       return json(route, 200, classifyEcho(body.expenses))
     }
     if (pathname === "/simulations" && req.method() === "POST") {
+      simulationsCalls++
+      if (opts.failSimulationCalls?.includes(simulationsCalls)) {
+        return json(route, 500, { error: "falha simulada de rede (fixture E2E)", request_id: "e2e-sim-fail" })
+      }
       const responses = opts.simulationResponses
       const body = responses
-        ? responses[Math.min(simulationsCalls, responses.length - 1)]
+        ? responses[Math.min(simulationsCalls - 1, responses.length - 1)]
         : SIMULATION_FIXTURE
-      simulationsCalls++
       return json(route, 200, body)
     }
     if (pathname === "/simulation-records" && req.method() === "POST") {
       simulationRecordsCalls++
+      if (opts.failSimulationRecordCalls?.includes(simulationRecordsCalls)) {
+        return json(route, 500, { error: "falha simulada de rede (fixture E2E)", request_id: "e2e-persist-fail" })
+      }
       const body = req.postDataJSON() as SimulationRecordCreatePayload
       records.unshift(summaryFromCreatePayload(body, SAVE_RECORD_FIXTURE.id))
       return json(route, 201, SAVE_RECORD_FIXTURE)

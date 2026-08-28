@@ -59,6 +59,8 @@ export interface ReportOverrideActions {
   onRequestRecalc?: () => void
   pendingSimulationSync?: boolean
   isRecalculating?: boolean
+  /** Etapa M/PR 8 — mensagem da última falha de recálculo, já formatada; null/undefined = sem falha registrada. */
+  recalcErrorMessage?: string | null
 }
 
 export interface ReportComparison {

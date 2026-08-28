@@ -127,7 +127,8 @@ export function SimulationDashboard({
   const formResults = pipeline.results
   const loading = pipeline.isRunning
   const { pendingSync: pendingSimulationSync, isRecalculating, dossierBusy } = pipeline
-  const { pendingHistoryComparison } = pipeline
+  const { pendingHistoryComparison, lastRecalcError, lastPersistError } = pipeline
+  const { retryPersist } = pipeline.actions
 
   const failureDetail = useMemo(
     () => (pipeline.failure ? errorDetailsFromUnknown(pipeline.failure.error) : null),
@@ -135,6 +136,24 @@ export function SimulationDashboard({
   )
   const error = failureDetail?.message ?? null
   const mutationRequestId = failureDetail?.requestId
+
+  // Etapa M/PR 8: falha ao salvar o registro (origem initial/recalc/dossier)
+  // — antes ficava só em console.error, o veredito continuava na tela como
+  // se tudo tivesse sido persistido. Suprimido enquanto dossierBusy: o
+  // "Gerar Dossiê digital" já tem o próprio spinner, e reabrir a última
+  // falha durante uma nova tentativa em voo confundiria mais do que ajudaria.
+  const persistFailureDetail = useMemo(
+    () => (lastPersistError && !dossierBusy ? errorDetailsFromUnknown(lastPersistError) : null),
+    [lastPersistError, dossierBusy],
+  )
+
+  // Etapa M/PR 8: mensagem real por trás do banner "Classificações alteradas"
+  // (mesa-rastreabilidade.tsx) — antes o banner só dizia que havia
+  // pendência, sem dizer o que deu errado na última tentativa de recálculo.
+  const recalcErrorMessage = useMemo(
+    () => (lastRecalcError ? errorDetailsFromUnknown(lastRecalcError).message : null),
+    [lastRecalcError],
+  )
 
   // ── Labels do carimbo de autoridade (item 1.2.1) ─────────────────────────
   // Strings primitivas memoizadas: React.memo no carimbo não re-renderiza durante scroll.
@@ -534,7 +553,30 @@ export function SimulationDashboard({
           </div>
         )}
 
-
+        {/* ── Falha ao salvar (Etapa M/PR 8) ──────────────────────────────── */}
+        {persistFailureDetail && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+          >
+            <div className="min-w-0">
+              <strong>Não foi possível salvar esta simulação.</strong>{" "}
+              <span className="text-destructive/90">{persistFailureDetail.message}</span>
+              {persistFailureDetail.requestId ? (
+                <RequestIdSupportRow requestId={persistFailureDetail.requestId} />
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={retryPersist}
+              className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+            >
+              Tentar novamente
+            </Button>
+          </div>
+        )}
 
         {/* ── Máquina de estados: input | loading | results (Motion) ─────── */}
         <AnimatePresence mode="wait">
@@ -627,6 +669,7 @@ export function SimulationDashboard({
                 setBoardTeaseOpen={setBoardTeaseOpen}
                 pendingSimulationSync={pendingSimulationSync}
                 isRecalculating={isRecalculating}
+                recalcErrorMessage={recalcErrorMessage}
                 onApplyOverride={pipeline.actions.applyOverride}
                 onRemoveOverride={pipeline.actions.removeOverride}
                 onRequestRecalc={pipeline.actions.requestRecalc}

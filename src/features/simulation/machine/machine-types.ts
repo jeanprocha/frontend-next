@@ -73,11 +73,28 @@ export type PipelineFailure = { step: StepId; error: unknown }
 
 export type RecalcStatus = "idle" | "debouncing" | "in-flight"
 
+/**
+ * O que o persist que falhou usava para montar o payload — PERSIST_RETRY_REQUESTED
+ * reemite exatamente isto. Sem isto o retry teria que "adivinhar" a origem: um
+ * retry hardcoded em "initial" reprocessaria a elegibilidade bruta da IA e
+ * descartaria em silêncio um override de consultor num persist de origem
+ * "recalc" que tenha falhado (useInitialExpenseEligibility, ver build-record-payload.ts).
+ */
+export interface PersistRetryInfo {
+  origin: PersistOrigin
+  discoveredTags?: StrategyTag[]
+  reportBrand?: ReportBrand | null
+}
+
 export interface ReadySync {
   pendingSync: boolean
   recalc: RecalcStatus
-  /** Bug preservado (FE-1): sem superfície de UI — não corrigido nesta fase. */
+  /** Corrigido na Etapa M/PR 8 — agora exposto via use-simulation-pipeline. */
   lastRecalcError: unknown | null
+  /** Idem — falha ao salvar (origem initial/recalc/dossier), antes NO_OP silencioso. */
+  lastPersistError: unknown | null
+  /** Dados do persist que falhou, para PERSIST_RETRY_REQUESTED reemitir a origem certa. */
+  lastPersistRetry: PersistRetryInfo | null
 }
 
 export type MachineState =
@@ -90,7 +107,7 @@ export type MachineEvent =
   | { type: "STEP_SUCCEEDED"; stepId: StepId; acc: PipelineAcc }
   | { type: "STEP_FAILED"; stepId: StepId; error: unknown }
   | { type: "PERSIST_SUCCEEDED"; recordId: string }
-  | { type: "PERSIST_FAILED"; error: unknown }
+  | { type: "PERSIST_FAILED"; error: unknown; origin: PersistOrigin; extra: { discoveredTags?: StrategyTag[]; reportBrand?: ReportBrand | null } }
   | { type: "OVERRIDE_APPLIED"; clientId: string; override: ConsultantClassificationOverride }
   | { type: "OVERRIDE_REMOVED"; clientId: string }
   | { type: "OVERRIDES_CLEARED" }
@@ -100,6 +117,8 @@ export type MachineEvent =
   | { type: "RECALC_FAILED"; error: unknown }
   | { type: "DOSSIER_STARTED" }
   | { type: "DOSSIER_FINISHED" }
+  /** Retry manual após PERSIST_FAILED (Etapa M/PR 8) — reemite a mesma origem que falhou (lastPersistRetry). */
+  | { type: "PERSIST_RETRY_REQUESTED" }
   | { type: "HYDRATED"; results: FormResults }
   | { type: "RESULTS_CLEARED" }
   | { type: "RESET" }

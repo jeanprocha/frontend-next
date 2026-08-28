@@ -290,10 +290,10 @@ export async function runPersist(
   extra: { discoveredTags?: StrategyTag[]; reportBrand?: ReportBrand | null },
   ctx: StepCtx,
 ): Promise<MachineEvent> {
-  if (!ctx.userId) return { type: "PERSIST_FAILED", error: new Error("Sem usuário autenticado.") }
+  if (!ctx.userId) return { type: "PERSIST_FAILED", error: new Error("Sem usuário autenticado."), origin, extra }
   try {
     const token = await ctx.getToken()
-    if (!token) return { type: "PERSIST_FAILED", error: new Error("Sem token de sessão.") }
+    if (!token) return { type: "PERSIST_FAILED", error: new Error("Sem token de sessão."), origin, extra }
 
     const store = useTaxStore.getState()
     const year = results.meta?.year ?? results.simulation.year
@@ -320,6 +320,6 @@ export async function runPersist(
     return { type: "PERSIST_SUCCEEDED", recordId: created.id }
   } catch (error) {
     console.error("[TribIA] Falha ao persistir histórico no servidor:", error)
-    return { type: "PERSIST_FAILED", error }
+    return { type: "PERSIST_FAILED", error, origin, extra }
   }
 }

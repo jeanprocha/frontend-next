@@ -117,7 +117,15 @@ export function createSimulationMachineStore(steps: readonly Step[] = PIPELINE_S
 
   /**
    * Fluxo do dossiê digital: replica handleOpenDossier passo a passo (FE-1).
-   * Erros seguem console.error sem superfície de UI — bug preservado.
+   *
+   * Falha ao persistir (o caso real de produção) já chega como evento
+   * PERSIST_FAILED normal — dispatchAndAwait/runCommand nunca lançam por
+   * isso, então o reducer põe lastPersistError no estado e a UI reage via
+   * use-simulation-pipeline (Etapa M/PR 8; antes esse resultado também caía
+   * em silêncio aqui). Este catch cobre só o resto — exceção genuína no
+   * fluxo (ex.: getToken() lançando) — e agora também vira lastPersistError,
+   * não só log: sem isso, um erro nesse trecho específico continuaria mudo
+   * para quem está olhando a tela, mesmo com o reducer já corrigido.
    */
   async function openDossier(opts: {
     reportBrand: { logo_url?: string | null; org_name?: string | null } | null
@@ -147,6 +155,7 @@ export function createSimulationMachineStore(steps: readonly Step[] = PIPELINE_S
       }
     } catch (e) {
       console.error("[TribIA] Dossié digital:", e)
+      dispatchSync({ type: "PERSIST_FAILED", error: e, origin: "dossier", extra: { reportBrand: opts.reportBrand } })
     } finally {
       dispatchSync({ type: "DOSSIER_FINISHED" })
     }
