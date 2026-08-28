@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { Providers } from "@/components/providers"
 import { E2E_AUTH_BYPASS } from "@/lib/e2e-auth-bypass"
 import { LegalVersionIndicator } from "@/features/legal-corpus"
+import { appUrl } from "@/lib/app-url"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -26,10 +27,28 @@ const sourceSerif4 = Source_Serif_4({
   display: "swap",
 })
 
+const description =
+  "Diagnóstico da reforma tributária (CBS/IBS, 2026–2033): classificação de crédito com citação auditável da LC 214/2025, motor de cálculo determinístico e dossiê compartilhável."
+
 export const metadata: Metadata = {
-  title: "TribIA — Simulador de Reforma Tributária",
-  description:
-    "Calcule o impacto da transição CBS/IBS para a sua empresa com classificação de créditos por IA.",
+  metadataBase: new URL(appUrl()),
+  title: {
+    default: "TribIA — Um parecer, não uma estimativa",
+    template: "%s · TribIA",
+  },
+  description,
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "TribIA",
+    title: "TribIA — Um parecer, não uma estimativa",
+    description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TribIA — Um parecer, não uma estimativa",
+    description,
+  },
 }
 
 export default function RootLayout({
