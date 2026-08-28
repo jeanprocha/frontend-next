@@ -35,7 +35,7 @@ test("demo: formulário → classificação IA → veredito → dossiê", async 
   // resultado pronto (disabled só é true durante `loading`). O aria-label
   // sobrepõe o texto visível.
   await expect(
-    page.getByRole("button", { name: "Gerar dossié digital e abrir em nova aba" }),
+    page.getByRole("button", { name: "Gerar dossiê digital e abrir em nova aba" }),
   ).toBeEnabled()
 
   // Dossiê: navega direto em vez de clicar — o CTA abre `window.open` numa

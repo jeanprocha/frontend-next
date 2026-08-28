@@ -201,7 +201,7 @@ export function PrintReportFooter({
       <p className="text-xs text-muted-foreground italic leading-relaxed max-w-3xl mx-auto font-board-report">
         O selo indica rastreabilidade de evidências legislativas no fluxo do simulador; não constitui certificação
         legal nem garantia de resultado fiscal. Este relatório é uma simulação baseada nas premissas da {changelog.label} e
-        nos dados fornecidos pelo utilizador. Não substitui parecer jurídico-contábil formal.
+        nos dados fornecidos pelo usuário. Não substitui parecer jurídico-contábil formal.
       </p>
     </div>
   )

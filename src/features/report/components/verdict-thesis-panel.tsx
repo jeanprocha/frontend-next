@@ -266,7 +266,7 @@ export function VerdictThesisPanel({
       {!pending && hasText && thesisIsStale && !syncVisualActive && (
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground/70 board-ready:hidden print:hidden">
           Fundamentação baseada na simulação original da IA · os números acima
-          reflectem os overrides do consultor
+          refletem os overrides do consultor
         </p>
       )}
 

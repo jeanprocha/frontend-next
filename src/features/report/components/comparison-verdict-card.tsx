@@ -151,10 +151,10 @@ export function ComparisonVerdictCard({
           {/* Protagonista do delta no resumo — espelha o Hero (emerald-600 p/ economia) */}
           <div
             className="mb-6 border-b border-border/50 pb-5 print:mb-4 print:border-foreground/20"
-            aria-label="Variação da carga líquida CBS/IBS (projetado vs actual)"
+            aria-label="Variação da carga líquida CBS/IBS (projetado vs atual)"
           >
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground font-sans print:text-foreground/80">
-              Impacto projectado (CBS/IBS)
+              Impacto projetado (CBS/IBS)
             </p>
             <div className="mt-1.5 flex flex-wrap items-baseline gap-2">
               <span
@@ -177,7 +177,7 @@ export function ComparisonVerdictCard({
                     !singleSaving && "bg-amber-600 text-white hover:bg-amber-600",
                   )}
                 >
-                  {singleSaving ? "Economia projectada" : "Aumento de carga"}
+                  {singleSaving ? "Economia projetada" : "Aumento de carga"}
                 </Badge>
               )}
             </div>

@@ -266,7 +266,7 @@ function TransitionTooltip({
         <div className="px-3 pb-2">
           <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
             {abMode
-              ? "Legado a partir do cenário B. A = referência; B = simulação actual."
+              ? "Legado a partir do cenário B. A = referência; B = simulação atual."
               : "Legado: PIS/COFINS/ISS · Novo: CBS/IBS."}
           </p>
         </div>
@@ -457,7 +457,7 @@ export function TransitionChart({
               presentationMode && "font-board-report",
             )}
           >
-            Trajectória da carga CBS/IBS projectada (2026–2033). Plano Pro: gráfico completo, ano
+            Trajetória da carga CBS/IBS projetada (2026–2033). Plano Pro: gráfico completo, ano
             de foco e memória de cálculo.
           </p>
         </CardHeader>
@@ -500,7 +500,7 @@ export function TransitionChart({
               )}
             >
               {abMode
-                ? "CBS/IBS projetado por ano: referência (A, tracejado) vs simulação actual (B, sólido). Legado a partir do cenário B."
+                ? "CBS/IBS projetado por ano: referência (A, tracejado) vs simulação atual (B, sólido). Legado a partir do cenário B."
                 : "Carga líquida legado (PIS/COFINS/ISS) vs CBS/IBS projetado — escala única para veracidade do cruzamento."}
             </p>
 
@@ -518,7 +518,7 @@ export function TransitionChart({
                 </span>
                 <span className="flex items-center gap-1.5 text-emerald-600">
                   <span className="inline-block h-0.5 w-4 bg-emerald-500" />
-                  Cenário B (actual)
+                  Cenário B (atual)
                 </span>
               </div>
             )}
@@ -596,9 +596,9 @@ export function TransitionChart({
           aria-busy={chartDataStale}
           aria-label={
             isRecalculating
-              ? "A sincronizar série temporal com o motor Go…"
+              ? "Sincronizando série temporal com o motor Go…"
               : pendingSimulationSync
-                ? "Série temporal ainda a reflectir a última classificação"
+                ? "Série temporal ainda refletindo a última classificação"
                 : undefined
           }
           className={cn(

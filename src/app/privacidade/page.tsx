@@ -40,7 +40,7 @@ export default function PrivacidadePage() {
         <h2 className="text-base font-semibold">Armazenamento</h2>
         <p className="text-muted-foreground">
           Dados persistidos pelo produto (por exemplo histórico de simulações e modelos
-          de empresa) utilizam Supabase (PostgreSQL) no desenho actual.
+          de empresa) utilizam Supabase (PostgreSQL) no desenho atual.
         </p>
       </section>
 

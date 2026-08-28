@@ -38,7 +38,7 @@ export function BoardReadyTeaseSheet({ open, onOpenChange }: BoardReadyTeaseShee
           </div>
           <SheetDescription className="text-xs leading-relaxed text-muted-foreground">
             Layout tipo relatório de conselho, tipografia de veredito e impressão otimizada. Disponível
-            ao subscrever o plano Pro.
+            ao assinar o plano Pro.
           </SheetDescription>
         </SheetHeader>
 

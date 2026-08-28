@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import { isImobiliarioRegime } from "@/lib/company-regime"
+import { useLawCorpus } from "@/lib/use-law-corpus"
 
 export function RegimeFollowUps() {
   const {
@@ -21,6 +22,7 @@ export function RegimeFollowUps() {
     imobiliarioRedutorAjusteBrl,
     setImobiliarioRedutorAjusteBrl,
   } = useTaxStore()
+  const { changelog } = useLawCorpus()
 
   return (
     <div
@@ -205,9 +207,9 @@ export function RegimeFollowUps() {
               <p className="mt-1 text-xs leading-relaxed text-purple-700 dark:text-purple-200/90">
                 A projeção aplica uma <strong>alíquota CBS+IBS efetiva reduzida</strong> conforme o perfil
                 (percentual da alíquota padrão do <strong>ano da simulação</strong>) e, se informado, o{" "}
-                <strong>redutor de ajuste</strong> em R$ sobre a receita agregada — modelo ilustrativo da LC
-                68/2024 para viabilidade, não substitui cálculo fiscal real. Créditos nas compras seguem o regime
-                de cada fornecedor.
+                <strong>redutor de ajuste</strong> em R$ sobre a receita agregada — modelo ilustrativo da{" "}
+                {changelog.label} para viabilidade, não substitui cálculo fiscal real. Créditos nas compras seguem
+                o regime de cada fornecedor.
               </p>
             </div>
           </div>

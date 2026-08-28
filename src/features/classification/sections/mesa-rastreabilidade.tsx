@@ -96,7 +96,7 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
               className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-amber-300/60 bg-amber-50/50 px-3 py-2 print:hidden dark:border-amber-700/40 dark:bg-amber-950/20"
             >
               <p className="text-xs text-amber-800 dark:text-amber-300 leading-snug">
-                Classificações alteradas — os números acima ainda reflectem a simulação anterior.
+                Classificações alteradas — os números acima ainda refletem a simulação anterior.
               </p>
               <button
                 type="button"

@@ -341,7 +341,7 @@ export function HistoryPageView({
                 e cenários A/B conforme o seu plano.
               </p>
               <p className="text-xs text-center max-w-xs opacity-80">
-                Ainda não há registos — rode a primeira simulação no painel principal.
+                Ainda não há registos — comece pela primeira simulação.
               </p>
               <Link
                 href={hrefSimulador}

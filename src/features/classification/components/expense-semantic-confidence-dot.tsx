@@ -207,8 +207,8 @@ function ExpenseSemanticConfidenceDotInner({
           {hasConsultantOverride ? (
             <p className="border-t border-border/50 pt-1.5 text-xs leading-snug text-emerald-700/90 dark:text-emerald-300/90">
               A decisão do consultor (substituição manual) é a que prevalece no envio
-              ao motor de cálculo. O percentual acima reflecte a confiança da
-              análise automática, não o risco após a sua correcção.
+              ao motor de cálculo. O percentual acima reflete a confiança da
+              análise automática, não o risco após a sua correção.
             </p>
           ) : null}
         </div>

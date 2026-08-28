@@ -40,22 +40,22 @@ export function TransitionGoPeaksMarcos({ series, focusYear }: TransitionGoPeaks
     const is2033Horizon = destPeak.year === 2033 && y2033
     if (is2033Horizon) {
       paragraphs.push(
-        `Horizonte e pico de carga CBS/IBS líquida projectada em 2033 (${formatBRL(destPeak.value)} no modelo) — referência de alíquota plena e ponto máximo da série neste cenário; útil para provisões e planeamento de margem em toda a transição.`,
+        `Horizonte e pico de carga CBS/IBS líquida projetada em 2033 (${formatBRL(destPeak.value)} no modelo) — referência de alíquota plena e ponto máximo da série neste cenário; útil para provisões e planejamento de margem em toda a transição.`,
       )
     } else {
       paragraphs.push(
-        `Neste cenário, a carga CBS/IBS líquida projectada atinge o máximo em ${destPeak.year} (${formatBRL(destPeak.value)} no modelo). Útil para antecipar provisões e o fluxo de caixa nesse ano.`,
+        `Neste cenário, a carga CBS/IBS líquida projetada atinge o máximo em ${destPeak.year} (${formatBRL(destPeak.value)} no modelo). Útil para antecipar provisões e o fluxo de caixa nesse ano.`,
       )
     }
   } else if (y2033) {
     paragraphs.push(
-      `Horizonte 2033 (referência de alíquota plena no modelo): carga destino ${formatBRL(y2033.new_tax_net)} — base para planeamento de margem ao longo da transição.`,
+      `Horizonte 2033 (referência de alíquota plena no modelo): carga destino ${formatBRL(y2033.new_tax_net)} — base para planejamento de margem ao longo da transição.`,
     )
   }
 
   if (y2033 && destPeak && destPeak.year !== 2033) {
     paragraphs.push(
-      `Horizonte 2033: carga destino ${formatBRL(y2033.new_tax_net)} — referência de planeamento ao longo da transição (o pico de carga na série ocorre noutro ano).`,
+      `Horizonte 2033: carga destino ${formatBRL(y2033.new_tax_net)} — referência de planejamento ao longo da transição (o pico de carga na série ocorre em outro ano).`,
     )
   }
 
@@ -67,24 +67,24 @@ export function TransitionGoPeaksMarcos({ series, focusYear }: TransitionGoPeaks
 
   if (y2027 && y2031) {
     paragraphs.push(
-      `Marcos para contratos: a carga CBS/IBS líquida projectada passa de ${formatBRL(y2027.new_tax_net)} (2027) para ${formatBRL(y2031.new_tax_net)} (2031) neste modelo — intervalo útil para rever preços e cláusulas em contratos de longo prazo.`,
+      `Marcos para contratos: a carga CBS/IBS líquida projetada passa de ${formatBRL(y2027.new_tax_net)} (2027) para ${formatBRL(y2031.new_tax_net)} (2031) neste modelo — intervalo útil para rever preços e cláusulas em contratos de longo prazo.`,
     )
   }
 
   if (focusYear === 2031 && d27 && d31 && !d27.isZero()) {
     const pct = d31.sub(d27).div(d27.abs()).mul(100).toFixed(1)
     paragraphs.push(
-      `Em 2031, a carga líquida CBS/IBS projectada (${formatBRL(focus.new_tax_net)}) difere de 2027 em aproximadamente ${pct}% neste modelo.`,
+      `Em 2031, a carga líquida CBS/IBS projetada (${formatBRL(focus.new_tax_net)}) difere de 2027 em aproximadamente ${pct}% neste modelo.`,
     )
   } else if (focusYear === 2027 && d27 && d31 && !d27.isZero()) {
     const pct = d31.sub(d27).div(d27.abs()).mul(100).toFixed(1)
     paragraphs.push(
-      `Entre 2027 e 2031, a carga CBS/IBS projectada evolui cerca de ${pct}% neste cenário (valores ilustrativos TribIA).`,
+      `Entre 2027 e 2031, a carga CBS/IBS projetada evolui cerca de ${pct}% neste cenário (valores ilustrativos TribIA).`,
     )
   } else if (dFocus && d31 && focusYear !== 2031 && !d31.isZero()) {
     const diff = dFocus.sub(d31).div(d31.abs()).mul(100).toFixed(1)
     paragraphs.push(
-      `No ano ${focusYear}, a carga CBS/IBS projectada (${formatBRL(focus.new_tax_net)}) situa-se cerca de ${diff}% em relação a 2031 no mesmo modelo.`,
+      `No ano ${focusYear}, a carga CBS/IBS projetada (${formatBRL(focus.new_tax_net)}) situa-se cerca de ${diff}% em relação a 2031 no mesmo modelo.`,
     )
   }
 

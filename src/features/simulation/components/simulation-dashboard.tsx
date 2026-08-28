@@ -146,7 +146,7 @@ export function SimulationDashboard({
   const sessionScenarioLabel = useMemo(() => {
     if (!formResults) return ""
     const year = formResults.meta?.year ?? formResults.simulation.year
-    if (isComparing) return `Comparação A/B — cenário actual · ${year}`
+    if (isComparing) return `Comparação A/B — cenário atual · ${year}`
     return `Simulação base · ${year}`
   }, [formResults, isComparing])
 

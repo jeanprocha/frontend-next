@@ -187,7 +187,7 @@ export function ClassificationBriefingContent({
       {withClosingNote ? (
         <div className="mt-6 border-t border-border/50 pt-3 text-xs leading-relaxed text-muted-foreground">
           Evidências e percentagens vêm da classificação em lote desta simulação. Para o briefing agregado ou o Raio-X no
-          contexto, use os controlos do painel principal.
+          contexto, use os controlos no simulador.
         </div>
       ) : null}
     </>

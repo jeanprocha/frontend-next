@@ -41,7 +41,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setErr(e instanceof Error ? e.message : "Não foi possível carregar o dossié.")
+        setErr(e instanceof Error ? e.message : "Não foi possível carregar o dossiê.")
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -62,7 +62,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
         role="status"
         aria-live="polite"
       >
-        <p className="text-sm text-muted-foreground">A carregar o dossié…</p>
+        <p className="text-sm text-muted-foreground">Carregando o dossiê…</p>
       </div>
     )
   }
@@ -131,7 +131,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
             {record.meta?.recordId ? ` · ${record.meta.recordId.slice(0, 8)}…` : ""}
           </p>
 
-          <h1 className="sr-only">Veredito financeiro — dossié TribIA</h1>
+          <h1 className="sr-only">Veredito financeiro — dossiê TribIA</h1>
 
           <ReportRenderer
             record={record}

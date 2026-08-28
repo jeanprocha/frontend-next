@@ -89,7 +89,7 @@ export function PlgUpgradeDialog({
         {details && <p className="text-sm font-medium">{details}</p>}
         <p className="text-xs text-muted-foreground">
           O plano da sua conta define os limites e funcionalidades disponíveis. Para subir de plano ou resolver
-          inconsistências, contacte o suporte ou o administrador da sua organização.
+          inconsistências, contate o suporte ou o administrador da sua organização.
         </p>
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>

@@ -211,9 +211,9 @@ export function RagAuditCard({ aiMetadata, onOpenBriefing, className }: RagAudit
 
         <p className="mt-1 leading-relaxed">
 
-          Não há trechos da lei associados a esta simulação (ex.: fluxo CSV sem classificação completa
+          Não há trechos da lei associados a esta simulação (ex.: registo antigo, ou a classificação por IA não
 
-          ou registo antigo). Execute uma simulação manual com classificação por IA para ver
+          encontrou evidência suficiente). Execute uma simulação manual com classificação por IA para ver
 
           relevância e fontes.
 

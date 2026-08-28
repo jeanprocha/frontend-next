@@ -102,7 +102,7 @@ export function PortfolioPage({ aoUsarEmpresa, breadcrumbItems }: PortfolioPageP
           <p className="text-sm font-medium">Nenhuma empresa cadastrada ainda.</p>
           <p className="text-xs text-center max-w-xs">
             Clique em «Nova empresa» para cadastrar um cliente com contexto tributário e serviços recorrentes.
-            Perfis guardados aqui aceleram o pipeline de simulação no painel principal.
+            Perfis guardados aqui aceleram o pipeline de simulação ao abrir o workspace do cliente.
           </p>
         </div>
       )}

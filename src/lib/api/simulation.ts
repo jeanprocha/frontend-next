@@ -106,7 +106,7 @@ export async function getPublicSimulationRecord(id: string): Promise<SimulationR
   const res = await fetch(resolvePublicSimulationRecordUrl(id), { cache: "no-store" })
   if (!res.ok) {
     const raw = await res.json().catch(() => ({ error: res.statusText }))
-    throwApiError(res, raw, "Erro ao carregar dossié")
+    throwApiError(res, raw, "Erro ao carregar dossiê")
   }
   return res.json()
 }

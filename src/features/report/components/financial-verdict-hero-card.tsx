@@ -320,9 +320,9 @@ export function FinancialVerdictHeroCard({
               aria-live="polite"
               aria-label={
                 isRecalculating
-                  ? "A sincronizar com o motor Go…"
+                  ? "Sincronizando com o motor Go…"
                   : pendingSimulationSync
-                    ? "Valores ainda a reflectir a última decisão de classificação"
+                    ? "Valores ainda refletindo a última decisão de classificação"
                     : undefined
               }
               className={cn(

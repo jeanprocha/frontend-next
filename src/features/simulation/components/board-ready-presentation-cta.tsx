@@ -71,7 +71,7 @@ export function BoardReadyPresentationCta({
         "no-print print:hidden",
         className,
       )}
-      aria-label="Gerar dossié digital e abrir em nova aba"
+      aria-label="Gerar dossiê digital e abrir em nova aba"
     >
       {busy ? (
         <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />

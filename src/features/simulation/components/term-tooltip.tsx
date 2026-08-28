@@ -2,14 +2,17 @@
 
 import type { ReactNode } from "react"
 import { GlossaryHelpTrigger } from "@/components/shared/glossary-help-trigger"
+import { TAX_GLOSSARY } from "@/constants/tax-glossary"
 import { cn } from "@/lib/utils"
 
-const glossary: Record<string, string> = {
-  IBS: "Imposto sobre Bens e Serviços — tributo estadual/municipal criado pela reforma tributária que substituirá ICMS e ISS.",
-  CBS: "Contribuição sobre Bens e Serviços — tributo federal que substituirá PIS e COFINS a partir de 2026.",
-  "Split Payment":
-    "Mecanismo automático de pagamento fracionado: o tributo é retido diretamente na transação financeira, sem passar pelo caixa do fornecedor.",
-}
+/**
+ * Fonte única do glossário fiscal: TAX_GLOSSARY (constants/tax-glossary.ts) —
+ * é a mesma usada por TaxTerm/parseTaxTerms no dossiê. Antes desta correção
+ * (Etapa M/PR 2), este componente tinha um dicionário local com 3 termos
+ * (IBS/CBS/Split Payment) e definições DIFERENTES das de TAX_GLOSSARY —
+ * o mesmo termo explicado de dois jeitos, dependendo de qual componente
+ * o usuário via.
+ */
 
 export function TermTooltip({
   term,
@@ -20,7 +23,7 @@ export function TermTooltip({
   children?: ReactNode
   triggerClassName?: string
 }) {
-  const body = glossary[term] ?? children
+  const body = (TAX_GLOSSARY as Record<string, string>)[term] ?? children
   return (
     <GlossaryHelpTrigger
       ariaLabel={`Definição: ${term}`}
