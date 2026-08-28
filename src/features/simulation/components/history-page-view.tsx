@@ -10,14 +10,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-client"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowRightLeft, FileClock, Loader2, Search } from "lucide-react"
-import { getSimulationRecord, listSimulationRecords, queryKeys } from "@/lib/api"
+import { ArrowRightLeft, ChevronRight, FileClock, Loader2, Search } from "lucide-react"
+import { getSimulationRecord, listCompanies, listSimulationRecords, queryKeys } from "@/lib/api"
 import { formatBRL } from "@/lib/format-money"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { TransitionSparkline } from "@/components/shared/transition-sparkline"
-import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
-import { useCapability, PlgUpgradeDialog } from "@/features/plg"
+import { useCapability, useTribiaPlgTier, PlgUpgradeDialog } from "@/features/plg"
 import { cn } from "@/lib/utils"
 import { ShellBreadcrumb, type ShellBreadcrumbItem } from "@/components/shell/shell-breadcrumb"
 import { shellPageClass } from "@/lib/shell-layout"
@@ -25,7 +24,6 @@ import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { simulationMachine } from "../machine/machine-store"
 import { hydrateSimulationFromRecord } from "../machine/hydrate-record"
 import { HistoryRecordPreviewTrigger } from "./history-record-preview-trigger"
-import { HistoryRowHoverPreview } from "./history-row-hover-preview"
 
 function formatDate(iso: string): string {
   try {
@@ -95,7 +93,6 @@ export function HistoryPageView({
   const [compareUpgradeOpen, setCompareUpgradeOpen] = useState(false)
 
   const historyPro = useCapability("historyRichPreview")
-  const touchMeeting = useTouchMeetingMode()
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: queryKeys.simulationRecords.list(userId, 100),
@@ -106,6 +103,28 @@ export function HistoryPageView({
     },
     enabled: isLoaded && !!userId,
   })
+
+  // Etapa N/PR 8 (fato 10) — a API já manda `company_id` em cada registro,
+  // mas ele ficava sem uso: a linha mostrava só o `company_context` livre,
+  // igual pra registro vinculado a cliente ou não. Mesma query key de
+  // command-menu.tsx/use-portfolio-companies.ts — dedupe via TanStack Query,
+  // não via hook compartilhado (features/simulation não importa
+  // features/portfolio).
+  const plgTierList = useTribiaPlgTier()
+  const { data: companies } = useQuery({
+    queryKey: queryKeys.companies.list(userId, plgTierList),
+    queryFn: async () => {
+      const token = await getToken()
+      if (!token || !userId) throw new Error("Não autenticado")
+      return listCompanies(token, userId, plgTierList)
+    },
+    enabled: isLoaded && !!userId,
+    staleTime: 60_000,
+  })
+  const companyNameById = useMemo(
+    () => new Map((companies ?? []).map((c) => [c.id, c.name])),
+    [companies],
+  )
 
   const filteredRecords = useMemo(() => {
     if (!data) return []
@@ -337,6 +356,7 @@ export function HistoryPageView({
                 const deltaNeutral = !Number.isFinite(deltaNum) || deltaNum === 0
                 const deltaSaving = deltaNum < 0
                 const checked = selectedIds.includes(row.id)
+                const companyName = row.company_id ? companyNameById.get(row.company_id) : undefined
 
                 const openSim = () => void handleOpenRecord(row.id)
 
@@ -356,102 +376,114 @@ export function HistoryPageView({
                       />
                     </label>
 
-                    <HistoryRowHoverPreview
-                      row={row}
-                      historyPro={historyPro}
-                      touchMeeting={touchMeeting}
-                      isThisLoading={isThisLoading}
-                      onOpenInSimulator={openSim}
+                    <button
+                      type="button"
+                      disabled={isThisLoading}
+                      onClick={openSim}
+                      className={cn(
+                        "group/histrow min-w-0 flex-1 text-left px-3 sm:px-4 py-3 sm:py-4 hover:bg-muted/50 transition-colors",
+                        "flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4",
+                        isThisLoading && "opacity-60 cursor-wait",
+                      )}
                     >
-                      <button
-                        type="button"
-                        disabled={isThisLoading}
-                        onClick={openSim}
-                        className={cn(
-                          "min-w-0 flex-1 text-left px-3 sm:px-4 py-3 sm:py-4 hover:bg-muted/50 transition-colors",
-                          "flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4",
-                          isThisLoading && "opacity-60 cursor-wait",
-                        )}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(row.created_at)}
-                          </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(row.created_at)}
+                        </span>
+                        {companyName ? (
+                          <>
+                            <p className="text-sm font-semibold mt-0.5 truncate">{companyName}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              Ano {row.year}
+                              {row.company_context
+                                ? ` · ${truncate(row.company_context, historyPro ? 40 : 60)}`
+                                : ""}
+                            </p>
+                          </>
+                        ) : (
                           <p className="text-sm font-medium mt-0.5">
                             Ano {row.year}
                             {row.company_context
                               ? ` · ${truncate(row.company_context, historyPro ? 48 : 72)}`
                               : ""}
                           </p>
+                        )}
+                      </div>
+
+                      {historyPro && (
+                        <div className="flex items-center gap-3 shrink-0">
+                          <TransitionSparkline series={row.transition_series} width={80} height={30} />
+                          <EconomyScanTag delta_impact={row.delta_impact} />
                         </div>
+                      )}
 
-                        {historyPro && (
-                          <div className="flex items-center gap-3 shrink-0">
-                            <TransitionSparkline series={row.transition_series} width={80} height={30} />
-                            <EconomyScanTag delta_impact={row.delta_impact} />
-                          </div>
-                        )}
-
-                        {!historyPro && (
-                          <div
-                            className="flex flex-col items-start gap-0.5 shrink-0 select-none opacity-40 pointer-events-none"
-                            aria-label="Pré-visualização da trajetória fiscal (2026–2033) — detalhe completo no plano Pro"
-                          >
-                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                              Pro
-                            </span>
-                            <TransitionSparkline series={row.transition_series} width={80} height={30} />
-                          </div>
-                        )}
-
+                      {!historyPro && (
                         <div
-                          className={cn(
-                            "text-xs lg:text-right shrink-0 flex flex-col lg:items-end gap-1",
-                            historyPro && "lg:min-w-[9rem]",
-                          )}
+                          className="flex flex-col items-start gap-0.5 shrink-0 select-none opacity-40 pointer-events-none"
+                          aria-label="Pré-visualização da trajetória fiscal (2026–2033) — detalhe completo no plano Pro"
                         >
-                          {isThisLoading ? (
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                              <span>Carregando…</span>
-                            </div>
-                          ) : historyPro ? (
-                            <div>
-                              <span className="text-muted-foreground">Projetado líquido </span>
-                              <span className="font-mono font-semibold">
-                                {formatBRL(row.total_projected_tax)}
-                              </span>
-                            </div>
-                          ) : (
-                            <div>
-                              <span className="text-muted-foreground">Líquido projetado </span>
-                              <span className="font-mono font-semibold">
-                                {formatBRL(row.total_projected_tax)}
-                              </span>
-                            </div>
-                          )}
-
-                          {historyPro && !isThisLoading && (
-                            <div>
-                              <span className="text-muted-foreground mr-1">Δ</span>
-                              <span
-                                className={cn(
-                                  "inline-flex items-center gap-0.5 font-mono text-xs font-semibold px-2 py-0.5 rounded-full",
-                                  deltaNeutral
-                                    ? "bg-muted/60 text-muted-foreground"
-                                    : deltaSaving
-                                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                                      : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
-                                )}
-                              >
-                                {deltaNeutral ? "→ " : deltaSaving ? "↓ " : "↑ "}
-                                {formatBRL(row.delta_impact)}
-                              </span>
-                            </div>
-                          )}
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Pro
+                          </span>
+                          <TransitionSparkline series={row.transition_series} width={80} height={30} />
                         </div>
-                      </button>
-                    </HistoryRowHoverPreview>
+                      )}
+
+                      <div
+                        className={cn(
+                          "text-xs lg:text-right shrink-0 flex flex-col lg:items-end gap-1",
+                          historyPro && "lg:min-w-[9rem]",
+                        )}
+                      >
+                        {isThisLoading ? (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Carregando…</span>
+                          </div>
+                        ) : historyPro ? (
+                          <div>
+                            <span className="text-muted-foreground">Projetado líquido </span>
+                            <span className="font-mono font-semibold">
+                              {formatBRL(row.total_projected_tax)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-muted-foreground">Líquido projetado </span>
+                            <span className="font-mono font-semibold">
+                              {formatBRL(row.total_projected_tax)}
+                            </span>
+                          </div>
+                        )}
+
+                        {historyPro && !isThisLoading && (
+                          <div>
+                            <span className="text-muted-foreground mr-1">Δ</span>
+                            <span
+                              className={cn(
+                                "inline-flex items-center gap-0.5 font-mono text-xs font-semibold px-2 py-0.5 rounded-full",
+                                deltaNeutral
+                                  ? "bg-muted/60 text-muted-foreground"
+                                  : deltaSaving
+                                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                                    : "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+                              )}
+                            >
+                              {deltaNeutral ? "→ " : deltaSaving ? "↓ " : "↑ "}
+                              {formatBRL(row.delta_impact)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Etapa N/PR 8 (fato 10) — a linha inteira sempre foi
+                          clicável, mas nada nela dizia isso; o cursor não
+                          muda de estilo em <button>. */}
+                      <ChevronRight
+                        className="hidden size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover/histrow:translate-x-0.5 group-hover/histrow:text-muted-foreground lg:block"
+                        aria-hidden
+                      />
+                    </button>
 
                     <HistoryRecordPreviewTrigger
                       row={row}
