@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic"
 import { CreditLeakageAlert } from "../components/credit-leakage-alert"
-import { TransitionAuditPanel } from "../components/transition-audit-panel"
 import { TransitionGoPeaksMarcos } from "../components/transition-go-peaks-marcos"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCapability } from "@/features/plg"
@@ -76,7 +75,6 @@ function CronogramaSection({ record, mode, focusYear, onFocusYearChange, compari
   const transitionFullChart = useCapability("transitionFullChart")
   const { simulation } = record
   const series = simulation.transition_series
-  const point = series?.find((p) => p.year === focusYear)
 
   return (
     <section
@@ -122,13 +120,6 @@ function CronogramaSection({ record, mode, focusYear, onFocusYearChange, compari
             <SankeyFlowLazy simulation={simulation} expenses={record.expenses} services={record.services} />
           </div>
         )}
-        <div className="mb-5">
-          <TransitionAuditPanel
-            focusYear={focusYear}
-            point={point}
-            seriesEnriched={simulation.transition_series_enriched === true}
-          />
-        </div>
         <CreditLeakageAlert result={simulation} />
       </div>
     </section>

@@ -24,7 +24,11 @@ export function TransitionAuditPanel({
   const [open, setOpen] = useState(false)
 
   return (
-    <div className={cn("rounded-lg border border-border/70 bg-muted/15", className)}>
+    // print:hidden: este painel é um collapsible que começa fechado — o
+    // conteúdo só entra no DOM quando aberto ({open && ...} abaixo), então
+    // nunca pode ser o que sustenta a impressão. CalculationTracePrint é o
+    // gêmeo sempre-visível que faz esse papel (ver o comentário nele).
+    <div className={cn("rounded-lg border border-border/70 bg-muted/15 print:hidden", className)}>
       <Button
         type="button"
         variant="ghost"
