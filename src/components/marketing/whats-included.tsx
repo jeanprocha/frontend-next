@@ -29,6 +29,7 @@ const ROWS: Row[] = [
   { label: "Simulações por dia", free: "3", pro: "sem limite", premium: "sem limite" },
   { label: "Clientes na carteira", free: "3", pro: "30", premium: "sem limite" },
   { label: "Dossiê público compartilhável", free: false, pro: true, premium: true },
+  { label: "Exportação CSV audit-ready", free: false, pro: true, premium: true },
   { label: "Memória de cálculo e fatores do ano", free: false, pro: true, premium: true },
   { label: "Série completa 2026–2033 e comparação A/B", free: false, pro: true, premium: true },
   { label: "Abertura do PDF oficial na página ancorada", free: false, pro: true, premium: true },

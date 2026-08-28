@@ -46,6 +46,11 @@ test("demo: formulário → classificação IA → veredito → dossiê", async 
   await expect(page.getByRole("button", { name: /Exportar para PDF/ })).toBeVisible()
   await expect(page.getByRole("heading", { name: /Mesa de operações/ })).toBeVisible()
 
+  // Export CSV audit-ready (Etapa M/PR 7): o dossiê público sempre abre com
+  // capabilities de Premium (PUBLIC_REPORT_CAPABILITIES), então o botão
+  // aparece desbloqueado aqui independente do tier de quem gerou o link.
+  await expect(page.getByRole("button", { name: "Exportar CSV" })).toBeEnabled()
+
   // Selo de base legal (W1/PR 9) — só aparece com o corpus ao vivo (LAW_CORPUS_FIXTURE,
   // publicado 2026-08-20); prova end-to-end que a data-base não sofre off-by-one de fuso.
   // Desde a Onda 2/PR 2 o documento vem do PREFIXO das âncoras que este registro

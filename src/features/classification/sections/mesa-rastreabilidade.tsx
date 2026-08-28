@@ -2,6 +2,7 @@
 
 import { ExpenseSemanticAuditTable } from "../components/expense-semantic-audit-table"
 import { DivergenceTrailPrint } from "../components/divergence-trail-print"
+import { ExportAuditCsvButton } from "../components/export-audit-csv-button"
 import { aggregateClassifications } from "../lib/classification-aggregates"
 import { cn } from "@/lib/utils"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
@@ -75,14 +76,19 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
         </p>
 
         <div id="tribia-semantic-audit-table" className="mt-5 scroll-mt-28 print:mt-4">
-          <p
-            className={cn(
-              "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground",
-              presentationMode && "font-board-report text-sm font-semibold normal-case tracking-normal text-foreground",
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <p
+              className={cn(
+                "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground",
+                presentationMode && "font-board-report text-sm font-semibold normal-case tracking-normal text-foreground",
+              )}
+            >
+              Rastreabilidade por linha
+            </p>
+            {expenses.length > 0 && (
+              <ExportAuditCsvButton expenses={expenses} classifications={classifications} />
             )}
-          >
-            Rastreabilidade por linha
-          </p>
+          </div>
           <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground print:hidden">
             Espelho cego do input — cada linha prova a classificação semântica atribuída pela IA ao montante
             processado pelo motor Go.
