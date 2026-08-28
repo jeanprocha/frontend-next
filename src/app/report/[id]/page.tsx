@@ -18,7 +18,11 @@ export default async function Page({ params }: PageProps) {
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params
   return {
-    title: `Dossiê tributário · TribIA${id ? ` · ${id.slice(0, 8)}` : ""}`,
+    // Sem "· TribIA" aqui: o template do layout raiz já o acrescenta ao
+    // final. Com ele, a aba e o preview de todo link compartilhado saíam
+    // "Dossiê tributário · TribIA · 1a2b3c4d · TribIA" — e este é o título
+    // mais compartilhado do produto.
+    title: `Dossiê tributário${id ? ` · ${id.slice(0, 8)}` : ""}`,
     robots: { index: false, follow: false },
   }
 }

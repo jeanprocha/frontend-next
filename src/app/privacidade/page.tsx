@@ -3,7 +3,8 @@ import Link from "next/link"
 import { ROTAS } from "@/constants/routes"
 
 export const metadata: Metadata = {
-  title: "Privacidade e dados — TribIA",
+  // Sufixo omitido de propósito — o template do layout raiz o acrescenta.
+  title: "Privacidade e dados",
   description:
     "Como o TribIA trata identidade, armazenamento e fornecedores de IA (política declarativa).",
 }

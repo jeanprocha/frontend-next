@@ -38,6 +38,9 @@ export default function ExemploPage() {
 }
 
 export const metadata = {
-  title: "Dossiê de exemplo · TribIA",
+  // Sem "· TribIA" no fim: o layout raiz já aplica `template: "%s · TribIA"`
+  // a segmentos FILHOS (só o `app/page.tsx` do mesmo segmento escapa dele).
+  // Repetir aqui rendia "Dossiê de exemplo · TribIA · TribIA" na aba.
+  title: "Dossiê de exemplo",
   robots: { index: false, follow: false },
 }
