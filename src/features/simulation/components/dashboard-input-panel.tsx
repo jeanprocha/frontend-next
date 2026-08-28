@@ -11,6 +11,22 @@ import { cn } from "@/lib/utils"
 import type { ImportAppliedSummary, ImporterPanelEntry } from "@/lib/importer-contract"
 import type { FormExpense, FormService } from "@/types/api"
 
+// Etapa N/PR 5 — a coluna `tipo` opcional do importer CSV agora pode trazer
+// receitas junto das despesas; o banner passa a nomear os dois em vez de só
+// "despesa(s) importada(s)".
+function formatImportSummary(summary: ImportAppliedSummary): string {
+  const parts: string[] = []
+  if (summary.servicesCount > 0) {
+    parts.push(`${summary.servicesCount} receita${summary.servicesCount === 1 ? "" : "s"}`)
+  }
+  if (summary.expensesCount > 0) {
+    parts.push(`${summary.expensesCount} despesa${summary.expensesCount === 1 ? "" : "s"}`)
+  }
+  const total = summary.servicesCount + summary.expensesCount
+  const suffix = summary.fileName ? ` de ${summary.fileName}` : ""
+  return `${parts.join(" e ")} importada${total === 1 ? "" : "s"}${suffix}.`
+}
+
 export interface DashboardInputPanelProps {
   importerEntries: ImporterPanelEntry[]
   isComparing: boolean
@@ -85,13 +101,11 @@ export function DashboardInputPanel({
 
       {importedSummary && activeId === "form" && (
         <div className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm" role="status">
-          <p className="font-medium">
-            {importedSummary.expensesCount} despesa{importedSummary.expensesCount === 1 ? "" : "s"} importada
-            {importedSummary.expensesCount === 1 ? "" : "s"}
-            {importedSummary.fileName ? ` de ${importedSummary.fileName}` : ""}.
-          </p>
+          <p className="font-medium">{formatImportSummary(importedSummary)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Revise os itens abaixo e complete as receitas para simular.
+            {importedSummary.servicesCount > 0
+              ? "Revise os itens abaixo e simule."
+              : "Revise os itens abaixo e complete as receitas para simular."}
           </p>
         </div>
       )}

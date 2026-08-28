@@ -69,4 +69,67 @@ describe("csvImporter.parse", () => {
     expect(csvImporter.accepts).toEqual([".csv", ".txt"])
     expect(csvImporter.formatHint).toBeTruthy()
   })
+
+  describe("coluna tipo (Etapa N/PR 5)", () => {
+    it("sem coluna tipo, tudo continua virando despesa (retrocompatível)", async () => {
+      const result = await csvImporter.parse("descricao,valor\nAWS,500.00\nGitHub,50.00")
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.draft.services).toBeUndefined()
+      expect(result.draft.expenses).toHaveLength(2)
+    })
+
+    it("com coluna tipo, 'receita' vira serviço com iss_rate default e 'despesa' vira despesa", async () => {
+      const result = await csvImporter.parse(
+        "descricao,valor,tipo\nConsultoria,10000.00,receita\nAWS,500.00,despesa",
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.draft.services).toHaveLength(1)
+      expect(result.draft.services?.[0]).toMatchObject({
+        description: "Consultoria",
+        amount: "10000.00",
+        iss_rate: "0.05",
+      })
+      expect(result.draft.expenses).toHaveLength(1)
+      expect(result.draft.expenses?.[0]).toMatchObject({ description: "AWS", amount: "500.00" })
+    })
+
+    it("valor de tipo é case-insensitive e aceita plural/inglês (RECEITA, revenue)", async () => {
+      const result = await csvImporter.parse(
+        "descricao,valor,tipo\nConsultoria,10000.00,RECEITA\nSuporte,2000.00,revenue",
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.draft.services).toHaveLength(2)
+      expect(result.draft.expenses).toBeUndefined()
+    })
+
+    it("valor de tipo não reconhecido vira despesa (fallback conservador)", async () => {
+      const result = await csvImporter.parse("descricao,valor,tipo\nAlgo,100.00,outro")
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.draft.services).toBeUndefined()
+      expect(result.draft.expenses).toHaveLength(1)
+    })
+
+    it("arquivo só com receitas não traz a chave expenses no draft", async () => {
+      const result = await csvImporter.parse("descricao,valor,tipo\nConsultoria,10000.00,receita")
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.draft.expenses).toBeUndefined()
+      expect(result.draft.services).toHaveLength(1)
+    })
+
+    it("cada serviço importado ganha id próprio (makeLineId)", async () => {
+      const result = await csvImporter.parse(
+        "descricao,valor,tipo\nConsultoria,10000.00,receita\nSuporte,2000.00,receita",
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const [a, b] = result.draft.services ?? []
+      expect(a.id).toBeTruthy()
+      expect(a.id).not.toBe(b.id)
+    })
+  })
 })

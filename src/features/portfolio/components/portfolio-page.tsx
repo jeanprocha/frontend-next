@@ -127,7 +127,7 @@ export function PortfolioPage({ aoUsarEmpresa, breadcrumbItems }: PortfolioPageP
             <li className="rounded-xl border border-border bg-card p-4">
               <span className="font-mono text-xs text-accent">02</span>
               <p className="mt-1 text-sm font-medium text-foreground">Importe no simulador</p>
-              <p className="mt-1 text-xs text-muted-foreground">A aba &ldquo;Upload de CSV&rdquo; preenche o formulário — você completa a receita.</p>
+              <p className="mt-1 text-xs text-muted-foreground">A aba &ldquo;Upload de CSV&rdquo; preenche receitas e despesas — já dá para simular.</p>
             </li>
             <li className="rounded-xl border border-border bg-card p-4">
               <span className="font-mono text-xs text-accent">03</span>

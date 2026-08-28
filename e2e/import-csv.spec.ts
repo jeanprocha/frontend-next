@@ -38,3 +38,26 @@ test("demo: upload de CSV preenche o formulário e simula (persiste)", async ({ 
   // Diferença central da FE-3: o caminho CSV agora persiste, como o form.
   expect(engine.simulationRecordsCallCount()).toBe(1)
 })
+
+// Etapa N/PR 5 — coluna `tipo` opcional (receita/despesa): o CSV de exemplo
+// real (public/despesas.csv) passou a trazer receita própria, então importar
+// ele fecha a simulação sem precisar digitar nada — este fixture espelha
+// esse formato novo (o de import-csv.spec.ts acima continua no formato
+// antigo, sem coluna tipo, provando a retrocompatibilidade).
+test("demo: CSV com coluna tipo preenche receita e despesa — simula sem digitar nada", async ({ page }) => {
+  await mockEngine(page)
+
+  await page.goto("/simulador")
+  await page.getByRole("button", { name: "Upload de CSV" }).click()
+  await page
+    .locator('input[type="file"]')
+    .setInputFiles(path.join(__dirname, "fixtures", "despesas-com-receita.csv"))
+
+  await expect(page.getByText("1 receita e 1 despesa importadas")).toBeVisible()
+  await expect(page.getByLabel("Identificação do serviço")).toHaveValue("Consultoria de tecnologia")
+  await expect(page.getByLabel("Identificação da despesa")).toHaveValue("Hospedagem AWS")
+
+  // Nenhum campo tocado entre o upload e o clique.
+  await page.getByRole("button", { name: /Simular impacto tributário/ }).click()
+  await expect(page.locator("#tribia-fvh-title")).toHaveText("Veredito Financeiro")
+})
