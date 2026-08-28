@@ -62,7 +62,7 @@ export function AnalystBriefingSheet() {
         })()
       : kind === "chip" && tag
         ? `O perfil estratégico «${tag.label}» corresponde a um padrão textual do contexto da empresa. ` +
-          "Esta classificação resulta do reconhecimento imediato no cliente combinado com o vocabulário actualizado pelo servidor após o processamento da simulação. " +
+          "Esta classificação resulta do reconhecimento imediato no cliente combinado com o vocabulário atualizado pelo servidor após o processamento da simulação. " +
           "Os chips materializam o vocabulário fiscal do TribIA; a citação integral de dispositivos da legislação vigente " +
           "liga-se à classificação das despesas com recuperação RAG."
         : "—"

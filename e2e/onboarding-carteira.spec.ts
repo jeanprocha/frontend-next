@@ -12,9 +12,9 @@ test("onboarding: carteira vazia → CSV de exemplo → veredito → dossiê", a
   await page.goto("/clientes")
 
   // Empty state guiado — os 3 passos e os dois caminhos (simulador direto ou
-  // cadastrar cliente primeiro) substituem o antigo "clique em Nova empresa"
+  // cadastrar cliente primeiro) substituem o antigo "clique em Novo cliente"
   // sem alternativa para quem só quer testar.
-  await expect(page.getByText("Nenhuma empresa cadastrada ainda.")).toBeVisible()
+  await expect(page.getByText("Nenhum cliente cadastrado ainda.")).toBeVisible()
   await expect(page.getByText("Baixe o CSV de exemplo")).toBeVisible()
   const csvLink = page.getByRole("link", { name: "despesas.csv" })
   await expect(csvLink).toHaveAttribute("href", "/despesas.csv")

@@ -58,14 +58,14 @@ export function CompanyCard({
           onClick={() => setConfirmOpen(true)}
           disabled={deleteMutation.isPending}
           className="shrink-0 flex items-center justify-center size-7 rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 disabled:opacity-40 transition-colors"
-          title="Excluir empresa"
+          title="Excluir cliente"
         >
           <Trash2 className="size-3.5" />
         </button>
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Excluir empresa</DialogTitle>
+              <DialogTitle>Excluir cliente</DialogTitle>
               <DialogDescription>
                 Excluir &ldquo;{company.name}&rdquo;? Esta ação não pode ser desfeita.
               </DialogDescription>
@@ -125,7 +125,7 @@ export function CompanyCard({
         onClick={() => onUse(company)}
       >
         <Receipt className="size-3" />
-        Abrir workspace
+        Abrir cliente
       </Button>
     </div>
   )

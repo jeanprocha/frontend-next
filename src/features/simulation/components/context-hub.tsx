@@ -196,7 +196,7 @@ export function ContextHub() {
           className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground"
         >
           As etiquetas ligam o que escreve a um{" "}
-          <span className="font-medium text-foreground/80">vocabulário fiscal</span> sincronizado com o servidor. O destaque (ícone ou anel) marca padrões integrados nesta sessão após a última simulação. A telemetria de produto registra apenas identificadores taxonômicos — nunca o texto livre do contexto.
+          <span className="font-medium text-foreground/80">vocabulário fiscal</span> já usado em outras simulações. O destaque (ícone ou anel) marca padrões reconhecidos nesta sessão após a última simulação.
         </p>
       </div>
     </div>

@@ -16,7 +16,7 @@ test("carteira → workspace: semeia contexto, simula com company_id e não vaza
 
   // Abre o workspace do cliente A (primeiro card — ordem = COMPANIES_FIXTURE,
   // portfolio-page.tsx não reordena).
-  await page.getByRole("button", { name: "Abrir workspace" }).nth(0).click()
+  await page.getByRole("button", { name: "Abrir cliente" }).nth(0).click()
   await expect(page).toHaveURL(new RegExp(`/clientes/${E2E_COMPANY_ID_A}$`))
   await expect(
     page.getByRole("heading", { name: "Simulador de Reforma Tributária" }),
@@ -44,7 +44,7 @@ test("carteira → workspace: semeia contexto, simula com company_id e não vaza
   // Troca de cliente: volta à carteira e abre o cliente B — nada do
   // contexto/resultado de A deve sobreviver (identidade só na URL).
   await page.goto("/clientes")
-  await page.getByRole("button", { name: "Abrir workspace" }).nth(1).click()
+  await page.getByRole("button", { name: "Abrir cliente" }).nth(1).click()
   await expect(page).toHaveURL(new RegExp(`/clientes/${E2E_COMPANY_ID_B}$`))
   await expect(page.locator("#context")).toHaveValue(COMPANIES_FIXTURE[1].tax_context)
   // Resultado da simulação de A não vaza para o workspace de B.

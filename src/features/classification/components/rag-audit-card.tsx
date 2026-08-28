@@ -211,7 +211,7 @@ export function RagAuditCard({ aiMetadata, onOpenBriefing, className }: RagAudit
 
         <p className="mt-1 leading-relaxed">
 
-          Não há trechos da lei associados a esta simulação (ex.: registo antigo, ou a classificação por IA não
+          Não há trechos da lei associados a esta simulação (ex.: registro antigo, ou a classificação por IA não
 
           encontrou evidência suficiente). Execute uma simulação manual com classificação por IA para ver
 

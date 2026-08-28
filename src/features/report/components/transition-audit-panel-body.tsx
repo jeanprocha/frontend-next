@@ -52,7 +52,7 @@ export function TransitionAuditPanelBody({
     <div className={cn("space-y-4 text-xs", className)}>
       {seriesEnriched ? (
         <p className="rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1.5 text-[11px] leading-snug text-amber-950 dark:text-amber-100">
-          Este registo foi reconstituído no servidor (líquidos e fatores de
+          Este registro foi reconstituído no servidor (líquidos e fatores de
           referência). O breakdown completo de bruto e créditos por ano fica
           gravado no histórico quando executar e guardar uma nova simulação.
         </p>
@@ -206,13 +206,13 @@ export function TransitionAuditPanelBody({
         />
       ) : (
         <p className="text-muted-foreground">
-          Fatores não disponíveis para este registo.
+          Fatores não disponíveis para este registro.
         </p>
       )}
 
       {/* Etapa C, W2/PR3: decomposição por tributo + trace item a item — o
           que já existia acima ("Conta armada", fatores) mostra o AGREGADO;
-          isto mostra COMO o motor chegou lá. Ausente em registo salvo antes
+          isto mostra COMO o motor chegou lá. Ausente em registro salvo antes
           da PR1/PR2 — CalculationTracePanel declara a ausência, não some
           em silêncio. */}
       <CalculationTracePanel current={point?.current} projected={point?.projected} basis={f?.basis} />

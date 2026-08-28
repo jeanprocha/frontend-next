@@ -31,14 +31,14 @@ function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): str
     const more = ragSources.length > 6 ? ` (+${ragSources.length - 6} outras)` : ""
     return `${base} Fontes legislativas priorizadas na recuperação RAG: ${list}${more}.`
   }
-  return `${base} Sem lista de artigos consolidada neste registo — valide premissas com a área fiscal.`
+  return `${base} Sem lista de artigos consolidada neste registro — valide premissas com a área fiscal.`
 }
 
 export interface ComparisonVerdictCardProps {
   mode: "single" | "comparison"
   strategyInsight?: string
   lawVersion?: string
-  /** Sempre o cenário actual (B em modo comparison). */
+  /** Sempre o cenário atual (B em modo comparison). */
   currentSimulation: SimulationResponse
   /** Modo comparison: cenário A. */
   baselineSimulation?: SimulationResponse
@@ -191,7 +191,7 @@ export function ComparisonVerdictCard({
             {/*
              * Col A — Referência CBS/IBS.
              * O protagonista do delta (valor absoluto + %) foi movido para o
-             * FinancialVerdictHeroCard (item 2.1.1) acima desta secção.
+             * FinancialVerdictHeroCard (item 2.1.1) acima desta seção.
              * Esta coluna mantém os valores de referência absolutos (projetado vs atual)
              * para contextualizar o Racional e a Prova técnica.
              */}
@@ -250,7 +250,7 @@ export function ComparisonVerdictCard({
                   </h4>
                   {executiveThesisDisplayed && !isComparison ? (
                     /* Remissão curta — evita duplicar o parecer executivo que já
-                     * está no VerdictThesisPanel (Lado B) acima desta secção.
+                     * está no VerdictThesisPanel (Lado B) acima desta seção.
                      * Um protagonista por ideia (tribia_core_rules + system.md). */
                     <p className="font-board-report text-xs leading-relaxed text-muted-foreground md:text-sm">
                       O parecer executivo encontra-se no painel ao lado do veredito financeiro.
@@ -326,7 +326,7 @@ export function ComparisonVerdictCard({
                     ) : null}
                   </div>
                 ) : (
-                  <p className="mt-1 text-[11px] text-muted-foreground">Sem indicador agregado neste registo.</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Sem indicador agregado neste registro.</p>
                 )}
               </div>
 

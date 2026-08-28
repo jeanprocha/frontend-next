@@ -15,9 +15,9 @@ const REPORT_PDF_FAB = "report-export-pdf-fab no-print print:hidden"
 interface PublicReportProps {
   id: string
   /**
-   * Lista de secções, composta por app/report/[id]/page.tsx a partir de
+   * Lista de seções, composta por app/report/[id]/page.tsx a partir de
    * features/report + features/classification — report ↛ classification
-   * (só features/plg tem excepção no lint de fronteira).
+   * (só features/plg tem exceção no lint de fronteira).
    */
   sections: ReportSection[]
 }
@@ -99,7 +99,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={record.reportBrand.logo_url}
-                  alt={record.reportBrand.org_name || "Logótipo do cliente"}
+                  alt={record.reportBrand.org_name || "Logotipo do cliente"}
                   className="h-8 w-auto max-w-[140px] object-contain object-left"
                 />
               ) : null}

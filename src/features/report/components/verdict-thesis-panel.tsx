@@ -55,7 +55,7 @@ const FALLBACK_EMPTY =
   "Execute a simulação com conta autenticada para ver a fundamentação gerada pelo motor semântico."
 
 const FALLBACK_UNAVAILABLE =
-  "Parecer executivo indisponível neste registo. A análise depende do motor semântico (LLM) — verifique se a funcionalidade está activa e execute uma nova simulação."
+  "Parecer executivo indisponível neste registro. A análise depende do motor semântico (LLM) — verifique se a funcionalidade está ativa e execute uma nova simulação."
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -86,11 +86,11 @@ export interface VerdictThesisPanelProps {
    * Mantido para suportar stream / desacoplamento futuro sem quebra de API.
    */
   pending?: boolean
-  /** Activa tipografia Board-Ready (font-board-report / Serif). */
+  /** Ativa tipografia Board-Ready (font-board-report / Serif). */
   presentationMode?: boolean
   /**
    * 3.4.2 — Quando `true`, o `strategy_insight` exibido pertence à simulação
-   * original da IA e pode não reflectir os overrides manuais do consultor.
+   * original da IA e pode não refletir os overrides manuais do consultor.
    * Exibe uma nota institucional subtil (muted, text-[11px]) junto ao parágrafo.
    * Anti-contradição: evita que o consultor apresente texto da IA desalinhado
    * do número novo que o motor Go acabou de calcular.
@@ -174,7 +174,7 @@ export function VerdictThesisPanel({
         </>
       )}
 
-      {/* Rótulo da secção */}
+      {/* Rótulo da seção */}
       <p
         className={cn(
           "text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground",

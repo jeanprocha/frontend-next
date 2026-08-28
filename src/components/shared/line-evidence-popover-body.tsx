@@ -21,7 +21,7 @@ const footerNote =
 
 const UNIFIED_PANEL_TITLE = "Cédula de auditoria"
 
-/** Uma frase curta; em ecrãs estreitos o <p> usa line-clamp-2. */
+/** Uma frase curta; em telas estreitas o <p> usa line-clamp-2. */
 const UNIFIED_PANEL_DESCRIPTION =
   "Classificação, evidências e texto legal remontados nesta simulação — não substitui o texto oficial consolidado."
 
@@ -177,7 +177,7 @@ function LawArticleSection({ c }: { c: ClassificationItem }) {
           <BriefingSectionTitle>Texto legal integral</BriefingSectionTitle>
           <p className="text-sm text-muted-foreground">
             Não há chunk indexado nem trecho RAG com texto para esta linha. O racional e a base legal da classificação
-            encontram-se na secção acima.
+            encontram-se na seção acima.
           </p>
         </section>
       )}

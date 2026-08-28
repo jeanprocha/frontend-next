@@ -46,7 +46,7 @@ export function PortfolioPage({ aoUsarEmpresa, breadcrumbItems }: PortfolioPageP
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Building2 className="size-5 text-accent" />
-            Empresas
+            Clientes
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Cadastre clientes com contexto e serviços recorrentes para pré-carregar o simulador em um clique.
@@ -59,7 +59,7 @@ export function PortfolioPage({ aoUsarEmpresa, breadcrumbItems }: PortfolioPageP
           disabled={showForm}
         >
           <Plus className="size-4" />
-          Nova empresa
+          Novo cliente
         </Button>
       </div>
 
@@ -84,7 +84,7 @@ export function PortfolioPage({ aoUsarEmpresa, breadcrumbItems }: PortfolioPageP
       {/* Estado de erro */}
       {isError && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-6 text-center">
-          <p className="text-sm text-destructive">Erro ao carregar empresas. Tente novamente.</p>
+          <p className="text-sm text-destructive">Erro ao carregar clientes. Tente novamente.</p>
         </div>
       )}
 
@@ -104,7 +104,7 @@ export function PortfolioPage({ aoUsarEmpresa, breadcrumbItems }: PortfolioPageP
         <div className="flex flex-col items-center gap-6 py-16 text-center">
           <Building2 className="size-10 text-muted-foreground opacity-60" aria-hidden />
           <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">Nenhuma empresa cadastrada ainda.</p>
+            <p className="text-sm font-medium text-foreground">Nenhum cliente cadastrado ainda.</p>
             <p className="text-xs text-muted-foreground max-w-sm">
               Cadastrar um cliente é opcional — acelera simulações futuras, mas a primeira pode começar direto.
             </p>

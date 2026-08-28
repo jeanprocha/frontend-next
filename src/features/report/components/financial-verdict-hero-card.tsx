@@ -237,7 +237,7 @@ export function FinancialVerdictHeroCard({
       id="tribia-financial-verdict-hero"
       aria-labelledby="tribia-fvh-title"
       className={cn(
-        // Elevação: único pico de dramatismo nesta secção (whisper-quiet — system.md).
+        // Elevação: único pico de dramatismo nesta seção (whisper-quiet — system.md).
         "relative overflow-hidden rounded-xl border tribia-shadow-elevated",
         borderClass,
         bgClass,
@@ -262,7 +262,7 @@ export function FinancialVerdictHeroCard({
       <div className="relative z-10 space-y-3 p-5 md:p-6">
         {/*
          * HIERARQUIA TOP-DOWN (tribia_core_rules §3):
-         * 1. Rótulo — contextualiza a secção
+         * 1. Rótulo — contextualiza a seção
          * 2. Selo  — estado do veredito (Shield + rótulo textual)
          * 3. Valor — magnitude do delta
          * 4. %    — variação percentual
@@ -380,13 +380,13 @@ export function FinancialVerdictHeroCard({
             </p>
           </>
         ) : (
-          // ── Estado indisponível — a API não enviou delta (registo antigo) ──
+          // ── Estado indisponível — a API não enviou delta (registro antigo) ──
           <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
             <p className="text-sm font-medium text-muted-foreground">
               Delta indisponível
             </p>
             <p className="mt-1 text-[11px] leading-snug text-muted-foreground/80">
-              Este registo não contém o campo{" "}
+              Este registro não contém o campo{" "}
               <code className="font-mono text-[10px]">delta</code> calculado
               pelo motor Go. Execute uma nova simulação para ver o veredito
               financeiro.

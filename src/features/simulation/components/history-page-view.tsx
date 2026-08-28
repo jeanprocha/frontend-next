@@ -73,7 +73,7 @@ function EconomyScanTag({ delta_impact }: { delta_impact: string }) {
 export interface HistoryPageViewProps {
   breadcrumbItems: ShellBreadcrumbItem[]
   hrefSimulador: string
-  /** Chamado após hidratar com sucesso um registo aberto — app/ decide a navegação. */
+  /** Chamado após hidratar com sucesso um registro aberto — app/ decide a navegação. */
   aoAbrirRegistro: () => void
   /** Chamado após preparar a comparação A/B com sucesso — app/ decide a navegação. */
   aoCompararCenarios: () => void
@@ -203,12 +203,12 @@ export function HistoryPageView({
           </h1>
           <p className="text-sm text-muted-foreground">
             {historyPro
-              ? "Arquivo ativo: sparklines, preview Time-Traveler e comparação de dois cenários."
+              ? "Arquivo completo: gráfico de tendência, prévia detalhada e comparação de dois cenários."
               : "Lista das suas simulações com pré-visualização suave da trajetória 2026–2033; toque numa linha para abrir no simulador."}
           </p>
           {!historyPro && data && data.length >= 2 && (
             <p className="text-xs text-muted-foreground/90 max-w-xl">
-              Seleccione duas simulações para ver como a comparação A/B funciona no TribIA Pro — ideal para reuniões e decisões de cenário.
+              Selecione duas simulações para ver como a comparação A/B funciona no TribIA Pro — ideal para reuniões e decisões de cenário.
             </p>
           )}
         </div>
@@ -302,7 +302,7 @@ export function HistoryPageView({
             <div className="flex flex-col items-center gap-3 py-16 px-4 text-muted-foreground">
               <FileClock className="h-10 w-10 shrink-0 opacity-60" aria-hidden />
               <p className="text-sm font-medium text-foreground/85">
-                Passo 3/3: arquivo BI — vereditos e cenários preservados
+                Passo 3/3: suas simulações ficam guardadas aqui
               </p>
               <p className="text-xs text-center max-w-md leading-relaxed opacity-90">
                 No simulador, o fluxo é <span className="font-medium text-foreground/80">Contexto</span> →{" "}
@@ -312,7 +312,7 @@ export function HistoryPageView({
                 e cenários A/B conforme o seu plano.
               </p>
               <p className="text-xs text-center max-w-xs opacity-80">
-                Ainda não há registos — comece pela primeira simulação.
+                Ainda não há registros — comece pela primeira simulação.
               </p>
               <Link
                 href={hrefSimulador}

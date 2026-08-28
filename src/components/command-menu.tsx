@@ -375,11 +375,11 @@ export function CommandMenu() {
               )}
               {naCarteira && canOpenCompanyForm && (
                 <CommandItem
-                  value="empresa nova cadastro"
+                  value="cliente empresa novo cadastro"
                   onSelect={openNewCompanyForm}
                 >
                   <Plus className="size-4 text-emerald-600" />
-                  <span>Nova empresa</span>
+                  <span>Novo cliente</span>
                 </CommandItem>
               )}
               {canSimActions && (

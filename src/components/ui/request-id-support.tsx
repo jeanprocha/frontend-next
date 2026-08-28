@@ -40,7 +40,7 @@ export function RequestIdSupportRow({
       >
         {copied ? "Copiado" : "Copiar"}
       </Button>
-      <span className="text-muted-foreground">Envie ao suporte para localizar o registo.</span>
+      <span className="text-muted-foreground">Envie ao suporte para localizar o registro.</span>
     </div>
   )
 }

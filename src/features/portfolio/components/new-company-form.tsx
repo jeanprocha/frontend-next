@@ -90,7 +90,7 @@ export function NewCompanyForm({ onClose }: { onClose: () => void }) {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Building2 className="size-4 text-accent" />
-          Nova empresa
+          Novo cliente
         </h3>
         <button
           type="button"
@@ -104,7 +104,7 @@ export function NewCompanyForm({ onClose }: { onClose: () => void }) {
       {/* Nome */}
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Nome da empresa *
+          Nome do cliente *
         </Label>
         <Input
           placeholder="ex: Tribunal de Justiça do RS"
@@ -185,7 +185,7 @@ export function NewCompanyForm({ onClose }: { onClose: () => void }) {
 
       {createErr && (
         <div className="text-xs text-destructive space-y-1">
-          <p>{createErr.message || "Erro ao criar empresa."}</p>
+          <p>{createErr.message || "Erro ao criar cliente."}</p>
           {createErr.requestId ? (
             <RequestIdSupportRow
               requestId={createErr.requestId}
@@ -200,7 +200,7 @@ export function NewCompanyForm({ onClose }: { onClose: () => void }) {
           Cancelar
         </Button>
         <Button type="submit" size="sm" disabled={mutation.isPending || !name.trim()}>
-          {mutation.isPending ? "Salvando…" : "Salvar empresa"}
+          {mutation.isPending ? "Salvando…" : "Salvar cliente"}
         </Button>
       </div>
     </form>
