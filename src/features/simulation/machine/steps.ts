@@ -312,7 +312,11 @@ export async function runPersist(
       {
         useInitialExpenseEligibility: origin === "initial",
         discoveredTags: origin === "initial" ? extra.discoveredTags : undefined,
-        reportBrand: origin === "dossier" ? extra.reportBrand : undefined,
+        // Etapa N/PR 9 — "initial" carrega a marca capturada no momento de
+        // simular (ver SimulationInput.reportBrand); "dossier" continua
+        // como rede de segurança para o caso raro de persist automático
+        // ainda não ter terminado quando o dossiê é pedido.
+        reportBrand: origin === "dossier" || origin === "initial" ? extra.reportBrand : undefined,
       },
     )
     const created = await saveSimulationRecord(token, ctx.userId, payload)

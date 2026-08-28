@@ -23,6 +23,16 @@ export interface SimulationInput {
   imobiliarioRedutorAjusteBrl?: string
   /** Cliente da carteira (FE-4/W9) — ver ResultMeta.companyId em lib/persisted-results.ts. */
   companyId?: string
+  /**
+   * Etapa N/PR 9 (fato 12) — capturada no momento de simular, não só no
+   * momento de abrir o dossiê: o persist "initial" roda automaticamente
+   * assim que os resultados ficam prontos (STEP_SUCCEEDED), tipicamente bem
+   * antes do usuário clicar em "Gerar Dossiê". Sem isso aqui, `openDossier`
+   * só anexa a marca quando `meta.recordId` ainda não existe — na prática,
+   * quase nunca (o persist automático já rodou) — e não há endpoint de
+   * atualização no backend para corrigir depois. Ver ReportBrand abaixo.
+   */
+  reportBrand?: ReportBrand | null
 }
 
 export interface ClassifiedInput {

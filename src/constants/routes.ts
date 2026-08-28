@@ -15,6 +15,7 @@ export const ROTAS = {
   relatorio: (recordId: string) => `/report/${recordId}`,
   privacidade: "/privacidade",
   exemplo: "/exemplo",
+  configuracoes: "/configuracoes",
 } as const
 
 /**
@@ -26,6 +27,7 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/clientes(.*)",
   "/simulador(.*)",
   "/simulacoes(.*)",
+  "/configuracoes(.*)",
 ] as const
 
 /** Superfícies onde o SimulationDashboard está montado — avulso ou workspace do cliente (com ou sem registo aberto). */

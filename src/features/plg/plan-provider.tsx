@@ -49,8 +49,17 @@ export function TribiaPlanProvider({ children }: { children: ReactNode }) {
       const meta = user.publicMetadata as Record<string, unknown>
       const fromMeta = normalizeTier(meta.tribia_plan)
       if (fromMeta) tier = fromMeta
-      const logo = meta.branding_logo_url
-      const org = meta.branding_org_name
+    }
+
+    // Etapa N/PR 9 — a marca do escritório vive em unsafeMetadata, não em
+    // publicMetadata: o SDK do Clerk só escreve unsafeMetadata a partir do
+    // cliente (publicMetadata exigiria um endpoint de backend dedicado, que
+    // não existe). tribia_plan continua em publicMetadata — administrado
+    // pela conta, não editável pelo próprio usuário em /configuracoes.
+    if (isLoaded && user?.unsafeMetadata) {
+      const unsafe = user.unsafeMetadata as Record<string, unknown>
+      const logo = unsafe.branding_logo_url
+      const org = unsafe.branding_org_name
       if (typeof logo === "string" && logo.trim()) brandingLogoUrl = logo.trim()
       if (typeof org === "string" && org.trim()) brandingOrgName = org.trim()
     }

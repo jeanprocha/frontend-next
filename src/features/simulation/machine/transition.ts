@@ -55,7 +55,9 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
           },
           dossierBusy: false,
         },
-        commands: [{ kind: "persist", origin: "initial", discoveredTags: event.acc.discoveredTags }],
+        commands: [
+          { kind: "persist", origin: "initial", discoveredTags: event.acc.discoveredTags, reportBrand: state.input.reportBrand },
+        ],
       }
     }
 

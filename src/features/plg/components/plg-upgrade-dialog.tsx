@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-export type PlgUpgradeFeature = "compare_ab" | "board_ready" | "rayx" | "generic"
+export type PlgUpgradeFeature = "compare_ab" | "board_ready" | "rayx" | "white_label" | "generic"
 
 const COPY: Record<
   PlgUpgradeFeature,
@@ -30,6 +30,11 @@ const COPY: Record<
     title: "Raio-X completo no contexto e na lei",
     body:
       "No Pro o trecho do contexto que sustenta a auditoria fica nítido no campo central, com base legal integral na legislação vigente e lista de evidências RAG sem desfocagem — trilha completa para consultores e CFO.",
+  },
+  white_label: {
+    title: "Marca do escritório no dossiê",
+    body:
+      "No plano Premium, seu logotipo e o nome do escritório substituem a marca TribIA no cabeçalho dos dossiês PDF e impressos — pronto para levar ao cliente com a sua identidade.",
   },
   generic: {
     title: "TribIA Pro — mais profundidade para o seu fluxo",

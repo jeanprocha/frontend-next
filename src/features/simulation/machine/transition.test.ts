@@ -115,6 +115,42 @@ describe("transition — fluxo feliz (registry de passos)", () => {
     })
     expect(commands).toEqual([{ kind: "persist", origin: "initial", discoveredTags: [] }])
   })
+
+  it("Etapa N/PR 9 — reportBrand do input viaja pro comando de persist initial (capturado ao simular, não ao abrir o dossiê)", () => {
+    const inputComMarca: SimulationInput = {
+      ...INPUT,
+      reportBrand: { logo_url: "https://exemplo.com/logo.png", org_name: "Escritório Exemplo" },
+    }
+    const running: MachineState = {
+      status: "running",
+      stepId: "simulate",
+      input: inputComMarca,
+      acc: { classified: CLASSIFIED },
+    }
+    const acc: PipelineAcc = { classified: CLASSIFIED, discoveredTags: [], results: RESULTS }
+    const { commands } = transition(running, { type: "STEP_SUCCEEDED", stepId: "simulate", acc }, ENV_NORMAL)
+    expect(commands).toEqual([
+      {
+        kind: "persist",
+        origin: "initial",
+        discoveredTags: [],
+        reportBrand: { logo_url: "https://exemplo.com/logo.png", org_name: "Escritório Exemplo" },
+      },
+    ])
+  })
+
+  it("sem Premium/marca configurada, reportBrand vai null no persist initial (não undefined silencioso disfarçando null explícito)", () => {
+    const inputSemMarca: SimulationInput = { ...INPUT, reportBrand: null }
+    const running: MachineState = {
+      status: "running",
+      stepId: "simulate",
+      input: inputSemMarca,
+      acc: { classified: CLASSIFIED },
+    }
+    const acc: PipelineAcc = { classified: CLASSIFIED, discoveredTags: [], results: RESULTS }
+    const { commands } = transition(running, { type: "STEP_SUCCEEDED", stepId: "simulate", acc }, ENV_NORMAL)
+    expect(commands).toEqual([{ kind: "persist", origin: "initial", discoveredTags: [], reportBrand: null }])
+  })
 })
 
 describe("transition — genericidade do registry (a máquina não conhece nomes de passo)", () => {

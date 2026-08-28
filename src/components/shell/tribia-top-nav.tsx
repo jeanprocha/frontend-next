@@ -139,6 +139,13 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
                         {NAV_LINK_LABELS.simulacoes}
                       </Link>
                       <Link
+                        href={ROTAS.configuracoes}
+                        className={cn(navLinkClass(false), "w-full justify-start")}
+                        onClick={() => setMobileNavOpen(false)}
+                      >
+                        Configurações
+                      </Link>
+                      <Link
                         href={ROTAS.privacidade}
                         className={cn(navLinkClass(false), "w-full justify-start")}
                         onClick={() => setMobileNavOpen(false)}
@@ -150,6 +157,12 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
                 </Sheet>
               </div>
             </nav>
+            <Link
+              href={ROTAS.configuracoes}
+              className="hidden shrink-0 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline md:inline"
+            >
+              Configurações
+            </Link>
             <span
               className="h-6 w-px shrink-0 bg-border/60"
               aria-hidden

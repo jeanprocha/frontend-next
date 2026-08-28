@@ -178,6 +178,19 @@ export function SimulationDashboard({
     }
   }, [formYear]) // eslint-disable-line react-hooks/exhaustive-deps -- herança: reagir só à mudança de ano, não a toda mudança de referência
 
+  // Etapa N/PR 9 (fato 12) — capturada aqui, no momento de simular: o persist
+  // "initial" roda automaticamente assim que os resultados ficam prontos,
+  // tipicamente antes do usuário sequer olhar o botão "Gerar Dossiê" — se a
+  // marca só fosse lida em handleOpenDossier, o registro já persistido sem
+  // ela nunca mais poderia ser corrigido (não há endpoint de atualização).
+  // Memoizado: entra como dependência de runSimulationFromBridge (useCallback)
+  // e do bridge de comandos abaixo — um objeto novo a cada render forçaria os
+  // dois a recriar/reregistrar sem necessidade.
+  const reportBrandForRun = useMemo(
+    () => (plgCap.whiteLabelExport ? { logo_url: brandingLogoUrl, org_name: brandingOrgName } : null),
+    [plgCap.whiteLabelExport, brandingLogoUrl, brandingOrgName],
+  )
+
   // ── Fluxo Formulário ─────────────────────────────────────────────────────
   function handleFormSubmit(
     year: number,
@@ -193,6 +206,7 @@ export function SimulationDashboard({
       companyRegime,
       imobiliarioRedutorAjusteBrl,
       companyId,
+      reportBrand: reportBrandForRun,
     })
   }
 
@@ -389,8 +403,9 @@ export function SimulationDashboard({
       companyRegime: regime,
       imobiliarioRedutorAjusteBrl: redutor,
       companyId,
+      reportBrand: reportBrandForRun,
     })
-  }, [pipeline.actions, companyId])
+  }, [pipeline.actions, companyId, reportBrandForRun])
 
   useEffect(() => {
     // FE-3 (PR 3c): a distinção form vs. importer saiu daqui — o painel de
