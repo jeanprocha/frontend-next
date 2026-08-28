@@ -133,7 +133,7 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
           <div className="mt-4 rounded-lg border border-border/60 bg-muted/15 px-3 py-3 text-[11px] leading-relaxed text-muted-foreground print:border-foreground/20 print:bg-transparent">
             <p className="font-semibold text-foreground/90">Custo morto (exemplo ilustrativo)</p>
             <p className="mt-1.5 print:text-foreground/85">
-              Uma assinatura de software ou streaming (por exemplo, Netflix) pode ser elegível a crédito quando o
+              Uma assinatura de software ou de serviço de streaming pode ser elegível a crédito quando o
               serviço estiver ligado à produção da receita tributável — mas se a linha não for enquadrada ou não
               houver nexo documental na legislação vigente, o benefício deixa de ser recuperável: vira{" "}
               <span className="font-medium text-foreground/90">custo morto</span> para efeitos de crédito nesta
@@ -146,7 +146,7 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
           </div>
         ) : (
           <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground print:text-foreground/80">
-            O exemplo Netflix acima resume a lógica quando não há nexo; com vazamentos detectados, priorize as linhas
+            O exemplo acima resume a lógica quando não há nexo; com vazamentos detectados, priorize as linhas
             do alerta e a tabela abaixo.
           </p>
         )}

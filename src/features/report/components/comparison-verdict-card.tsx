@@ -1,7 +1,6 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useState } from "react"
 import { ArrowRightLeft, Scale, ShieldCheck } from "lucide-react"
 import type { ReportScreenTab } from "@/lib/report-contract"
 import { ConfidenceGauge } from "@/components/shared/confidence-gauge"
@@ -23,7 +22,6 @@ import {
 } from "@/lib/simulation-verdict"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { AiMetadata, ClassificationItem, SimulationResponse } from "@/types/api"
-import { useCapability } from "@/features/plg"
 import { useLawCorpus } from "@/lib/use-law-corpus"
 
 function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): string {
@@ -85,8 +83,6 @@ export function ComparisonVerdictCard({
   executiveThesisDisplayed = false,
 }: ComparisonVerdictCardProps) {
   const openMacroBriefing = useTaxStore((s) => s.openAnalystBriefingFromMacro)
-  const [execTab, setExecTab] = useState<"veredito" | "parecer">("veredito")
-  const showLegalTab = useCapability("legalOpinionTab")
   const { changelog } = useLawCorpus()
   const lawLabel = fiscalLawVersionLabel(lawVersion ?? changelog.version, changelog.label)
 
@@ -235,49 +231,7 @@ export function ComparisonVerdictCard({
 
             {/* Col B — Racional */}
             <div className="min-w-0 space-y-4 border-y border-border/50 py-4 xl:border-x xl:border-y-0 xl:px-4 xl:py-0 print:border-0 print:px-0 print:py-0">
-              {showLegalTab && (
-                <div
-                  className="flex rounded-lg border border-border/70 bg-muted/20 p-0.5 text-sm font-medium print:hidden"
-                  role="tablist"
-                >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={execTab === "veredito"}
-                    className={cn(
-                      "flex-1 rounded-md px-2 py-1.5 transition-colors",
-                      execTab === "veredito"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                    onClick={() => setExecTab("veredito")}
-                  >
-                    Veredito financeiro
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={execTab === "parecer"}
-                    className={cn(
-                      "inline-flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 transition-colors",
-                      execTab === "parecer"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                    onClick={() => setExecTab("parecer")}
-                  >
-                    <Scale className="size-3 opacity-80" aria-hidden />
-                    Parecer jurídico
-                  </button>
-                </div>
-              )}
-
-              <div
-                className={cn(
-                  "space-y-4",
-                  showLegalTab && execTab === "parecer" && "hidden print:block",
-                )}
-              >
+              <div className="space-y-4">
                 <section className="space-y-1.5">
                   <h4 className="font-board-report text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     O veredito
@@ -307,24 +261,6 @@ export function ComparisonVerdictCard({
                 </section>
                 {insightSlot ? <div className="border-t border-border/50 pt-3">{insightSlot}</div> : null}
               </div>
-
-              {showLegalTab && execTab === "parecer" && (
-                <section className="space-y-3 rounded-xl border border-border/60 bg-muted/15 p-4 text-sm leading-relaxed board-ready:border-foreground/15 print:border print:border-foreground/25">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Rascunho assistido — Premium
-                  </p>
-                  <p className="font-board-report text-foreground/95">
-                    Com base nos resultados simulados e nos artigos da {changelog.label} recuperados pelo motor RAG, a linha de
-                    defesa fiscal preliminar sustenta que a transição CBS/IBS deve ser interpretada em conjunto com o
-                    regime de não-cumulatividade e com as exceções sectoriais aplicáveis ao perfil declarado. Este texto é
-                    gerado de forma ilustrativa; exige revisão por profissional habilitado antes de qualquer uso perante
-                    terceiros.
-                  </p>
-                  <p className="text-xs text-muted-foreground italic">
-                    Pipeline futuro: LLM + revisão humana com trilho de citações por artigo.
-                  </p>
-                </section>
-              )}
 
               <div className="hidden board-ready:block print:block space-y-1">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auditado via RAG Engine</p>
@@ -494,49 +430,7 @@ export function ComparisonVerdictCard({
               </h3>
             </div>
 
-            {showLegalTab && (
-              <div
-                className="flex rounded-lg border border-border/70 bg-muted/20 p-0.5 text-sm font-medium print:hidden"
-                role="tablist"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={execTab === "veredito"}
-                  className={cn(
-                    "flex-1 rounded-md px-2 py-1.5 transition-colors",
-                    execTab === "veredito"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  onClick={() => setExecTab("veredito")}
-                >
-                  Veredito financeiro
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={execTab === "parecer"}
-                  className={cn(
-                    "flex-1 rounded-md px-2 py-1.5 transition-colors inline-flex items-center justify-center gap-1",
-                    execTab === "parecer"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  onClick={() => setExecTab("parecer")}
-                >
-                  <Scale className="size-3 opacity-80" aria-hidden />
-                  Parecer jurídico
-                </button>
-              </div>
-            )}
-
-            <div
-              className={cn(
-                "space-y-5",
-                showLegalTab && execTab === "parecer" && "hidden print:block",
-              )}
-            >
+            <div className="space-y-5">
               <section className="space-y-1.5">
                 <h4 className="font-board-report text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   O veredito
@@ -558,24 +452,6 @@ export function ComparisonVerdictCard({
                 <p className="font-board-report text-sm leading-relaxed text-foreground/90">{recomendacao}</p>
               </section>
             </div>
-
-            {showLegalTab && execTab === "parecer" && (
-              <section className="space-y-3 rounded-xl border border-border/60 bg-muted/15 p-4 text-sm leading-relaxed board-ready:border-foreground/15 print:border print:border-foreground/25">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Rascunho assistido — Premium
-                </p>
-                <p className="font-board-report text-foreground/95">
-                  Com base nos resultados simulados e nos artigos da {changelog.label} recuperados pelo motor RAG, a linha de
-                  defesa fiscal preliminar sustenta que a transição CBS/IBS deve ser interpretada em conjunto com o
-                  regime de não-cumulatividade e com as exceções sectoriais aplicáveis ao perfil declarado. Este texto é
-                  gerado de forma ilustrativa; exige revisão por profissional habilitado antes de qualquer uso perante
-                  terceiros.
-                </p>
-                <p className="text-xs text-muted-foreground italic">
-                  Pipeline futuro: LLM + revisão humana com trilho de citações por artigo.
-                </p>
-              </section>
-            )}
 
             <div className="hidden board-ready:block print:block space-y-1">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auditado via RAG Engine</p>

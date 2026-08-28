@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Radar, Scale } from "lucide-react"
+import { Scale } from "lucide-react"
 
 import { ChangelogFiscalPanel } from "./changelog-fiscal-panel"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -12,7 +12,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { usePlgCapabilities } from "@/features/plg"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
 import { useLawCorpus } from "@/lib/use-law-corpus"
 
@@ -22,7 +21,6 @@ export interface LegalVersionIndicatorProps {
 }
 
 export function LegalVersionIndicator({ criticalAlert = false }: LegalVersionIndicatorProps) {
-  const cap = usePlgCapabilities()
   const touchMeeting = useTouchMeetingMode()
   const [open, setOpen] = useState(false)
   const { changelog } = useLawCorpus()
@@ -31,39 +29,7 @@ export function LegalVersionIndicator({ criticalAlert = false }: LegalVersionInd
 
   const ariaLabel = `Legislação ${label} versão ${version}. Abrir changelog fiscal.`
 
-  const plgRibbon = (
-    <>
-      {cap.complianceRadar && (
-        <div className="border-b border-border bg-muted/25 px-4 py-3">
-          <p className="flex items-center gap-2 text-xs font-semibold text-foreground">
-            <Radar className="size-3.5 shrink-0 text-accent" aria-hidden />
-            Compliance Radar
-          </p>
-          <p className="mt-1 text-sm leading-snug text-muted-foreground">
-            Alertas prioritários quando a {label} ou o motor determinístico mudam de versão — visão agregada
-            Premium (roadmap).
-          </p>
-        </div>
-      )}
-      {cap.collectiveIntel && (
-        <div className="border-b border-border bg-accent/5 px-4 py-2.5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Inteligência colectiva
-          </p>
-          <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
-            Tendências anónimas dos chips de estratégia na rede TribIA (opt-in) — antecipe padrões fiscais.
-          </p>
-        </div>
-      )}
-    </>
-  )
-
-  const panel = (
-    <>
-      {plgRibbon}
-      <ChangelogFiscalPanel data={changelog} embedded={touchMeeting} />
-    </>
-  )
+  const panel = <ChangelogFiscalPanel data={changelog} embedded={touchMeeting} />
 
   const triggerClass = cn(
     "relative flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-left transition-colors",
