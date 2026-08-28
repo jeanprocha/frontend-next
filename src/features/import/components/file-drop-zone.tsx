@@ -5,6 +5,7 @@
 // arquivo, chama importer.parse() e aplica o rascunho ao store. Erros de
 // parse aparecem aqui mesmo, não mais no banner de erro do dashboard.
 import { useRef, useState } from "react"
+import { Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -132,6 +133,18 @@ export function FileDropZone({ importer, onApplied }: FileDropZoneProps) {
           <p className="text-xs text-muted-foreground">
             Exemplo de cabeçalho: <code className="font-mono bg-muted px-1 rounded">{importer.formatHint}</code>
           </p>
+        )}
+
+        {/* CSV de exemplo real, no formato aceito por este importer — Etapa M/PR 4 */}
+        {phase.type === "idle" && importer.id === "csv" && (
+          <a
+            href="/despesas.csv"
+            download
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
+          >
+            <Download className="size-3" aria-hidden />
+            Baixar CSV de exemplo
+          </a>
         )}
       </div>
     </Card>

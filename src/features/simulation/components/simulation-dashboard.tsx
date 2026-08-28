@@ -474,8 +474,23 @@ export function SimulationDashboard({
               >
                 ← Nova simulação
               </Button>
-              {/* Saída de emergência: só visível em Board-Ready (a sticky está oculta).
-                  O CTA principal vive agora no toolbar / cabeçalho da página. */}
+              {/* Entrada: visível assim que há resultado, antes de ativar o modo.
+                  handlePresentationMode já trata o teaser Free internamente —
+                  antes desta linha, o único acesso era o atalho de teclado "B"
+                  ou a command palette (achado 7, docs/product/anexo-a). */}
+              {!boardReadyActive && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePresentationMode}
+                  className="board-ready:hidden no-print print:hidden gap-1.5 border-border/60 hover:border-emerald-500/40"
+                >
+                  <Monitor className="h-4 w-4 shrink-0" aria-hidden />
+                  Modo apresentação
+                </Button>
+              )}
+              {/* Saída: volta ao modo edição. */}
               {boardReadyActive && (
                 <Button
                   type="button"

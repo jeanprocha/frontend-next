@@ -1,12 +1,21 @@
 "use client"
 
 // Extraído verbatim de app/dashboard/companies/page.tsx (FE-4, PR 4c — move puro).
+import { useState } from "react"
 import { useAuth } from "@/lib/auth-client"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Receipt, Trash2 } from "lucide-react"
 import { deleteCompany, queryKeys } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import type { CompanyTemplate } from "@/types/api"
 
 export function CompanyCard({
@@ -18,6 +27,7 @@ export function CompanyCard({
 }) {
   const { userId, getToken } = useAuth()
   const queryClient = useQueryClient()
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -25,13 +35,11 @@ export function CompanyCard({
       if (!token || !userId) throw new Error("Não autenticado")
       return deleteCompany(token, userId, company.id)
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.companies.all }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all })
+      setConfirmOpen(false)
+    },
   })
-
-  function handleDelete() {
-    if (!window.confirm(`Excluir "${company.name}"? Esta ação não pode ser desfeita.`)) return
-    deleteMutation.mutate()
-  }
 
   const services = company.default_services ?? []
 
@@ -47,13 +55,46 @@ export function CompanyCard({
           )}
         </div>
         <button
-          onClick={handleDelete}
+          onClick={() => setConfirmOpen(true)}
           disabled={deleteMutation.isPending}
           className="shrink-0 flex items-center justify-center size-7 rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 disabled:opacity-40 transition-colors"
           title="Excluir empresa"
         >
           <Trash2 className="size-3.5" />
         </button>
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Excluir empresa</DialogTitle>
+              <DialogDescription>
+                Excluir &ldquo;{company.name}&rdquo;? Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            {deleteMutation.isError && (
+              <p className="text-sm text-destructive" role="alert">
+                Não foi possível excluir. Tente novamente.
+              </p>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmOpen(false)}
+                disabled={deleteMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Excluindo…" : "Excluir"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {services.length > 0 && (

@@ -5,14 +5,16 @@
 // valores de antes (comportamento idêntico) — os literais de rota saem
 // daqui para não travar a feature numa rota específica.
 import { useEffect, useState } from "react"
-import { Building2, Plus } from "lucide-react"
+import Link from "next/link"
+import { Building2, Download, Plus } from "lucide-react"
 import { useAuth } from "@/lib/auth-client"
 import { ShellBreadcrumb, type ShellBreadcrumbItem } from "@/components/shell/shell-breadcrumb"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
 import { shellPageClass } from "@/lib/shell-layout"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ROTAS } from "@/constants/routes"
 import { CompanyCard } from "./company-card"
 import { NewCompanyForm } from "./new-company-form"
 import { usePortfolioCompanies } from "../hooks/use-portfolio-companies"
@@ -95,15 +97,53 @@ export function PortfolioPage({ aoUsarEmpresa, breadcrumbItems }: PortfolioPageP
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — primeira simulação em 3 passos (Etapa M/PR 4: onboarding
+          guiado; antes só dizia "cadastre uma empresa", sem caminho até o
+          primeiro dossiê para quem chega sem saber por onde começar). */}
       {!isPending && !isError && (!companies || companies.length === 0) && !showForm && (
-        <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground opacity-60">
-          <Building2 className="size-10" aria-hidden />
-          <p className="text-sm font-medium">Nenhuma empresa cadastrada ainda.</p>
-          <p className="text-xs text-center max-w-xs">
-            Clique em «Nova empresa» para cadastrar um cliente com contexto tributário e serviços recorrentes.
-            Perfis guardados aqui aceleram o pipeline de simulação ao abrir o workspace do cliente.
-          </p>
+        <div className="flex flex-col items-center gap-6 py-16 text-center">
+          <Building2 className="size-10 text-muted-foreground opacity-60" aria-hidden />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Nenhuma empresa cadastrada ainda.</p>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              Cadastrar um cliente é opcional — acelera simulações futuras, mas a primeira pode começar direto.
+            </p>
+          </div>
+
+          <ol className="grid w-full max-w-2xl grid-cols-1 gap-3 text-left sm:grid-cols-3">
+            <li className="rounded-xl border border-border bg-card p-4">
+              <span className="font-mono text-xs text-accent">01</span>
+              <p className="mt-1 text-sm font-medium text-foreground">Baixe o CSV de exemplo</p>
+              <p className="mt-1 text-xs text-muted-foreground">Despesas reais de uma empresa de serviços, prontas para importar.</p>
+              <a
+                href="/despesas.csv"
+                download
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
+              >
+                <Download className="size-3" aria-hidden />
+                despesas.csv
+              </a>
+            </li>
+            <li className="rounded-xl border border-border bg-card p-4">
+              <span className="font-mono text-xs text-accent">02</span>
+              <p className="mt-1 text-sm font-medium text-foreground">Importe no simulador</p>
+              <p className="mt-1 text-xs text-muted-foreground">A aba &ldquo;Upload de CSV&rdquo; preenche o formulário — você completa a receita.</p>
+            </li>
+            <li className="rounded-xl border border-border bg-card p-4">
+              <span className="font-mono text-xs text-accent">03</span>
+              <p className="mt-1 text-sm font-medium text-foreground">Veja o veredito e o dossiê</p>
+              <p className="mt-1 text-xs text-muted-foreground">Classificação por IA, memória de cálculo e plano de ação em R$.</p>
+            </li>
+          </ol>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href={ROTAS.simulador} className={cn(buttonVariants({ size: "sm" }))}>
+              Ir para o simulador
+            </Link>
+            <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
+              Ou cadastre um cliente primeiro
+            </Button>
+          </div>
         </div>
       )}
     </div>
