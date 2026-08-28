@@ -17,9 +17,9 @@ import { BOARD_READY_SESSION_KEY } from "@/hooks/use-board-ready"
 import {
   PipelineStageAnnouncer,
   PipelineStageCompass,
+  PipelineStageProgress,
 } from "./pipeline-stage-indicators"
 import { DashboardInputPanel } from "./dashboard-input-panel"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
@@ -610,28 +610,7 @@ export function SimulationDashboard({
               transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
               className="space-y-5"
             >
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-xl border bg-white p-5 space-y-3">
-                    <Skeleton className="h-3 w-28" />
-                    <Skeleton className="h-7 w-20" />
-                    <Skeleton className="h-2.5 w-36" />
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-xl border bg-white p-5 space-y-2.5">
-                <Skeleton className="h-4 w-44" />
-                <div className="rounded-lg border overflow-hidden">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="flex items-center gap-4 px-4 py-3 border-b last:border-0">
-                      <Skeleton className="h-3 w-48" />
-                      <Skeleton className="h-3 w-20 ml-auto" />
-                      <Skeleton className="h-5 w-16 rounded-full" />
-                      <Skeleton className="h-3 w-14" />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <PipelineStageProgress stage={pipelineStage} shouldReduceMotion={shouldReduceMotion} />
             </motion.div>
           )}
 
