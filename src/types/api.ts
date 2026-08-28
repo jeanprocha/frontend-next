@@ -1,10 +1,64 @@
 // Tipos TypeScript que espelham os DTOs do backend Go (internal/transport/http/dto.go).
 // Valores monetários chegam como string para preservar precisão decimal.
 
+/**
+ * Decomposição do bruto por tributo (W7/B2.1, exposta na W2/PR2). A soma pode
+ * divergir de gross_tax em até R$ 0,01 por arredondamento independente — não
+ * é erro. Zerada (não ausente) em regimes sem decomposição natural (MEI,
+ * Simples, imobiliário) — ver o comentário em cada ramo de calculator.go.
+ */
+export interface TaxComponents {
+  pis: string
+  cofins: string
+  iss: string
+  cbs: string
+  ibs: string
+}
+
+export interface CalculationStepInput {
+  name: string
+  /** Precisão total — não arredondado a 2 casas. */
+  value: string
+}
+
+/**
+ * Um passo da memória de cálculo (W2/PR1-2) — fórmula legível e operandos
+ * nomeados o suficiente para reproduzir output à mão, sem acesso ao código.
+ */
+export interface CalculationStep {
+  /** Serviço/despesa a que este passo se refere; ausente para um agregado. */
+  item?: string
+  label: string
+  formula: string
+  inputs?: CalculationStepInput[]
+  /** Precisão total — não arredondado a 2 casas. */
+  output: string
+  /** true quando output foi arredondado como parte deste passo. */
+  rounded: boolean
+}
+
 export interface TaxBreakdown {
   gross_tax: string
   credits: string
   net_tax: string
+  /**
+   * O backend sempre envia esta chave (zerada, não ausente, em registro
+   * antigo ou regime sem decomposição) — opcional aqui só para não obrigar
+   * fixture/teste existente a declará-la; ver TaxComponents.
+   */
+  components?: TaxComponents
+  /** Ausente em registro salvo antes do W2/PR1-2 (compatibilidade retroativa). */
+  trace?: CalculationStep[]
+}
+
+/**
+ * Proveniência de uma linha da tabela de transição — auditada número a
+ * número na Onda 2/PR 7 (W1), exposta ao dossiê na W2/PR2 em vez de ficar só
+ * em comentário de código no backend.
+ */
+export interface RuleBasis {
+  kind: "lei_calendario" | "estimativa_oficial" | "premissa_tribia"
+  note: string
 }
 
 /** Insumos de transição por ano (espelho do motor Go / auditoria PRO). */
@@ -16,6 +70,8 @@ export interface TransitionYearFactors {
   combined_projected_rate?: string
   iss_municipal_factor?: string
   iss_model?: string
+  /** Ausente em registro salvo antes do W2/PR2. */
+  basis?: RuleBasis
 }
 
 export interface TransitionSeriesPoint {
@@ -45,6 +101,13 @@ export interface SimulationResponse {
   year: number
   /** Eco do perfil tributário no simulador (persistido no histórico / PDF). */
   company_regime?: string
+  /**
+   * Ramo do motor que produziu este resultado (ex.: "regular" para entrada
+   * vazia) — NUNCA o valor bruto de company_regime acima; os dois podem
+   * divergir (entrada "" vira ramo "regular"). Ausente em registro salvo
+   * antes do W2/PR2.
+   */
+  regime?: string
   current: TaxBreakdown
   projected: TaxBreakdown
   /** projetado − atual: positivo = custo adicional; negativo = economia */
