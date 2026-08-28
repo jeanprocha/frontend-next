@@ -304,6 +304,11 @@ export interface StrategyTagsListResponse {
   tags: StrategyTag[]
 }
 
+/** Retorno de POST /waitlist (Etapa M/PR 9). joined=false = e-mail já estava na lista — não é erro. */
+export interface WaitlistJoinResponse {
+  joined: boolean
+}
+
 export interface BatchClassificationResponse {
   total: number
   processed: number

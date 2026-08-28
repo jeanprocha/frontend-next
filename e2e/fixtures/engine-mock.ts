@@ -98,6 +98,8 @@ export interface MockEngineOptions {
    * 500 — cobre o retry de persistência visível (Etapa M/PR 8).
    */
   failSimulationRecordCalls?: number[]
+  /** POST /waitlist sempre falha com 500 (Etapa M/PR 9 — caminho de erro). */
+  failWaitlist?: boolean
 }
 
 /** Sintetiza uma linha de listagem a partir do corpo do POST /simulation-records. */
@@ -120,12 +122,14 @@ function summaryFromCreatePayload(
 export interface MockEngineHandle {
   simulationsCallCount(): number
   simulationRecordsCallCount(): number
+  waitlistEmails(): string[]
 }
 
 export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Promise<MockEngineHandle> {
   let simulationsCalls = 0
   let simulationRecordsCalls = 0
   const records: SimulationRecordSummary[] = [...(opts.records ?? [])]
+  const waitlistEmails: string[] = []
 
   await page.route(`${API_ORIGIN}/**`, async (route) => {
     const req = route.request()
@@ -181,6 +185,14 @@ export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Prom
     if (pathname === "/engine/validation" && req.method() === "GET") {
       return json(route, 200, opts.engineValidation ?? ENGINE_VALIDATION_FIXTURE)
     }
+    if (pathname === "/waitlist" && req.method() === "POST") {
+      if (opts.failWaitlist) {
+        return json(route, 500, { error: "falha simulada de rede (fixture E2E)", request_id: "e2e-waitlist-fail" })
+      }
+      const body = req.postDataJSON() as { email?: string }
+      waitlistEmails.push(body.email ?? "")
+      return json(route, 201, { joined: true })
+    }
 
     // Rota do motor não mockada: falha alto em vez de deixar a requisição
     // real vazar (nada escuta em API_ORIGIN de qualquer forma).
@@ -196,6 +208,7 @@ export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Prom
   return {
     simulationsCallCount: () => simulationsCalls,
     simulationRecordsCallCount: () => simulationRecordsCalls,
+    waitlistEmails: () => waitlistEmails,
   }
 }
 

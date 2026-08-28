@@ -13,6 +13,7 @@ export {
 export { fetchPlgQuota, type PlgQuotaResponse } from "@/lib/api/plg"
 export { classifyBatch } from "@/lib/api/classification"
 export { fetchStrategyTags } from "@/lib/api/strategy-tags"
+export { joinWaitlist } from "@/lib/api/waitlist"
 export {
   fetchLawArticle,
   fetchLawPdfAnchor,

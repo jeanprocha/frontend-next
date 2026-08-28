@@ -1,4 +1,5 @@
 import { Check, Info } from "lucide-react"
+import { WaitlistForm } from "./waitlist-form"
 
 /**
  * Seção 07 — âncora `#planos` (linkada de dentro do produto por
@@ -107,6 +108,11 @@ export function WhatsIncluded() {
             qualquer que seja o plano de quem o gerou; a tabela acima é sobre o que você vê enquanto trabalha. Entrar
             exige acesso: o simulador não está aberto ao público nesta fase, e o dossiê de exemplo abre sem login.
           </p>
+        </div>
+
+        <div className="mt-5 border-t border-border pt-5">
+          <p className="mb-2.5 text-sm font-medium text-foreground">Quer acesso quando abrir?</p>
+          <WaitlistForm />
         </div>
       </div>
     </section>
