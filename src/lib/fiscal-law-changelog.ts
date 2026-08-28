@@ -17,25 +17,36 @@ export interface FiscalLawChangelogPayload {
 }
 
 /**
- * Fonte oficial do documento hoje ingerido (PLP 68/2024, pré-sanção) — página
- * de tramitação na Câmara, NÃO o Planalto: o PLP nunca virou "LC 68" — esse
- * número já é de uma lei complementar de 1991, sem nenhuma relação com a
- * reforma tributária (confirmado; a URL antiga desta constante apontava para
- * ela por engano). Quando GET /law/corpus estiver ativo (PR 8), a URL certa
- * por documento vem do backend (internal/lawcorpus/catalog.go) — esta
- * constante só alimenta o fallback estático.
+ * Fonte oficial do documento corrente — o texto compilado da LC 214/2025 no
+ * Planalto (inclui as alterações da LC 227/2026, que é o que está ingerido
+ * desde a Onda 2/PR 5).
+ *
+ * Até a virada da Onda 2/PR 6 isto apontava a página de tramitação do
+ * PLP 68/2024 na Câmara — deliberadamente a Câmara e não o Planalto, porque o
+ * PLP nunca virou "LC 68": esse número já é de uma lei complementar de 1991,
+ * sem relação com a reforma tributária.
+ *
+ * A URL por documento vem do backend em `GET /law/corpus`
+ * (internal/lawcorpus/catalog.go); esta constante só alimenta o fallback
+ * estático, usado quando a API não responde.
  */
-export const LAW_SOURCE_URL =
-  "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2430143" as const
+export const LAW_SOURCE_URL = "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm" as const
 
 /**
- * Fonte estática até existir API de versão do motor. Atualizar com releases reais.
- * Alterações que impliquem interpretação legal devem ser validadas pelo domínio antes de publicar.
+ * Fallback estático — só aparece quando `GET /law/corpus` não responde
+ * (`useLawCorpus().isLive === false`). Precisa espelhar o documento CORRENTE do
+ * backend, senão a UI diz uma lei na falha e outra no caminho feliz.
+ *
+ * `date` é a data-base do TEXTO ingerido, não a da publicação original da lei:
+ * o corpus é o compilado, já com as alterações da LC 227/2026, e é isso que o
+ * backend reporta em `published_at`. Virado junto com
+ * LAW_CORPUS_CURRENT_SOURCE no Railway (Onda 2/PR 6) — os dois lados mudam na
+ * mesma leva, por isso.
  */
 export const FISCAL_LAW_CHANGELOG: FiscalLawChangelogPayload = {
-  version: "2.1",
-  date: "2026-04-05",
-  label: "LC 68/2024",
+  version: "1",
+  date: "2026-06-16",
+  label: "LC 214/2025",
   sourceUrl: LAW_SOURCE_URL,
   updates: [
     {
