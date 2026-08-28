@@ -24,3 +24,8 @@ export type {
   PipelineFailure,
   SimulationInput,
 } from "./machine/machine-types"
+
+// Etapa N/PR 1: único ponto de hidratação a partir de um registo salvo —
+// usado pelo histórico global (import relativo interno) e pelo workspace
+// do cliente (app/, via este barrel).
+export { hydrateSimulationFromRecord } from "./machine/hydrate-record"

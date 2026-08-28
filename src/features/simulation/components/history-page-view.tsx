@@ -19,12 +19,11 @@ import { TransitionSparkline } from "@/components/shared/transition-sparkline"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
 import { useCapability, PlgUpgradeDialog } from "@/features/plg"
 import { cn } from "@/lib/utils"
-import { simulationDetailToPersisted } from "@/lib/history-hydrate"
 import { ShellBreadcrumb, type ShellBreadcrumbItem } from "@/components/shell/shell-breadcrumb"
 import { shellPageClass } from "@/lib/shell-layout"
 import { patchDashboardCommandBridge } from "@/lib/dashboard-command-bridge"
-import { useTaxStore } from "@/store/useTaxStore"
 import { simulationMachine } from "../machine/machine-store"
+import { hydrateSimulationFromRecord } from "../machine/hydrate-record"
 import { HistoryRecordPreviewTrigger } from "./history-record-preview-trigger"
 import { HistoryRowHoverPreview } from "./history-row-hover-preview"
 
@@ -98,13 +97,6 @@ export function HistoryPageView({
   const historyPro = useCapability("historyRichPreview")
   const touchMeeting = useTouchMeetingMode()
 
-  const {
-    setYear,
-    setCompanyContext,
-    setServices,
-    setExpenses,
-  } = useTaxStore()
-
   const { data, isPending, isError, error } = useQuery({
     queryKey: queryKeys.simulationRecords.list(userId, 100),
     queryFn: async () => {
@@ -158,7 +150,7 @@ export function HistoryPageView({
     })
   }, [])
 
-  async function handleOpenRecord(id: string, createdAt: string, companyContext: string | null | undefined, year: number) {
+  async function handleOpenRecord(id: string) {
     if (!userId) return
     setLoadingId(id)
     setLoadError(null)
@@ -166,28 +158,7 @@ export function HistoryPageView({
       const token = await getToken()
       if (!token) throw new Error("Não autenticado")
       const d = await getSimulationRecord(token, userId, id)
-      setYear(d.year)
-      setCompanyContext(d.company_context)
-      setServices(d.services.map((s) => ({
-        id: s.id,
-        description: s.description,
-        amount: s.amount,
-        iss_rate: s.iss_rate,
-      })))
-      setExpenses(
-        d.expenses.map((e) => ({
-          id: e.id,
-          description: e.description,
-          amount: e.amount,
-        })),
-      )
-      simulationMachine.hydrateResults(
-        simulationDetailToPersisted(d, {
-          createdAt,
-          companyContext: companyContext ?? "",
-          year,
-        }),
-      )
+      hydrateSimulationFromRecord(d)
       aoAbrirRegistro()
     } catch (e) {
       console.error("[TribIA] Erro ao carregar simulação:", e)
@@ -367,13 +338,7 @@ export function HistoryPageView({
                 const deltaSaving = deltaNum < 0
                 const checked = selectedIds.includes(row.id)
 
-                const openSim = () =>
-                  void handleOpenRecord(
-                    row.id,
-                    row.created_at,
-                    row.company_context,
-                    row.year,
-                  )
+                const openSim = () => void handleOpenRecord(row.id)
 
                 return (
                   <li key={row.id} className="relative flex items-stretch gap-1 px-1 py-1">

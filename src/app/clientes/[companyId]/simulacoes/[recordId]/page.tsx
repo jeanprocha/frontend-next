@@ -9,12 +9,7 @@ import { useRouter, notFound } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/lib/auth-client"
 import { getSimulationRecord, queryKeys } from "@/lib/api"
-import {
-  detailServicesToFormServices,
-  parseCompanyRegimeFromDetail,
-  simulationDetailToPersisted,
-} from "@/lib/history-hydrate"
-import { SimulationDashboard, useSimulationPipeline } from "@/features/simulation"
+import { SimulationDashboard, hydrateSimulationFromRecord } from "@/features/simulation"
 import {
   ReportRenderer,
   anatomiaSection,
@@ -34,7 +29,6 @@ import { getImporterPanelEntries } from "@/features/import"
 import { baseLegalSeloSection } from "@/features/legal-corpus"
 import { motorValidadoSeloSection } from "@/features/engine-validation"
 import { usePortfolioCompanies } from "@/features/portfolio"
-import { useTaxStore } from "@/store/useTaxStore"
 import { ROTAS } from "@/constants/routes"
 import type { ReportRenderInput, ReportSection } from "@/lib/report-contract"
 
@@ -69,8 +63,6 @@ export default function WorkspaceRecordPage({
   const { userId, isLoaded, getToken } = useAuth()
   const { data: companies } = usePortfolioCompanies()
   const company = companies?.find((c) => c.id === companyId)
-  const pipeline = useSimulationPipeline()
-  const { setYear, setCompanyContext, setCompanyRegime, setServices, setExpenses } = useTaxStore()
 
   const { data: detail, isPending, isError } = useQuery({
     queryKey: queryKeys.simulationRecords.detail(userId, recordId),
@@ -93,21 +85,8 @@ export default function WorkspaceRecordPage({
       return
     }
 
-    setYear(detail.year)
-    setCompanyContext(detail.company_context)
-    setCompanyRegime(parseCompanyRegimeFromDetail(detail))
-    setServices(detailServicesToFormServices(detail.services))
-    setExpenses(detail.expenses.map((e) => ({ id: e.id, description: e.description, amount: e.amount })))
-    pipeline.actions.hydrateResults(
-      simulationDetailToPersisted(detail, {
-        createdAt: detail.created_at,
-        companyContext: detail.company_context ?? "",
-        year: detail.year,
-        recordId: detail.id,
-        companyId: detail.company_id ?? companyId,
-      }),
-    )
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- roda só quando `detail` (identidade do registo) muda; setters/ações são estáveis
+    hydrateSimulationFromRecord(detail, { companyId })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- roda só quando `detail` (identidade do registo) muda; companyId vem da URL
   }, [detail])
 
   if (isError) notFound()

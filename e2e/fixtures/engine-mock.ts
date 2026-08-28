@@ -7,6 +7,7 @@ import type {
   BatchClassificationResponse,
   CompanyTemplate,
   SimulationRecordCreatePayload,
+  SimulationRecordDetailResponse,
   SimulationRecordSummary,
   SimulationResponse,
 } from "@/types/api"
@@ -82,6 +83,13 @@ export interface MockEngineOptions {
    * sintetizada ao estado do mock — GET reflete o que foi persistido.
    */
   records?: SimulationRecordSummary[]
+  /**
+   * GET /simulation-records/{id} (Etapa N/PR 1) — mapa id → detalhe completo,
+   * para reabrir um registro específico do histórico/workspace. Id ausente
+   * do mapa devolve 404 (rota antes não era mockada — qualquer chamada caía
+   * no catch-all "rota do motor não mockada").
+   */
+  recordDetails?: Record<string, SimulationRecordDetailResponse>
   /** GET /plg/quota. Omitido = QUOTA_FIXTURE (pro, sem enforcement). */
   quota?: PlgQuotaResponse
   /** GET /law/corpus (W1/PR 8). Omitido = LAW_CORPUS_FIXTURE. */
@@ -169,6 +177,14 @@ export async function mockEngine(page: Page, opts: MockEngineOptions = {}): Prom
       const limit = Number(url.searchParams.get("limit") ?? "20")
       const filtered = companyId ? records.filter((r) => r.company_id === companyId) : records
       return json(route, 200, filtered.slice(0, limit))
+    }
+    if (pathname.startsWith("/simulation-records/") && req.method() === "GET") {
+      const id = decodeURIComponent(pathname.slice("/simulation-records/".length))
+      const detail = opts.recordDetails?.[id]
+      if (!detail) {
+        return json(route, 404, { error: `registro não encontrado no fixture E2E: ${id}` })
+      }
+      return json(route, 200, detail)
     }
     if (pathname === "/plg/quota" && req.method() === "GET") {
       return json(route, 200, opts.quota ?? QUOTA_FIXTURE)
