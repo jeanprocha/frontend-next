@@ -66,8 +66,12 @@ interface TaxState {
 
 const DEFAULTS = {
   year: 2026,
-  companyContext:
-    "Empresa SaaS B2B, regime regular IBS/CBS, fornecimento de software como serviço",
+  // Etapa N/PR 4 (fato 7): antes vinha pré-preenchido com um exemplo de SaaS
+  // — quem não editasse rodava TODA simulação como se fosse essa empresa,
+  // silenciosamente, e esse texto ia para o prompt da IA. O placeholder do
+  // campo (context-hub.tsx) já orienta; o cenário de exemplo (demo-scenarios.ts)
+  // é o caminho para quem só quer testar sem digitar nada.
+  companyContext: "",
   companyRegime: "regular" as CompanyRegimeOption,
   imobiliarioRedutorAjusteBrl: "",
   services: [] as FormService[],

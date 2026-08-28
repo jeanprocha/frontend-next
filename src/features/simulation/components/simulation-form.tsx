@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { FormExpense, FormService } from "@/types/api"
 import { ContextHub } from "./context-hub"
+import { DemoScenarioPicker } from "./demo-scenario-picker"
 import { RegimeFollowUps } from "./regime-follow-ups"
 import { ResultSidebar } from "./result-sidebar"
 import { TransactionRow } from "./transaction-row"
@@ -125,6 +126,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
         <div className="space-y-4 lg:col-span-8">
           <ContextHub />
+          {services.length === 0 && expenses.length === 0 && <DemoScenarioPicker />}
           <RegimeFollowUps />
 
           <Card className={cn(cardShell, "ring-0")}>
