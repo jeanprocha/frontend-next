@@ -1,6 +1,7 @@
 "use client"
 
 import { ExpenseSemanticAuditTable } from "../components/expense-semantic-audit-table"
+import { DivergenceTrailPrint } from "../components/divergence-trail-print"
 import { aggregateClassifications } from "../lib/classification-aggregates"
 import { cn } from "@/lib/utils"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
@@ -124,6 +125,8 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
               onRemoveOverride={overrides?.onRemoveOverride}
             />
           </div>
+
+          <DivergenceTrailPrint classifications={classifications} />
         </div>
 
         {leaks.length === 0 ? (

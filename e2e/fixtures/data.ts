@@ -242,3 +242,38 @@ export const RECORD_DETAIL_FIXTURE: SimulationRecordDetailResponse = {
     },
   },
 }
+
+export const E2E_RECORD_ID_DIVERGENT = "66666666-6666-4666-8666-666666666666"
+
+/**
+ * consultant_override preenchido — id distinto de RECORD_DETAIL_FIXTURE.
+ * Usada por dossie-publico.spec.ts para provar o achado 9 (Etapa C/PR4):
+ * um cold load em /report/[id] (sem clique, sem hover, sem estado local —
+ * a simulação mais próxima de "reabrir noutra máquina" que o Playwright
+ * consegue) precisa mostrar a divergência IA × consultor, porque ela só
+ * chega aí se tiver sobrevivido ao round-trip save→load no backend.
+ */
+const DIVERGENT_EXPENSE_CLASSIFICATION_FIXTURE: ClassificationItem = {
+  ...EXPENSE_CLASSIFICATION_FIXTURE,
+  consultant_override: {
+    is_eligible: false,
+    regime_type: "padrao",
+    justification: "Não há nexo documental com a receita tributável (fixture E2E).",
+    overridden_at: "2026-08-27T10:00:00.000Z",
+  },
+}
+
+export const RECORD_DETAIL_WITH_DIVERGENCE_FIXTURE: SimulationRecordDetailResponse = {
+  ...RECORD_DETAIL_FIXTURE,
+  id: E2E_RECORD_ID_DIVERGENT,
+  classifications: [DIVERGENT_EXPENSE_CLASSIFICATION_FIXTURE],
+  classifications_snapshot: {
+    snapshot_version: 1,
+    service_classifications: [SERVICE_CLASSIFICATION_FIXTURE],
+    expense_classifications: [DIVERGENT_EXPENSE_CLASSIFICATION_FIXTURE],
+    ai_metadata: {
+      confidence_score: 0.9,
+      sources_analyzed: ["LC 68/2024"],
+    },
+  },
+}
