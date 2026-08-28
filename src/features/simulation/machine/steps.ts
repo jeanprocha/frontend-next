@@ -189,6 +189,7 @@ export const simulateStep: Step = {
             amount: e.amount,
             is_eligible: expClassMap.get(e.id)?.is_eligible ?? false,
             regime_type: expClassMap.get(e.id)?.regime_type ?? "padrao",
+            legal_base: expClassMap.get(e.id)?.legal_base,
           })),
         },
         plgAuth,
@@ -264,6 +265,7 @@ export async function runRecalc(results: FormResults, ctx: StepCtx): Promise<Mac
             amount: e.amount,
             is_eligible: eff.is_eligible,
             regime_type: eff.regime_type,
+            legal_base: c?.legal_base,
           }
         }),
       },

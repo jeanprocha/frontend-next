@@ -87,6 +87,12 @@ export interface TransitionSeriesPoint {
   factors?: TransitionYearFactors
 }
 
+/** Um ponto de CreditLeak.annual_values — lost_credit projetado para um ano específico da transição. */
+export interface CreditLeakAnnualValue {
+  year: number
+  lost_credit: string
+}
+
 /** Vazamento ilustrativo: despesa inelegível e crédito CBS/IBS não apropriado (calculado no backend). */
 export interface CreditLeak {
   description: string
@@ -95,6 +101,16 @@ export interface CreditLeak {
   reason?: string
   fix?: string
   regime_type?: string
+  /** Citação do RAG que já embasou a classificação (passthrough de ExpenseInput.legal_base) — vazio quando a IA não citou nada, nunca inventada. */
+  legal_base?: string
+  /** lost_credit projetado ano a ano, 2026–2033, mesma despesa (Etapa C/PR5). */
+  annual_values?: CreditLeakAnnualValue[]
+  /** Faixa determinística — nunca escrita pela LLM. "baixo" | "medio" | "alto". */
+  effort?: string
+  /** Faixa determinística — nunca escrita pela LLM. "baixo" | "medio" | "alto". */
+  risk?: string
+  /** Faixa determinística — nunca escrita pela LLM. "baixa" | "media" | "alta". */
+  priority?: string
 }
 
 export interface SimulationResponse {
@@ -142,6 +158,8 @@ export interface ExpenseInput {
   amount: string
   is_eligible: boolean
   regime_type?: string // "padrao" | "diferenciado_60" | "reduzido_zero"
+  /** Citação do RAG que já embasou a classificação (ClassificationItem.legal_base) — o motor só ecoa, nunca interpreta. */
+  legal_base?: string
 }
 
 export interface SimulationRequest {
