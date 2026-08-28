@@ -17,7 +17,14 @@ import { ResultSidebar } from "./result-sidebar"
 import { TransactionRow } from "./transaction-row"
 import { EmptyStateCard } from "./empty-state-card"
 import { TermTooltip } from "./term-tooltip"
-import { createBlankExpenseLine, createBlankServiceLine, isFilledLine } from "@/lib/simulation-line-helpers"
+import {
+  clampSimulationYear,
+  createBlankExpenseLine,
+  createBlankServiceLine,
+  isFilledLine,
+  parseLineAmount,
+  validateSimulationLines,
+} from "@/lib/simulation-line-helpers"
 import { SHORTCUT_KEYS } from "@/constants/shortcuts"
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -77,6 +84,9 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
     expenses: storedExpenses,
     setServices,
     setExpenses,
+    submitValidationError,
+    invalidLineIds,
+    setSubmitValidationError,
   } = useTaxStore()
 
   const services = storedServices
@@ -110,14 +120,16 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const validServices = services.filter(isFilledLine)
-    const validExpenses = expenses.filter(isFilledLine)
-    if (validServices.length === 0) return
-    onSubmit(year, validServices, validExpenses, companyContext)
+    const result = validateSimulationLines(services, expenses)
+    if (!result.ok) {
+      setSubmitValidationError(result.message, result.invalidLineIds)
+      return
+    }
+    onSubmit(clampSimulationYear(year), result.validServices, result.validExpenses, companyContext)
   }
 
-  const totalReceita = services.reduce((acc, s) => acc + (parseFloat(s.amount) || 0), 0)
-  const totalDespesas = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0)
+  const totalReceita = services.reduce((acc, s) => acc + parseLineAmount(s.amount), 0)
+  const totalDespesas = expenses.reduce((acc, e) => acc + parseLineAmount(e.amount), 0)
   const validServices = services.filter(isFilledLine)
   const validExpenses = expenses.filter(isFilledLine)
 
@@ -128,6 +140,18 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
           <ContextHub />
           {services.length === 0 && expenses.length === 0 && <DemoScenarioPicker />}
           <RegimeFollowUps />
+
+          {/* Etapa N/PR 7 (fato 9) — fim do return silencioso: mensagem
+              perto dos campos em vez de "nada acontecer" ao tentar simular
+              com o formulário vazio/inválido (clique ou atalho ⌘Enter). */}
+          {submitValidationError && (
+            <div
+              role="alert"
+              className="rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+            >
+              {submitValidationError}
+            </div>
+          )}
 
           <Card className={cn(cardShell, "ring-0")}>
             <CardHeader className="pb-2">
@@ -173,6 +197,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                         onIssRateChange={(v) => updateService(svc.id, "iss_rate", v)}
                         onRemove={() => removeService(svc.id)}
                         removeDisabled={services.length === 1}
+                        invalid={invalidLineIds.includes(svc.id)}
                       />
                     ))}
                   </div>
@@ -230,6 +255,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                         onDescriptionChange={(v) => updateExpense(exp.id, "description", v)}
                         onAmountChange={(v) => updateExpense(exp.id, "amount", v)}
                         onRemove={() => removeExpense(exp.id)}
+                        invalid={invalidLineIds.includes(exp.id)}
                       />
                     ))}
                   </div>

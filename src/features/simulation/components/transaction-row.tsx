@@ -14,6 +14,8 @@ interface TransactionRowBase {
   onAmountChange: (value: string) => void
   onRemove: () => void
   removeDisabled?: boolean
+  /** Etapa N/PR 7 (fato 9) — realça a linha que `validateSimulationLines` recusou. */
+  invalid?: boolean
 }
 
 interface ServiceRowProps extends TransactionRowBase {
@@ -73,6 +75,7 @@ export function TransactionRow(props: TransactionRowProps) {
     onAmountChange,
     onRemove,
     removeDisabled,
+    invalid,
   } = props
 
   const fiscalStatus: ExpenseFiscalStatus =
@@ -99,6 +102,7 @@ export function TransactionRow(props: TransactionRowProps) {
         "rounded-r-2xl border-l-4 pl-4 pr-3 py-4 sm:pl-5 sm:pr-4",
         shell.bar,
         "hover:border-border hover:bg-card/80 hover:shadow-sm dark:hover:bg-card/60",
+        invalid && "border-l-destructive bg-destructive/[0.05] dark:bg-destructive/[0.08]",
       )}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-5">
@@ -154,9 +158,11 @@ export function TransactionRow(props: TransactionRowProps) {
               value={amount}
               onChange={(e) => onAmountChange(e.target.value)}
               required={variant === "service"}
+              aria-invalid={invalid || undefined}
               className={cn(
                 ghostInput,
                 "min-w-0 flex-1 font-mono text-base font-black tabular-nums text-foreground",
+                invalid && "text-destructive placeholder:text-destructive/40",
               )}
             />
           </div>
@@ -174,7 +180,12 @@ export function TransactionRow(props: TransactionRowProps) {
               value={props.issRate}
               onChange={(e) => props.onIssRateChange(e.target.value)}
               required
-              className={cn(ghostInput, "font-mono text-sm font-semibold tabular-nums text-foreground")}
+              aria-invalid={invalid || undefined}
+              className={cn(
+                ghostInput,
+                "font-mono text-sm font-semibold tabular-nums text-foreground",
+                invalid && "text-destructive placeholder:text-destructive/40",
+              )}
             />
           </div>
         )}

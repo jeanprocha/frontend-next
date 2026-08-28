@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
+import { clampSimulationYear } from "@/lib/simulation-line-helpers"
 import { Button } from "@/components/ui/button"
 import {
   CompanyRegimeSelect,
@@ -83,6 +84,12 @@ export function ContextHub() {
             max={2033}
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
+            // Etapa N/PR 7 (fato 15): `min`/`max` do <input type="number"> são só
+            // dica pro spinner nativo — não impedem digitar/colar fora da faixa.
+            // Corrige (não rejeita) ao sair do campo; clampar a cada tecla
+            // impediria digitar "2030" (passaria por "2", "20", "203" — todos
+            // fora da faixa, todos forçados de volta pro mínimo no meio da digitação).
+            onBlur={(e) => setYear(clampSimulationYear(Number(e.target.value)))}
             className="h-9 tabular-nums"
           />
           <p className="text-xs text-muted-foreground">2026–2033 · cronograma da reforma</p>

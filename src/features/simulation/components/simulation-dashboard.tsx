@@ -24,7 +24,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import { errorDetailsFromUnknown } from "@/lib/api"
-import { isFilledLine } from "@/lib/simulation-line-helpers"
+import { clampSimulationYear, validateSimulationLines } from "@/lib/simulation-line-helpers"
 import { RequestIdSupportRow } from "@/components/ui/request-id-support"
 import { useComparison } from "../hooks/use-comparison"
 import { useBoardReady } from "@/hooks/use-board-ready"
@@ -368,14 +368,23 @@ export function SimulationDashboard({
       expenses,
       companyRegime: regime,
       imobiliarioRedutorAjusteBrl: redutor,
+      setSubmitValidationError,
     } = useTaxStore.getState()
-    const validServices = services.filter(isFilledLine)
-    const validExpenses = expenses.filter(isFilledLine)
-    if (validServices.length === 0) return
+    // Etapa N/PR 7 (fato 9) — mesma validação do clique em "Simular" (o
+    // atalho ⌘Enter não passa pelo <form>, então não pode reusar
+    // handleSubmit direto): antes, `if (validServices.length === 0) return`
+    // era um no-op completo — quem apertasse o atalho sem nada preenchido
+    // não tinha nenhum jeito de descobrir por quê. A mensagem grava no
+    // store e aparece no formulário (sempre montado durante a fase input).
+    const result = validateSimulationLines(services, expenses)
+    if (!result.ok) {
+      setSubmitValidationError(result.message, result.invalidLineIds)
+      return
+    }
     pipeline.actions.runSimulation({
-      year,
-      services: validServices,
-      expenses: validExpenses,
+      year: clampSimulationYear(year),
+      services: result.validServices,
+      expenses: result.validExpenses,
       companyContext,
       companyRegime: regime,
       imobiliarioRedutorAjusteBrl: redutor,

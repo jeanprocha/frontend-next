@@ -29,6 +29,17 @@ interface TaxState {
   strategyTagsDiscoveryMessage: string | null
   /** Padrões normalizados para realçar chips recém-inseridos na sessão. */
   strategyTagHighlightPatterns: string[]
+  /**
+   * Etapa N/PR 7 (fato 9) — mensagem de validação do submit, compartilhada
+   * entre o clique em "Simular" (dentro de SimulationForm) e o atalho ⌘Enter
+   * (fora dela, em simulation-dashboard.tsx) — os dois chamam
+   * `validateSimulationLines` e gravam o resultado aqui, porque só o form
+   * tem onde renderizar a mensagem perto do campo. Some sozinha na próxima
+   * edição de serviços/despesas (ver setServices/setExpenses).
+   */
+  submitValidationError: string | null
+  /** ids das linhas (serviço e/ou despesa) com valor inválido — realce na linha certa. */
+  invalidLineIds: string[]
 
   setYear: (year: number) => void
   setCompanyContext: (ctx: string) => void
@@ -39,6 +50,7 @@ interface TaxState {
   setStrategyTagsDiscoveryMessage: (msg: string | null) => void
   appendStrategyTagHighlightPatterns: (patterns: string[]) => void
   clearStrategyTagsDiscoveryUi: () => void
+  setSubmitValidationError: (message: string, invalidLineIds: string[]) => void
   /** Briefing lateral (plano 06) + Raio-X no contexto. */
   analystBriefingOpen: boolean
   analystBriefingKind: "chip" | "macro" | null
@@ -79,6 +91,8 @@ const DEFAULTS = {
   presentationMode: false,
   strategyTagsDiscoveryMessage: null as string | null,
   strategyTagHighlightPatterns: [] as string[],
+  submitValidationError: null as string | null,
+  invalidLineIds: [] as string[],
   analystBriefingOpen: false,
   analystBriefingKind: null as "chip" | "macro" | null,
   analystBriefingTag: null as StrategyTag | null,
@@ -95,8 +109,10 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
   setCompanyContext: (companyContext) => set({ companyContext }),
   setCompanyRegime: (companyRegime) => set({ companyRegime }),
   setImobiliarioRedutorAjusteBrl: (imobiliarioRedutorAjusteBrl) => set({ imobiliarioRedutorAjusteBrl }),
-  setServices: (services) => set({ services }),
-  setExpenses: (expenses) => set({ expenses }),
+  // Qualquer edição de linha invalida a mensagem de validação anterior — evita
+  // banner "preso" apontando pra uma linha que o usuário já corrigiu.
+  setServices: (services) => set({ services, submitValidationError: null, invalidLineIds: [] }),
+  setExpenses: (expenses) => set({ expenses, submitValidationError: null, invalidLineIds: [] }),
   setPresentationMode: (presentationMode) => set({ presentationMode }),
 
   setStrategyTagsDiscoveryMessage: (strategyTagsDiscoveryMessage) => set({ strategyTagsDiscoveryMessage }),
@@ -108,6 +124,9 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
     })),
   clearStrategyTagsDiscoveryUi: () =>
     set({ strategyTagsDiscoveryMessage: null, strategyTagHighlightPatterns: [] }),
+
+  setSubmitValidationError: (message, invalidLineIds) =>
+    set({ submitValidationError: message, invalidLineIds }),
 
   openAnalystBriefingFromChip: (tag) => {
     const ctx = get().companyContext ?? ""
@@ -170,5 +189,7 @@ export const useTaxStore = create<TaxState>()((set, get) => ({
       analystBriefingTag: null,
       analystBriefingAiMeta: null,
       contextHighlightRuneRange: null,
+      submitValidationError: null,
+      invalidLineIds: [],
     }),
 }))
