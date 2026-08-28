@@ -12,6 +12,7 @@ export {
   anatomiaSection,
   cronogramaSection,
   memoriaDeCalculoSection,
+  planoDeAcaoSection,
   transicaoTabelaSection,
   rodapeLegalSection,
 } from "./sections"

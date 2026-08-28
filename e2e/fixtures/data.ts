@@ -5,6 +5,7 @@
 import type {
   ClassificationItem,
   CompanyTemplate,
+  CreditLeak,
   FormExpenseDTO,
   FormServiceDTO,
   SimulationRecordCreateResponse,
@@ -276,4 +277,36 @@ export const RECORD_DETAIL_WITH_DIVERGENCE_FIXTURE: SimulationRecordDetailRespon
       sources_analyzed: ["LC 68/2024"],
     },
   },
+}
+
+export const E2E_RECORD_ID_WITH_LEAKS = "77777777-7777-4777-8777-777777777777"
+
+/**
+ * credit_leaks preenchido — usada por dossie-publico.spec.ts para provar o
+ * aceite literal do W4 (Etapa C/PR6): "o dossiê termina com uma tabela de
+ * ações somando o total recuperável em R$". Cold load, sem clique.
+ */
+const CREDIT_LEAKS_FIXTURE: CreditLeak[] = [
+  {
+    description: "Licença de software ERP",
+    value: "3000.00",
+    lost_credit: "30.00",
+    reason: "Sem nexo documental com a receita tributável.",
+    fix: "Reclassificar como elegível padrão com a documentação de nexo.",
+    regime_type: "padrao",
+    legal_base: "Art. 47, LC 214/2025",
+    effort: "baixo",
+    risk: "baixo",
+    priority: "alta",
+    annual_values: [
+      { year: 2026, lost_credit: "30.00" },
+      { year: 2033, lost_credit: "795.00" },
+    ],
+  },
+]
+
+export const RECORD_DETAIL_WITH_LEAKS_FIXTURE: SimulationRecordDetailResponse = {
+  ...RECORD_DETAIL_FIXTURE,
+  id: E2E_RECORD_ID_WITH_LEAKS,
+  simulation: { ...RECORD_DETAIL_FIXTURE.simulation, credit_leaks: CREDIT_LEAKS_FIXTURE },
 }

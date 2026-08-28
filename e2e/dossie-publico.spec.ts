@@ -4,10 +4,15 @@
 // /api/public/simulation-records/* antes do route handler do Next
 // encaminhar ao engine (engine-mock.ts).
 import { expect, test } from "@playwright/test"
-import { RECORD_DETAIL_FIXTURE, RECORD_DETAIL_WITH_DIVERGENCE_FIXTURE } from "./fixtures/data"
+import {
+  RECORD_DETAIL_FIXTURE,
+  RECORD_DETAIL_WITH_DIVERGENCE_FIXTURE,
+  RECORD_DETAIL_WITH_LEAKS_FIXTURE,
+} from "./fixtures/data"
 
 const RECORD_ID = RECORD_DETAIL_FIXTURE.id
 const DIVERGENT_RECORD_ID = RECORD_DETAIL_WITH_DIVERGENCE_FIXTURE.id
+const LEAKS_RECORD_ID = RECORD_DETAIL_WITH_LEAKS_FIXTURE.id
 const UNKNOWN_ID = "99999999-9999-4999-8999-999999999999"
 
 test("dossiê público: cold load direto na URL renderiza conteúdo real", async ({ page }) => {
@@ -67,6 +72,36 @@ test("dossiê público: divergência IA × consultor persiste e aparece ao reabr
   await expect(page.getByText("Sugerido pela IA:")).toBeAttached()
   await expect(page.getByText("Definido pelo consultor:")).toBeAttached()
   await expect(page.getByText(/Não há nexo documental/)).toBeAttached()
+})
+
+// Etapa C/PR6: aceite literal do W4 ("o dossiê termina com uma tabela de
+// ações somando o total recuperável em R$"). Diferente da PR3/PR4, o Plano
+// de ação não precisa de gêmeo de impressão — é uma tabela sempre montada
+// (sem <details>/collapsible), então .toBeVisible() já é a prova certa.
+test("dossiê público: plano de ação mostra a tabela ordenada com o total em R$ (cold load)", async ({ page }) => {
+  await page.route("**/api/public/simulation-records/*", (route) => {
+    const id = route.request().url().split("/").pop()
+    if (id === LEAKS_RECORD_ID) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(RECORD_DETAIL_WITH_LEAKS_FIXTURE),
+        headers: { "content-type": "application/json" },
+      })
+    }
+    return route.fulfill({
+      status: 404,
+      body: JSON.stringify({ error: "Simulação não encontrada" }),
+      headers: { "content-type": "application/json" },
+    })
+  })
+
+  await page.goto(`/report/${LEAKS_RECORD_ID}`)
+  const section = page.locator("#tribia-plano-de-acao")
+  await expect(section.getByRole("heading", { name: "Plano de ação" })).toBeVisible()
+  await expect(section.getByText("Licença de software ERP")).toBeVisible()
+  await expect(section.getByText("Art. 47, LC 214/2025")).toBeVisible()
+  await expect(section.getByText("Total recuperável (ano simulado)")).toBeVisible()
+  await expect(section.getByText("−R$ 30,00").first()).toBeVisible()
 })
 
 test("dossiê público: UUID inexistente mostra erro em vez de tela em branco", async ({ page }) => {

@@ -1,7 +1,6 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { CreditLeakageAlert } from "../components/credit-leakage-alert"
 import { TransitionGoPeaksMarcos } from "../components/transition-go-peaks-marcos"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCapability } from "@/features/plg"
@@ -120,7 +119,6 @@ function CronogramaSection({ record, mode, focusYear, onFocusYearChange, compari
             <SankeyFlowLazy simulation={simulation} expenses={record.expenses} services={record.services} />
           </div>
         )}
-        <CreditLeakageAlert result={simulation} />
       </div>
     </section>
   )
