@@ -141,7 +141,7 @@ export function CalculationTracePanel({ current, projected, basis, className }: 
   if (!hasTrace) {
     return (
       <p className={cn("text-[11px] text-muted-foreground", className)}>
-        Memória de cálculo item a item não disponível para este registo — execute e grave uma nova simulação para
+        Memória de cálculo item a item não disponível para este registro — execute e grave uma nova simulação para
         obtê-la.
       </p>
     )

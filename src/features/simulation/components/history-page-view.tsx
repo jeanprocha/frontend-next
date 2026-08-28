@@ -351,7 +351,7 @@ export function HistoryPageView({
                         aria-label={
                           historyPro
                             ? `Incluir simulação de ${formatDate(row.created_at)} na comparação`
-                            : `Seleccionar simulação de ${formatDate(row.created_at)} para comparação A/B (disponível no plano Pro)`
+                            : `Selecionar simulação de ${formatDate(row.created_at)} para comparação A/B (disponível no plano Pro)`
                         }
                       />
                     </label>

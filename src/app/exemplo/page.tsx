@@ -10,7 +10,7 @@ import { ROTAS } from "@/constants/routes"
  * (dados de uma empresa fictícia, mas com vazamentos e ao menos um override
  * de consultor, para o dossiê mostrar a trilha de divergência inteira) —
  * fica com o usuário (M-U3, docs/roadmap-execucao.md §4.2). Sem o registro
- * publicado, redirecionar cegamente devolveria "Dossié indisponível." do
+ * publicado, redirecionar cegamente devolveria "Dossiê indisponível." do
  * PublicReport, que não explica nada a quem chegou pela landing.
  */
 export default function ExemploPage() {

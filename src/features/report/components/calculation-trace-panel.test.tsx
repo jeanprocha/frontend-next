@@ -29,15 +29,15 @@ const UNTRACED_BREAKDOWN: TaxBreakdown = { gross_tax: "1425.00", credits: "0.00"
 const BASIS: RuleBasis = { kind: "estimativa_oficial", note: "Alíquota de referência delegada ao Senado (Art. 349)." }
 
 describe("CalculationTracePanel", () => {
-  it("declara a ausência quando nenhum breakdown tem trace (registo antigo)", () => {
+  it("declara a ausência quando nenhum breakdown tem trace (registro antigo)", () => {
     render(<CalculationTracePanel current={UNTRACED_BREAKDOWN} projected={UNTRACED_BREAKDOWN} />)
-    expect(screen.getByText(/não disponível para este registo/i)).toBeInTheDocument()
+    expect(screen.getByText(/não disponível para este registro/i)).toBeInTheDocument()
     expect(screen.queryByText("ISS do serviço")).not.toBeInTheDocument()
   })
 
   it("sem breakdown nenhum (undefined) também declara a ausência, sem quebrar", () => {
     render(<CalculationTracePanel />)
-    expect(screen.getByText(/não disponível para este registo/i)).toBeInTheDocument()
+    expect(screen.getByText(/não disponível para este registro/i)).toBeInTheDocument()
   })
 
   it("renderiza os passos do trace quando presente", () => {

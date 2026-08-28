@@ -247,7 +247,7 @@ export function VerdictThesisPanel({
        * Nota de coerência RAG (3.4.2 — anti-contradição consultor/cliente).
        *
        * Exibida quando o consultor aplicou overrides e o motor Go recalculou
-       * os números, mas o strategy_insight ainda reflecte a simulação original.
+       * os números, mas o strategy_insight ainda reflete a simulação original.
        * Tom: informativo e institucional — Geist Sans, muted, sem ícone
        * carnavalesco (system.md "whisper-quiet"; tribia_core_rules §4 "Honestidade").
        * Board-Ready / print: suprimida para não poluir o relatório oficial.
@@ -259,7 +259,7 @@ export function VerdictThesisPanel({
         >
           {isRecalculating
             ? "A sincronizar os números com o motor Go…"
-            : "Tese a sincronizar com os números — a simulação ainda reflecte a última decisão de classificação."}
+            : "Tese a sincronizar com os números — a simulação ainda reflete a última decisão de classificação."}
         </p>
       )}
 

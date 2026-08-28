@@ -71,7 +71,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
     return (
       <div className="font-board-report min-h-screen bg-background p-8">
         <p className="text-destructive text-sm" role="alert">
-          {err ?? "Dossié indisponível."}
+          {err ?? "Dossiê indisponível."}
         </p>
       </div>
     )
