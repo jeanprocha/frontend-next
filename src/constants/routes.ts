@@ -14,6 +14,7 @@ export const ROTAS = {
   simulacoes: "/simulacoes",
   relatorio: (recordId: string) => `/report/${recordId}`,
   privacidade: "/privacidade",
+  exemplo: "/exemplo",
 } as const
 
 /**
