@@ -219,6 +219,7 @@ export const simulateStep: Step = {
           createdAt: new Date().toISOString(),
           companyContext: input.companyContext,
           year: input.year,
+          reopenedFromHistory: false,
           ...(input.companyId ? { companyId: input.companyId } : {}),
         },
       }

@@ -40,6 +40,7 @@ export function hydrateSimulationFromRecord(
       year: detail.year,
       recordId: detail.id,
       companyId: detail.company_id ?? opts?.companyId,
+      reopenedFromHistory: true,
     }),
   )
 }

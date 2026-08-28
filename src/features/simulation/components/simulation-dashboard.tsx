@@ -262,11 +262,13 @@ export function SimulationDashboard({
       createdAt: bDetail.created_at,
       companyContext: bDetail.company_context ?? "",
       year: bDetail.year,
+      reopenedFromHistory: true,
     }
     const metaB = {
       createdAt: cDetail.created_at,
       companyContext: cDetail.company_context ?? "",
       year: cDetail.year,
+      reopenedFromHistory: true,
     }
     const persistedA = simulationDetailToPersisted(bDetail, metaA)
     const persistedB = simulationDetailToPersisted(cDetail, metaB)

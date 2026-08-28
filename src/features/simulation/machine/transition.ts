@@ -145,6 +145,7 @@ export function transition(state: MachineState, event: MachineEvent, env: Machin
             companyContext: "",
             year: state.results.simulation.year,
             recordId: event.recordId,
+            reopenedFromHistory: false,
           }
       return {
         state: {

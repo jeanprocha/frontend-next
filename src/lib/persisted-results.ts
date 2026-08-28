@@ -18,6 +18,16 @@ export interface ResultMeta {
    * vínculo do RESULTADO até o persist; nunca é estado global.
    */
   companyId?: string
+  /**
+   * Etapa N/PR 2 — explícito, não inferido. Antes o selo "Simulação do
+   * histórico" (dashboard-results-view.tsx) condicionava só em `meta` ser
+   * truthy — mas uma simulação recém-rodada TAMBÉM tem meta (createdAt/
+   * companyContext/year, ver steps.ts), então o selo aparecia sempre. E
+   * `recordId` sozinho não serve de sinal: uma simulação nova ganha
+   * recordId assim que o auto-persist termina, então o selo "acenderia"
+   * sozinho segundos depois de simular.
+   */
+  reopenedFromHistory?: boolean
 }
 
 export interface PersistedResults {

@@ -141,7 +141,7 @@ export function DashboardResultsView({
                 className="shrink-0 board-ready:hidden no-print print:hidden"
               />
             ),
-            sessionStampAside: formResults.meta && (
+            sessionStampAside: formResults.meta?.reopenedFromHistory && (
               <div className="rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 board-ready:hidden print:hidden w-full sm:max-w-none">
                 <div className="flex items-start justify-end gap-2.5 min-w-0 text-right sm:max-w-[24rem] sm:ml-auto">
                   <History className="h-4 w-4 shrink-0 text-accent mt-0.5" aria-hidden />

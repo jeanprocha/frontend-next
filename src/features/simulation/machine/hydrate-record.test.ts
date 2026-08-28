@@ -70,6 +70,11 @@ describe("hydrateSimulationFromRecord", () => {
     expect(readyResults().meta?.recordId).toBe("rec-42")
   })
 
+  it("marca meta.reopenedFromHistory=true — sem isto, o selo 'Simulação do histórico' não sabe distinguir de uma simulação nova (fato 3)", () => {
+    hydrateSimulationFromRecord(minimalDetail({}))
+    expect(readyResults().meta?.reopenedFromHistory).toBe(true)
+  })
+
   it("companyId do próprio registo tem prioridade sobre o companyId passado por parâmetro", () => {
     hydrateSimulationFromRecord(minimalDetail({ company_id: "empresa-do-registo" }), {
       companyId: "empresa-da-url",

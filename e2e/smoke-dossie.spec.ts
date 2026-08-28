@@ -31,6 +31,11 @@ test("demo: formulário → classificação IA → veredito → dossiê", async 
   // Resultado.
   await expect(page.locator("#tribia-fvh-title")).toHaveText("Veredito Financeiro")
 
+  // Etapa N/PR 2: simulação recém-rodada não é "do histórico" — antes o
+  // selo aparecia sempre, porque a condição só checava `meta` truthy, e uma
+  // simulação nova também tem meta (createdAt/companyContext/year).
+  await expect(page.getByText("Simulação do histórico")).toHaveCount(0)
+
   // CTA visível e habilitado prova: tier pro (env, desbloqueia o dossiê) +
   // resultado pronto (disabled só é true durante `loading`). O aria-label
   // sobrepõe o texto visível.

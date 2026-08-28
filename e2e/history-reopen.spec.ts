@@ -37,6 +37,11 @@ test("reabrir do histórico global carrega o registro certo e reaproveita ao ger
     page.getByRole("region", { name: "Identificação da sessão de simulação" }),
   ).toContainText("consultoria tributária")
 
+  // Etapa N/PR 2: reabrir do histórico é exatamente o caso em que o selo
+  // "Simulação do histórico" DEVE aparecer — o contraponto do smoke (que
+  // prova o caso em que ele não deve).
+  await expect(page.getByText("Simulação do histórico")).toBeVisible()
+
   const dossierButton = page.getByRole("button", { name: "Gerar dossiê digital e abrir em nova aba" })
   await expect(dossierButton).toBeEnabled()
 
