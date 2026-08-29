@@ -31,8 +31,12 @@ function formatRunAt(iso?: string): string {
  *
  * Texto limitado pelo escopo real (validation.scope), nunca "motor
  * validado" genérico — a calculadora oficial não cobre PIS/COFINS, ISS,
- * ICMS, IPI, Simples, MEI nem as premissas ilustrativas do TribIA
- * (ver validation.out_of_scope, acessível no payload para quem quiser).
+ * ICMS, IPI, Simples, MEI nem as premissas ilustrativas do TribIA.
+ *
+ * O que a validação NÃO cobre (validation.out_of_scope) é exibido junto, e não
+ * só disponível no payload: "validado" é a afirmação mais forte do dossiê, e a
+ * primeira pergunta de um leitor cético ("valida os créditos também?") precisa
+ * ter resposta aqui, antes de ser feita — não numa evidência que ele não vê.
  *
  * O texto nomeia a VERSÃO da calculadora: ela é beta e muda de versão, então
  * "validado" sem dizer contra o quê é afirmação mais forte do que a evidência
@@ -49,17 +53,25 @@ function MotorValidadoSeloSection() {
 
   const dataExecucao = formatRunAt(validation.reference.run_at)
   const escopo = validation.scope.join(" + ")
+  const foraDoEscopo = validation.out_of_scope?.filter((s) => s.trim()) ?? []
 
   return (
-    <p
-      role="note"
-      aria-label={`${escopo} validados contra a Calculadora de Tributos RFB versão ${versao} — ${validation.cases_total} casos, ${dataExecucao}`}
-      className="flex items-center gap-1.5 px-1 pb-2 text-[11px] leading-none text-muted-foreground"
-    >
-      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
-      <span className="font-medium text-foreground">{escopo}</span> validados contra a Calculadora de Tributos RFB versão{" "}
-      {versao} — {validation.cases_total} casos, {dataExecucao}
-    </p>
+    <div className="px-1 pb-2">
+      <p
+        role="note"
+        aria-label={`${escopo} validados contra a Calculadora de Tributos RFB versão ${versao} — ${validation.cases_total} casos, ${dataExecucao}`}
+        className="flex items-center gap-1.5 text-[11px] leading-none text-muted-foreground"
+      >
+        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
+        <span className="font-medium text-foreground">{escopo}</span> validados contra a Calculadora de Tributos RFB versão{" "}
+        {versao} — {validation.cases_total} casos, {dataExecucao}
+      </p>
+      {foraDoEscopo.length > 0 && (
+        <p className="mt-1 pl-3 text-[11px] leading-snug text-muted-foreground/90">
+          A validação não cobre: {foraDoEscopo.join(", ")}.
+        </p>
+      )}
+    </div>
   )
 }
 

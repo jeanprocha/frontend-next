@@ -22,11 +22,11 @@ const RAG_HELP_CONTENT = (
     <p>
       O valor combina similaridade RAG, confiança do classificador e cobertura de linhas com trechos na lei recuperada. Não é
       certeza jurídica nem probabilidade de acerto fiscal: trate como <strong>aderência à lei recuperada</strong>, com
-      espaço para <strong>interpretação por analogia</strong> ou <strong>baixa evidência directa</strong> quando o
+      espaço para <strong>interpretação por analogia</strong> ou <strong>baixa evidência direta</strong> quando o
       semáforo não estiver verde.
     </p>
     <p>
-      Use &quot;Como calculámos isto&quot; no cartão de auditoria RAG para a fórmula. Em âmbar ou vermelho, o TribIA
+      Use &quot;Como calculamos isto&quot; no cartão de auditoria RAG para a fórmula. Em âmbar ou vermelho, o TribIA
       assume <strong>rigor da incerteza</strong> — não esconde dúvida.
     </p>
   </div>

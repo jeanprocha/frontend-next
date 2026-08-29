@@ -90,8 +90,7 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
             )}
           </div>
           <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground print:hidden">
-            Espelho cego do input — cada linha prova a classificação semântica atribuída pela IA ao montante
-            processado pelo motor Go.
+            Cada linha mostra a classificação que a IA atribuiu à despesa e o valor que o motor usou no cálculo.
             {!presentationMode && <> Clique em qualquer classificação para substituir manualmente.</>}
           </p>
 
@@ -160,24 +159,14 @@ function MesaRastreabilidadeSection({ record, mode, overrides }: ReportSectionPr
         </div>
 
         {leaks.length === 0 ? (
-          <div className="mt-4 rounded-lg border border-border/60 bg-muted/15 px-3 py-3 text-[11px] leading-relaxed text-muted-foreground print:border-foreground/20 print:bg-transparent">
-            <p className="font-semibold text-foreground/90">Custo morto (exemplo ilustrativo)</p>
-            <p className="mt-1.5 print:text-foreground/85">
-              Uma assinatura de software ou de serviço de streaming pode ser elegível a crédito quando o
-              serviço estiver ligado à produção da receita tributável — mas se a linha não for enquadrada ou não
-              houver nexo documental na legislação vigente, o benefício deixa de ser recuperável: vira{" "}
-              <span className="font-medium text-foreground/90">custo morto</span> para efeitos de crédito nesta
-              simulação. O motor não «adivinha» elegibilidade; a tabela abaixo mostra o enquadramento por linha; o
-              detalhe de confiança e nexo RAG está na Cédula (Ver lei).
-            </p>
-            <p className="mt-2 text-[10px] italic text-muted-foreground/90 print:text-muted-foreground">
-              Exemplo didáctico, não posição fiscal definitiva — valide com a área fiscal e o perfil real da empresa.
-            </p>
-          </div>
+          <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground print:text-foreground/80">
+            Nenhuma despesa desta simulação ficou sem direito a crédito: não há custo morto identificado neste
+            cenário.
+          </p>
         ) : (
           <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground print:text-foreground/80">
-            O exemplo acima resume a lógica quando não há nexo; com vazamentos detectados, priorize as linhas
-            do alerta e a tabela abaixo.
+            As {leaks.length === 1 ? "despesa sem direito a crédito está priorizada" : "despesas sem direito a crédito estão priorizadas"}{" "}
+            no Plano de ação, com o valor recuperável de cada uma ao longo da transição.
           </p>
         )}
       </div>

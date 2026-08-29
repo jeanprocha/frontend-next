@@ -46,6 +46,13 @@ export function ChangelogFiscalPanel({
           embedded ? "min-h-0 flex-1" : "max-h-[min(60vh,22rem)] overflow-y-auto",
         )}
       >
+        {data.updates.length === 0 && (
+          <li className="px-4 py-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Histórico do corpus indisponível no momento. O documento e a data-base acima continuam válidos.
+            </p>
+          </li>
+        )}
         {data.updates.map((u, i) => (
           <li key={`${u.label}-${i}`} className="flex gap-3 px-4 py-3">
             <span

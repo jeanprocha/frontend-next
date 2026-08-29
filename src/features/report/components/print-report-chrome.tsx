@@ -177,7 +177,7 @@ export function PrintReportFooter({
           {law}
         </p>
         <p className="text-xs font-medium text-muted-foreground font-sans">{simLine}</p>
-        <p className="text-xs font-medium text-muted-foreground font-sans">Auditado via RAG Engine</p>
+        <p className="text-xs font-medium text-muted-foreground font-sans">Auditado contra o texto da lei</p>
         <p className="text-xs text-muted-foreground italic leading-relaxed max-w-3xl mx-auto font-board-report">
           O plano Free pode aplicar limites de precisão e de funcionalidades face aos planos pagos. Este relatório
           não substitui parecer jurídico-contábil formal.
@@ -197,7 +197,7 @@ export function PrintReportFooter({
         {law}
       </p>
       <p className="text-xs font-medium text-muted-foreground font-sans">{simLine}</p>
-      <p className="text-xs font-medium text-muted-foreground font-sans">Auditado via RAG Engine</p>
+      <p className="text-xs font-medium text-muted-foreground font-sans">Auditado contra o texto da lei</p>
       <p className="text-xs text-muted-foreground italic leading-relaxed max-w-3xl mx-auto font-board-report">
         O selo indica rastreabilidade de evidências legislativas no fluxo do simulador; não constitui certificação
         legal nem garantia de resultado fiscal. Este relatório é uma simulação baseada nas premissas da {changelog.label} e

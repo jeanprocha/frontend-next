@@ -106,7 +106,7 @@ export function LawPdfAuthorityCard({
           </p>
         ) : null}
         <p className={cn("text-xs leading-relaxed text-muted-foreground", !embedded && "mt-2")}>
-          A abertura directa no PDF do Diário Oficial na página indexada é recurso{" "}
+          A abertura direta no PDF do Diário Oficial na página indexada é recurso{" "}
           <span className="font-medium text-foreground/90">Pro</span>. O motor continua a ser a fonte determinística dos
           números; a IA fundamenta a leitura.
         </p>

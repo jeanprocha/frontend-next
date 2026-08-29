@@ -2,7 +2,7 @@
 
 import { TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatBRL } from "@/lib/format-money"
+import { formatBRL, formatPct } from "@/lib/format-money"
 import { parseApiDecimal } from "@/lib/money-decimal"
 import { peakYearMaxDelta, peakYearMaxDestinationNet } from "@/lib/transition-series-peaks"
 import type { TransitionSeriesPoint } from "@/types/api"
@@ -61,7 +61,7 @@ export function TransitionGoPeaksMarcos({ series, focusYear }: TransitionGoPeaks
 
   if (deltaPeak && (!destPeak || deltaPeak.year !== destPeak.year)) {
     paragraphs.push(
-      `O maior aumento de carga face ao legado (delta projetado − legado na série) ocorre em ${deltaPeak.year} (${formatBRL(deltaPeak.value)}).`,
+      `O maior aumento de carga frente ao legado (delta projetado − legado na série) ocorre em ${deltaPeak.year} (${formatBRL(deltaPeak.value)}).`,
     )
   }
 
@@ -72,19 +72,19 @@ export function TransitionGoPeaksMarcos({ series, focusYear }: TransitionGoPeaks
   }
 
   if (focusYear === 2031 && d27 && d31 && !d27.isZero()) {
-    const pct = d31.sub(d27).div(d27.abs()).mul(100).toFixed(1)
+    const pct = formatPct(d31.sub(d27).div(d27.abs()).mul(100).toFixed(1))
     paragraphs.push(
-      `Em 2031, a carga líquida CBS/IBS projetada (${formatBRL(focus.new_tax_net)}) difere de 2027 em aproximadamente ${pct}% neste modelo.`,
+      `Em 2031, a carga líquida CBS/IBS projetada (${formatBRL(focus.new_tax_net)}) difere de 2027 em aproximadamente ${pct} neste modelo.`,
     )
   } else if (focusYear === 2027 && d27 && d31 && !d27.isZero()) {
-    const pct = d31.sub(d27).div(d27.abs()).mul(100).toFixed(1)
+    const pct = formatPct(d31.sub(d27).div(d27.abs()).mul(100).toFixed(1))
     paragraphs.push(
-      `Entre 2027 e 2031, a carga CBS/IBS projetada evolui cerca de ${pct}% neste cenário (valores ilustrativos TribIA).`,
+      `Entre 2027 e 2031, a carga CBS/IBS projetada evolui cerca de ${pct} neste cenário (valores ilustrativos TribIA).`,
     )
   } else if (dFocus && d31 && focusYear !== 2031 && !d31.isZero()) {
-    const diff = dFocus.sub(d31).div(d31.abs()).mul(100).toFixed(1)
+    const diff = formatPct(dFocus.sub(d31).div(d31.abs()).mul(100).toFixed(1))
     paragraphs.push(
-      `No ano ${focusYear}, a carga CBS/IBS projetada (${formatBRL(focus.new_tax_net)}) situa-se cerca de ${diff}% em relação a 2031 no mesmo modelo.`,
+      `No ano ${focusYear}, a carga CBS/IBS projetada (${formatBRL(focus.new_tax_net)}) está cerca de ${diff} em relação a 2031 no mesmo modelo.`,
     )
   }
 

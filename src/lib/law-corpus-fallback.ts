@@ -7,7 +7,14 @@ import { FISCAL_LAW_CHANGELOG, LAW_SOURCE_URL } from "@/lib/fiscal-law-changelog
 import type { FiscalLawChangelogPayload } from "@/lib/fiscal-law-changelog"
 import type { LawCorpusResponse } from "@/lib/api/legal"
 
-const FALLBACK_DOCUMENT_ID = "lc68-2024"
+// A identidade do documento tem de casar com o RÓTULO que o fallback exibe.
+// Ficou em "lc68-2024"/"lc68_" depois da virada da Onda 2/PR 6, enquanto o
+// label já era "LC 214/2025": com a API fora do ar, `record-law-documents.ts`
+// casa o prefixo das âncoras do registro contra `chunk_prefix`, então um dossiê
+// que citou `lc68_` era rotulado "LC 214/2025" — exatamente a afirmação sem
+// lastro que o W1 existe para impedir. Os três campos mudam juntos, sempre.
+const FALLBACK_DOCUMENT_ID = "lc214-2025"
+const FALLBACK_CHUNK_PREFIX = "lc214_"
 
 /** Devolve a constante FISCAL_LAW_CHANGELOG de sempre, no shape de LawCorpusResponse. */
 export function staticCorpusFallback(): LawCorpusResponse {
@@ -19,7 +26,7 @@ export function staticCorpusFallback(): LawCorpusResponse {
         version: FISCAL_LAW_CHANGELOG.version,
         published_at: FISCAL_LAW_CHANGELOG.date,
         source_url: LAW_SOURCE_URL,
-        chunk_prefix: "lc68_",
+        chunk_prefix: FALLBACK_CHUNK_PREFIX,
       },
     ],
     current_document_id: FALLBACK_DOCUMENT_ID,

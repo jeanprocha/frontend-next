@@ -15,6 +15,22 @@ describe("staticCorpusFallback", () => {
     })
     expect(corpus.changelog).toBe(FISCAL_LAW_CHANGELOG.updates)
   })
+
+  // Regressão: o id/prefixo ficaram em `lc68_` depois da virada da Onda 2/PR 6
+  // enquanto o label já dizia "LC 214/2025". Com a API fora do ar, um dossiê que
+  // citou `lc68_` casava esse prefixo e era rotulado com a lei errada.
+  it("identidade do documento casa com o rótulo exibido", () => {
+    const doc = staticCorpusFallback().documents[0]
+    expect(doc.label).toBe("LC 214/2025")
+    expect(doc.id).toBe("lc214-2025")
+    expect(doc.chunk_prefix).toBe("lc214_")
+  })
+
+  // O changelog do fallback é vazio por decisão: o real é fato de indexação
+  // servido pelo backend, e o fallback não tem como sabê-lo sem inventar.
+  it("não inventa histórico de mudanças quando o servidor não responde", () => {
+    expect(staticCorpusFallback().changelog).toEqual([])
+  })
 })
 
 describe("corpusToChangelogPayload", () => {

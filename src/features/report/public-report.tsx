@@ -105,7 +105,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
               ) : null}
               <div className="min-w-0 text-right sm:text-left">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-800">
-                  Auditado via RAG Engine
+                  Auditado contra o texto da lei
                 </p>
                 {record.reportBrand?.org_name ? (
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">{record.reportBrand.org_name}</p>

@@ -54,7 +54,7 @@ export function TransitionAuditPanelBody({
         <p className="rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1.5 text-[11px] leading-snug text-amber-950 dark:text-amber-100">
           Este registro foi reconstituído no servidor (líquidos e fatores de
           referência). O breakdown completo de bruto e créditos por ano fica
-          gravado no histórico quando executar e guardar uma nova simulação.
+          gravado no histórico quando executar e salvar uma nova simulação.
         </p>
       ) : null}
 

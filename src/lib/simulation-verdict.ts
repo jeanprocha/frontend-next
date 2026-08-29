@@ -27,7 +27,7 @@ export function singleVereditoSentence(sim: SimulationResponse): string {
     return "Não há variação material entre a carga líquida tributária atual estimada e a CBS/IBS projetada para o ano da simulação."
   }
   if (saving) {
-    return `Economia potencial projetada de ${formatBRL(absDeltaStr)} na transição para CBS/IBS face ao quadro atual estimado.`
+    return `Economia potencial projetada de ${formatBRL(absDeltaStr)} na transição para CBS/IBS frente ao quadro atual estimado.`
   }
-  return `Custo adicional projetado de ${formatBRL(absDeltaStr)} na transição para CBS/IBS face ao quadro atual estimado.`
+  return `Custo adicional projetado de ${formatBRL(absDeltaStr)} na transição para CBS/IBS frente ao quadro atual estimado.`
 }

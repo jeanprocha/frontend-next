@@ -1,6 +1,7 @@
 "use client"
 
 import { AlertTriangle, CheckCircle2, FileCheck, Layers2 } from "lucide-react"
+import { formatDecimalPtBR } from "@/lib/format-money"
 import { cn } from "@/lib/utils"
 
 export interface BoardAuditCertificateProps {
@@ -50,7 +51,7 @@ export function BoardAuditCertificate({
           <div className="min-w-0 space-y-1">
             <p className="text-[11px] font-medium leading-snug text-foreground">Triangulação de provas</p>
             <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-              {avgEvPerLine != null ? avgEvPerLine.toFixed(1) : "—"}{" "}
+              {avgEvPerLine != null ? formatDecimalPtBR(avgEvPerLine) : "—"}{" "}
               <span className="font-sans text-[11px] font-normal text-muted-foreground">
                 trechos em média por linha com evidência
               </span>
@@ -78,13 +79,13 @@ export function BoardAuditCertificate({
             <p className="font-mono text-sm font-semibold tabular-nums text-foreground">{tenuousLineCount}</p>
             {tenuousLineCount === 0 ? (
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Nenhuma detecção de nexo ténue: sem analogias forçadas entre a despesa e o dispositivo — leitura
+                Nenhuma detecção de nexo tênue: sem analogias forçadas entre a despesa e o dispositivo — leitura
                 conservadora para auditoria.
               </p>
             ) : (
               <p className="text-[11px] leading-relaxed text-muted-foreground">
                 {tenuousLineCount}{" "}
-                {tenuousLineCount === 1 ? "linha com" : "linhas com"} nexo interpretativo ténue — rever na Classificação
+                {tenuousLineCount === 1 ? "linha com" : "linhas com"} nexo interpretativo tênue — rever na Classificação
                 IA.
               </p>
             )}
