@@ -53,7 +53,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
         <p className="text-muted-foreground">
 
-          Demonstração = cálculo exato (motor Go) + fundamentação legal (RAG). O consultor permanece responsável pela
+          Demonstração = cálculo exato (motor determinístico) + fundamentação legal citada. O consultor permanece responsável pela
 
           tese perante o cliente; o TribIA fornece rastro auditável, não substituição pelo software.
 
@@ -77,7 +77,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
           <div className="rounded-md border border-border/60 bg-muted/30 px-2.5 py-2">
 
-            <p className="font-medium text-foreground">Motor Go valida e calcula</p>
+            <p className="font-medium text-foreground">O motor determinístico valida e calcula</p>
 
             <p className="mt-1 text-[11px] text-muted-foreground">
 
@@ -101,7 +101,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
         <p className="text-[11px] text-muted-foreground">
 
-          Os percentuais abaixo medem aderência da recuperação RAG e confiança média do classificador — não confundir
+          Os percentuais abaixo medem aderência da evidência recuperada na lei e confiança média do classificador — não confundir
 
           com a «Fórmula da solidez» acima nem com certeza jurídica.
 
@@ -113,7 +113,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
             <li>
 
-              Similaridade RAG média (linhas com evidência):{" "}
+              Similaridade média com o texto legal (linhas com evidência):{" "}
 
               <span className="font-mono text-foreground">{pct(b.rag_similarity_mean)}</span>
 
@@ -159,7 +159,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
         <span className="font-medium text-foreground/90">Go calcula</span> impostos e deltas no motor. Este popover
 
-        resume a camada ML/RAG agregada — não substitui parecer fiscal.
+        resume a análise semântica agregada — não substitui parecer fiscal.
 
       </p>
 
@@ -178,9 +178,24 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
  */
 
+/** Ordena dispositivos por número de artigo (numérico, não lexicográfico —
+ *  "Art. 28" antes de "Art. 278"); sem número identificável, vai para o fim. */
+function sortLegalSources(sources: string[]): string[] {
+  const num = (s: string) => {
+    const m = /\d+/.exec(s)
+    return m ? Number.parseInt(m[0], 10) : Number.MAX_SAFE_INTEGER
+  }
+  return [...sources].sort((a, b) => num(a) - num(b) || a.localeCompare(b, "pt-BR"))
+}
+
+/** Acima disto, a lista de fontes colapsa na tela (a impressão sai sempre completa). */
+const SOURCES_COLLAPSE_AT = 12
+
 export function RagAuditCard({ aiMetadata, onOpenBriefing, className }: RagAuditCardProps) {
 
   const [howOpen, setHowOpen] = useState(false)
+
+  const [showAllSources, setShowAllSources] = useState(false)
 
   const score = aiMetadata?.confidence_score
 
@@ -207,7 +222,7 @@ export function RagAuditCard({ aiMetadata, onOpenBriefing, className }: RagAudit
 
       >
 
-        <p className="font-medium text-foreground/80">Auditoria RAG</p>
+        <p className="font-medium text-foreground/80">Auditoria semântica</p>
 
         <p className="mt-1 leading-relaxed">
 
@@ -227,7 +242,9 @@ export function RagAuditCard({ aiMetadata, onOpenBriefing, className }: RagAudit
 
 
 
-  const sources = aiMetadata.sources_analyzed
+  const sources = sortLegalSources(aiMetadata.sources_analyzed)
+  const visibleSources = showAllSources ? sources : sources.slice(0, SOURCES_COLLAPSE_AT)
+  const collapsedCount = sources.length - visibleSources.length
 
 
 
@@ -325,27 +342,54 @@ export function RagAuditCard({ aiMetadata, onOpenBriefing, className }: RagAudit
 
             {sources.length > 0 ? (
 
-              <div className="flex flex-wrap content-start gap-1.5">
-
-                {sources.map((source) => (
-
-                  <Badge
-
-                    key={source}
-
-                    variant="outline"
-
-                    className="h-auto min-h-5 max-w-full shrink items-start whitespace-normal border-emerald-200/80 bg-white/90 py-1 text-left text-xs font-medium leading-snug text-emerald-800 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200 print:border-foreground/30 print:bg-transparent print:text-foreground"
-
+              <>
+                {/* Tela: lista colapsada além de SOURCES_COLLAPSE_AT — o muro de
+                    chips virava 3 telas no celular (achado do critique). */}
+                <div className="flex flex-wrap content-start gap-1.5 print:hidden">
+                  {visibleSources.map((source) => (
+                    <Badge
+                      key={source}
+                      variant="outline"
+                      className="h-auto min-h-5 max-w-full shrink items-start whitespace-normal border-emerald-200/80 bg-white/90 py-1 text-left text-xs font-medium leading-snug text-emerald-800 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200"
+                    >
+                      {source}
+                    </Badge>
+                  ))}
+                </div>
+                {collapsedCount > 0 && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setShowAllSources(true)}
+                    className="mt-2 h-auto p-0 text-xs font-semibold text-emerald-800 underline-offset-2 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-100 print:hidden"
                   >
-
-                    {source}
-
-                  </Badge>
-
-                ))}
-
-              </div>
+                    Mostrar os {sources.length} dispositivos citados
+                  </Button>
+                )}
+                {collapsedCount === 0 && sources.length > SOURCES_COLLAPSE_AT && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setShowAllSources(false)}
+                    className="mt-2 h-auto p-0 text-xs font-semibold text-emerald-800 underline-offset-2 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-100 print:hidden"
+                  >
+                    Mostrar menos
+                  </Button>
+                )}
+                {/* Impressão: a lista completa sai sempre — conteúdo atrás de
+                    interação não existe no papel. */}
+                <div className="hidden print:flex print:flex-wrap print:content-start print:gap-1.5">
+                  {sources.map((source) => (
+                    <Badge
+                      key={source}
+                      variant="outline"
+                      className="h-auto min-h-5 max-w-full shrink items-start whitespace-normal py-1 text-left text-xs font-medium leading-snug print:border-foreground/30 print:bg-transparent print:text-foreground"
+                    >
+                      {source}
+                    </Badge>
+                  ))}
+                </div>
+              </>
 
             ) : (
 

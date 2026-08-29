@@ -1,4 +1,4 @@
-import { API_BASE, throwApiError } from "@/lib/http"
+import { API_BASE, throwApiError, tribiaFetch } from "@/lib/http"
 
 export interface EngineValidationCase {
   year: number
@@ -42,7 +42,7 @@ export interface EngineValidationResponse {
  * a rota devolve `validated: false` e `reference` vazia, nunca inventa.
  */
 export async function fetchEngineValidation(): Promise<EngineValidationResponse> {
-  const res = await fetch(`${API_BASE}/engine/validation`)
+  const res = await tribiaFetch(`${API_BASE}/engine/validation`)
   if (!res.ok) {
     const raw = await res.json().catch(() => ({ error: res.statusText }))
     throwApiError(res, raw, "Erro ao carregar validação do motor")

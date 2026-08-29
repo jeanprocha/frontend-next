@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { simulationAtFocusYear } from "./transition-focus"
+import { availableFocusYears, simulationAtFocusYear } from "./transition-focus"
 import type { SimulationResponse } from "@/types/api"
 
 function minimalSim(): SimulationResponse {
@@ -71,5 +71,38 @@ describe("simulationAtFocusYear", () => {
     expect(o.current.net_tax).toBe("100.00")
     expect(o.projected.net_tax).toBe("200.00")
     expect(o.delta).toBe("100.00")
+  })
+})
+
+describe("availableFocusYears", () => {
+  it("deriva os anos da série de transição, ordenados", () => {
+    const b = minimalSim()
+    expect(availableFocusYears(b)).toEqual([2028, 2031])
+  })
+
+  it("não hardcoda 2026–2033 — respeita uma série menor", () => {
+    const b: SimulationResponse = {
+      ...minimalSim(),
+      transition_series: [
+        { year: 2029, old_tax_net: "1", new_tax_net: "2", total_tax_net: "3" },
+      ],
+    }
+    expect(availableFocusYears(b)).toEqual([2029])
+  })
+
+  it("cai para [base.year] quando não há série (registro antigo)", () => {
+    const b: SimulationResponse = { ...minimalSim(), transition_series: undefined }
+    expect(availableFocusYears(b)).toEqual([2028])
+  })
+
+  it("remove duplicatas", () => {
+    const b: SimulationResponse = {
+      ...minimalSim(),
+      transition_series: [
+        { year: 2027, old_tax_net: "1", new_tax_net: "2", total_tax_net: "3" },
+        { year: 2027, old_tax_net: "1", new_tax_net: "2", total_tax_net: "3" },
+      ],
+    }
+    expect(availableFocusYears(b)).toEqual([2027])
   })
 })

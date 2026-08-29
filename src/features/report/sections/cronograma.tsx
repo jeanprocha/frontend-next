@@ -4,11 +4,20 @@ import dynamic from "next/dynamic"
 import { TransitionGoPeaksMarcos } from "../components/transition-go-peaks-marcos"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCapability } from "@/features/plg"
+import { PRINT_PENDING_ATTR } from "@/lib/print-readiness"
 import { cn } from "@/lib/utils"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 
+// D3 — marcado como "impressão pendente" (ver lib/print-readiness.ts):
+// usePrintFullDocument espera este marcador sumir do DOM antes de
+// window.print(), para não imprimir o esqueleto de um gráfico lazy que
+// ainda não carregou.
 function ChartSankeySkeleton() {
-  return <Skeleton className="h-[min(360px,50vh)] w-full min-h-[200px] rounded-xl" />
+  return (
+    <div {...{ [PRINT_PENDING_ATTR]: "" }}>
+      <Skeleton className="h-[min(360px,50vh)] w-full min-h-[200px] rounded-xl" />
+    </div>
+  )
 }
 
 const TransitionChartLazy = dynamic(
@@ -21,49 +30,69 @@ const SankeyFlowLazy = dynamic(
   { ssr: false, loading: () => <ChartSankeySkeleton /> },
 )
 
-function MotorGoTransitionTimeline({ years, focusYear }: { years: number[]; focusYear: number }) {
+/**
+ * D2/Frente D — os chips deixaram de ser decorativos: são atalhos VIVOS
+ * para o ano de foco, ligados ao mesmo onFocusYearChange do controle
+ * canônico (focus-year-control.tsx) — nunca um controle "fake" ao lado do
+ * de verdade. O slider decorativo (trilho + bolinha sem interação) que
+ * existia aqui foi removido — não fazia nada além de parecer clicável.
+ */
+/** Exportado para teste direto (cronograma.test.tsx) — evita montar a árvore pesada de CronogramaSection (gráficos lazy, capacidades PLG). */
+export function MotorGoTransitionTimeline({
+  years,
+  focusYear,
+  onFocusYearChange,
+}: {
+  years: number[]
+  focusYear: number
+  onFocusYearChange?: (year: number) => void
+}) {
   const sorted = [...years].sort((a, b) => a - b)
-  const minY = sorted[0] ?? focusYear
-  const maxY = sorted[sorted.length - 1] ?? focusYear
-  const span = Math.max(1, maxY - minY)
-  const focusPos = sorted.length ? ((focusYear - minY) / span) * 100 : 50
 
   return (
     <div className="space-y-3">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Série de transição 2026–2033
+        Série de transição
       </p>
-      <div className="relative pt-1">
-        <div className="h-1.5 rounded-full bg-muted" aria-hidden />
-        <div
-          className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-emerald-600 bg-card shadow-sm"
-          style={{ left: `${Math.min(100, Math.max(0, focusPos))}%` }}
-          title={`Ano de foco ${focusYear} na rampa`}
-          aria-hidden
-        />
-      </div>
-      <ul className="flex flex-wrap items-center gap-2">
+      <ul
+        className="flex flex-wrap items-center gap-2 print:hidden"
+        role={onFocusYearChange ? "group" : undefined}
+        aria-label={onFocusYearChange ? "Atalhos de ano de foco" : undefined}
+      >
         {sorted.map((y) => {
           const isFocus = y === focusYear
+          const chipClass = cn(
+            "inline-flex min-w-[3.25rem] justify-center rounded-md border px-2 py-1.5 font-mono tabular-nums transition-colors",
+            isFocus
+              ? "border-emerald-600/60 bg-emerald-600/15 text-sm font-semibold text-foreground ring-2 ring-emerald-500/25"
+              : "border-border/60 bg-muted/30 text-[11px] text-muted-foreground",
+          )
           return (
             <li key={y}>
-              <span
-                className={cn(
-                  "inline-flex min-w-[3.25rem] justify-center rounded-md border px-2 py-1 font-mono tabular-nums transition-colors",
-                  isFocus
-                    ? "border-emerald-600/60 bg-emerald-600/15 text-sm font-semibold text-foreground ring-2 ring-emerald-500/25"
-                    : "border-border/60 bg-muted/30 text-[11px] text-muted-foreground",
-                )}
-              >
-                {y}
-              </span>
+              {onFocusYearChange ? (
+                <button
+                  type="button"
+                  onClick={() => onFocusYearChange(y)}
+                  aria-pressed={isFocus}
+                  aria-label={`Focar no ano ${y}`}
+                  className={cn(
+                    chipClass,
+                    "cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-500/10",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50",
+                  )}
+                >
+                  {y}
+                </button>
+              ) : (
+                <span className={chipClass}>{y}</span>
+              )}
             </li>
           )
         })}
       </ul>
-      <p className="text-[11px] leading-snug text-muted-foreground">
-        O ano de foco está na rampa de convivência entre regimes; os valores desta aba são reprodutíveis para
-        esse ano e auditáveis externamente.
+      <p className="text-[11px] leading-snug text-muted-foreground print:hidden">
+        Atalho para o ano de foco — o mesmo controle do topo do documento. Os valores desta aba são reprodutíveis
+        para o ano escolhido e auditáveis externamente.
       </p>
     </div>
   )
@@ -89,12 +118,16 @@ function CronogramaSection({ record, mode, focusYear, onFocusYearChange, compari
             2
           </span>
           <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground board-ready:font-board-report board-ready:text-lg board-ready:normal-case board-ready:tracking-normal board-ready:font-semibold board-ready:text-foreground">
-            Cronograma de Impacto (Motor Go)
+            Cronograma de impacto
           </h2>
         </div>
         {series && series.length > 0 && (
           <div className="mb-5">
-            <MotorGoTransitionTimeline years={series.map((p) => p.year)} focusYear={focusYear} />
+            <MotorGoTransitionTimeline
+              years={series.map((p) => p.year)}
+              focusYear={focusYear}
+              onFocusYearChange={onFocusYearChange}
+            />
           </div>
         )}
         <div className="mb-5">
@@ -103,7 +136,6 @@ function CronogramaSection({ record, mode, focusYear, onFocusYearChange, compari
             abBaselineResult={comparison?.baseline.simulation}
             chartMode={transitionFullChart ? "full" : "sparkline"}
             focusYear={focusYear}
-            onFocusYearChange={onFocusYearChange}
             presentationMode={presentationMode}
             isRecalculating={overrides?.isRecalculating}
             pendingSimulationSync={overrides?.pendingSimulationSync}

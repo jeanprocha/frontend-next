@@ -6,8 +6,10 @@
 // não importa features/import: as entries chegam prontas de app/ (mesmo
 // padrão do renderDossier da FE-2).
 import { useState } from "react"
+import { DemoScenarioPicker } from "./demo-scenario-picker"
 import { SimulationForm } from "./simulation-form"
 import { cn } from "@/lib/utils"
+import { useTaxStore } from "@/store/useTaxStore"
 import type { ImportAppliedSummary, ImporterPanelEntry } from "@/lib/importer-contract"
 import type { FormExpense, FormService } from "@/types/api"
 
@@ -45,6 +47,7 @@ export function DashboardInputPanel({
 }: DashboardInputPanelProps) {
   const [activeId, setActiveId] = useState<string>("form")
   const [importedSummary, setImportedSummary] = useState<ImportAppliedSummary | null>(null)
+  const hasNoData = useTaxStore((s) => s.services.length === 0 && s.expenses.length === 0)
 
   const entries: { id: string; label: string }[] = [
     { id: "form", label: "Simulação Manual" },
@@ -66,6 +69,10 @@ export function DashboardInputPanel({
 
   return (
     <div id="tribia-sim-input" className="scroll-mt-24 space-y-4">
+      {/* D1/Frente D — convite proeminente de dados fictícios: a primeira
+          coisa que quem chega sem dados encontra, antes até do selector de
+          modo. */}
+      {activeId === "form" && hasNoData && <DemoScenarioPicker />}
       {entries.length > 1 && (
         <div className="inline-flex shrink-0 rounded-lg border bg-muted p-1 gap-0.5">
           {entries.map((e) => (

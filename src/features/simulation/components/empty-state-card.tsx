@@ -19,11 +19,11 @@ const COPY = {
     aria: "Passo 1 do pipeline: adicionar primeiro serviço ou receita",
   },
   expense: {
-    title: "Passo 2/3: Insira custos para o motor RAG identificar créditos automáticos.",
+    title: "Passo 2/3: Insira custos para a IA identificar créditos com base na lei.",
     description:
-      "A IA classifica cada item para elegibilidade de créditos tributários em tempo real via RAG.",
+      "A IA classifica cada item para elegibilidade de créditos tributários em tempo real, citando a legislação.",
     cta: "Adicionar despesa",
-    aria: "Passo 2 do pipeline: adicionar primeira despesa para análise de créditos com IA e RAG",
+    aria: "Passo 2: adicionar a primeira despesa para análise de créditos com citação da lei",
   },
 } as const
 

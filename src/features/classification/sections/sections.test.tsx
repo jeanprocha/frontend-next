@@ -30,10 +30,12 @@ const baseProps: ReportSectionProps = {
   focusYear: 2026,
 }
 
+// mesaRastreabilidadeSection fica fora deste smoke: desde B1, ela só monta em
+// mode "screen-tabs" (é a ferramenta de trabalho do consultor, não a cédula
+// canônica do documento) — em "board" o comportamento correto é não montar.
 const SECTIONS: ReportSection[] = [
   dossieRagSection,
   coberturaLegalAuditoriaSection,
-  mesaRastreabilidadeSection,
   fundamentacaoCreditosSection,
 ]
 
@@ -50,4 +52,16 @@ describe("secções classificationReportSections — smoke com registo mínimo/a
       expect(container).not.toBeEmptyDOMElement()
     })
   }
+
+  it("mesaRastreabilidadeSection não rebenta com registo mínimo em screen-tabs", () => {
+    const { container } = render(
+      <mesaRastreabilidadeSection.Component {...baseProps} mode="screen-tabs" />,
+    )
+    expect(container).not.toBeEmptyDOMElement()
+  })
+
+  it("mesaRastreabilidadeSection não monta em board (fora do smoke genérico de propósito)", () => {
+    const { container } = render(<mesaRastreabilidadeSection.Component {...baseProps} />)
+    expect(container).toBeEmptyDOMElement()
+  })
 })

@@ -18,6 +18,21 @@ export function simulationDeltaValue(sim: SimulationResponse): number {
   return deltaD ? deltaD.toNumber() : Number.NaN
 }
 
+/**
+ * Extraído de comparison-verdict-card.tsx (Frente A / item A2 — o arquivo já
+ * excede o teto de 300 linhas; "ao tocar, extrair em vez de aumentar").
+ * Pura, sem JSX — cabe aqui ao lado de `singleVereditoSentence`.
+ */
+export function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): string {
+  const base = `A simulação parte das premissas do modelo TribIA para a ${lawLabel}, com regimes de transição e elegibilidade a créditos conforme o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
+  if (ragSources && ragSources.length > 0) {
+    const list = ragSources.slice(0, 6).join(", ")
+    const more = ragSources.length > 6 ? ` (+${ragSources.length - 6} outras)` : ""
+    return `${base} Dispositivos legais com maior peso na análise: ${list}${more}.`
+  }
+  return `${base} Sem lista de artigos consolidada neste registro — valide premissas com a área fiscal.`
+}
+
 export function singleVereditoSentence(sim: SimulationResponse): string {
   const deltaValue = simulationDeltaValue(sim)
   const neutral = !Number.isFinite(deltaValue) || deltaValue === 0

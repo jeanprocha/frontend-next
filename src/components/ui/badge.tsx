@@ -33,6 +33,14 @@ const badgeVariants = cva(
           "bg-red-500/10 text-red-900 border-red-700/20 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 print:bg-transparent print:border-red-800 print:text-red-900",
         verdictNeutral:
           "bg-slate-500/10 text-slate-600 border-slate-400/20 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20 print:bg-transparent print:border-slate-500 print:text-slate-600",
+        /**
+         * Chip de identidade "Ano de foco" (Institucional Moderno — sempre
+         * escuro, ver `tribia-navy-hero` no system.md). Fundo sólido em vez
+         * de bg/10: não é um estado semântico (economia/aumento), é o
+         * carimbo do ano — precisa destacar-se dos selos de polaridade.
+         */
+        verdictFocusYear:
+          "bg-tribia-navy-hero text-white border-transparent dark:bg-tribia-navy-hero dark:text-white print:bg-transparent print:border-foreground print:text-foreground",
       },
     },
     defaultVariants: {

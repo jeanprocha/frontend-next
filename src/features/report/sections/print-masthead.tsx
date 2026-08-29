@@ -2,7 +2,7 @@ import { PrintReportHeader } from "../components/print-report-chrome"
 import { useCapability } from "@/features/plg"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
 
-function PrintMastheadSection({ record, sessionCompanyLabel, sessionScenarioLabel }: ReportSectionProps) {
+function PrintMastheadSection({ record, sessionCompanyLabel, sessionScenarioLabel, focusYear }: ReportSectionProps) {
   const whiteLabelExport = useCapability("whiteLabelExport")
   return (
     <PrintReportHeader
@@ -12,6 +12,7 @@ function PrintMastheadSection({ record, sessionCompanyLabel, sessionScenarioLabe
       clientLogoUrl={record.reportBrand?.logo_url}
       simulationContextLine={sessionCompanyLabel || undefined}
       scenarioLine={sessionScenarioLabel || undefined}
+      focusYear={focusYear}
     />
   )
 }

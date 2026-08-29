@@ -4,7 +4,7 @@ import { mesaRastreabilidadeSection } from "./mesa-rastreabilidade"
 import type { ReportSectionProps, SimulationRecord } from "@/lib/report-contract"
 import type { ClassificationItem } from "@/types/api"
 
-const DIVERGENT_CLASSIFICATION: ClassificationItem = {
+const CLASSIFICATION: ClassificationItem = {
   client_id: "exp-1",
   description: "Licença de software ERP",
   is_eligible: true,
@@ -14,12 +14,6 @@ const DIVERGENT_CLASSIFICATION: ClassificationItem = {
   risk_level: "baixo",
   regime_type: "padrao",
   evidence: [],
-  consultant_override: {
-    is_eligible: false,
-    regime_type: "padrao",
-    justification: "Não há nexo documental com a receita tributável.",
-    overridden_at: "2026-08-28T14:30:00Z",
-  },
 }
 
 function recordCom(classifications: ClassificationItem[]): SimulationRecord {
@@ -37,27 +31,35 @@ function recordCom(classifications: ClassificationItem[]): SimulationRecord {
   }
 }
 
-function propsPara(record: SimulationRecord): ReportSectionProps {
-  return { record, mode: "public-linear", focusYear: 2026 }
+function propsPara(record: SimulationRecord, mode: ReportSectionProps["mode"]): ReportSectionProps {
+  return { record, mode, focusYear: 2026 }
 }
 
-describe("mesaRastreabilidadeSection — trilha de divergência IA × consultor", () => {
-  // O mesmo bug de classe que a PR 3 corrigiu no painel de trace: a única
-  // superfície da divergência era um Tooltip do Radix — nunca entra no DOM
-  // sem hover/foco. Este teste renderiza a seção do zero, sem clicar/passar
-  // o mouse em nada (equivalente a reabrir um dossiê salvo noutra máquina,
-  // achado 9), e prova que a divergência ainda assim está no DOM.
-  it("a divergência está no DOM mesmo sem qualquer interação (hover/clique)", () => {
-    render(<mesaRastreabilidadeSection.Component {...propsPara(recordCom([DIVERGENT_CLASSIFICATION]))} />)
-
-    expect(screen.getByText(/Sugerido pela IA:/)).toBeInTheDocument()
-    expect(screen.getByText(/Definido pelo consultor:/)).toBeInTheDocument()
-    expect(screen.getByText(/Não há nexo documental/)).toBeInTheDocument()
+// B1: a Mesa é a ferramenta de trabalho do consultor — existe SÓ na aba
+// "Mesa" do dashboard (screen-tabs). No documento (board/public-linear) e no
+// impresso desses modos, a cédula canônica é a Fundamentação de créditos;
+// duas tabelas com as mesmas despesas era o achado do critique ("Mesa +
+// Fundamentação = as mesmas 15 despesas 2x").
+describe("mesaRastreabilidadeSection — montagem por modo", () => {
+  it("monta em screen-tabs", () => {
+    render(
+      <mesaRastreabilidadeSection.Component {...propsPara(recordCom([CLASSIFICATION]), "screen-tabs")} />,
+    )
+    expect(screen.getByText("Mesa de operações")).toBeInTheDocument()
+    expect(screen.getByText("Licença de software ERP")).toBeInTheDocument()
   })
 
-  it("sem nenhuma classificação divergente, a trilha não aparece", () => {
-    const semDivergencia: ClassificationItem = { ...DIVERGENT_CLASSIFICATION, consultant_override: undefined }
-    render(<mesaRastreabilidadeSection.Component {...propsPara(recordCom([semDivergencia]))} />)
-    expect(screen.queryByText(/Sugerido pela IA:/)).not.toBeInTheDocument()
+  it("não monta em board (a cédula canônica é a Fundamentação de créditos)", () => {
+    const { container } = render(
+      <mesaRastreabilidadeSection.Component {...propsPara(recordCom([CLASSIFICATION]), "board")} />,
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it("não monta em public-linear (dossiê público)", () => {
+    const { container } = render(
+      <mesaRastreabilidadeSection.Component {...propsPara(recordCom([CLASSIFICATION]), "public-linear")} />,
+    )
+    expect(container).toBeEmptyDOMElement()
   })
 })

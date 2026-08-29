@@ -20,7 +20,9 @@ async function fillMinimalSimulation(page: import("@playwright/test").Page) {
   await page.getByLabel("Identificação do serviço").fill("Consultoria tributária")
   await page.getByLabel("Valor (BRL)").fill("12000.00")
 
-  await page.getByRole("button", { name: /Passo 2 do pipeline/ }).click()
+  await page
+    .getByRole("button", { name: "Passo 2: adicionar a primeira despesa para análise de créditos com citação da lei" })
+    .click()
   await page.getByLabel("Identificação da despesa").fill("Licença de software ERP")
   await page.getByLabel("Valor (BRL)").last().fill("3000.00")
 

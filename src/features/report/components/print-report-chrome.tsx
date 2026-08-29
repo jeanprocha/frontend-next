@@ -4,7 +4,12 @@ import { cn } from "@/lib/utils"
 import { fiscalLawVersionLabel } from "@/lib/fiscal-law-changelog"
 import { useLawCorpus } from "@/lib/use-law-corpus"
 
-function formatPrintDate(iso?: string | null): string {
+/**
+ * Exportado (A5): `public-report.tsx` reusa este formatador para o subtítulo
+ * do dossiê web — mesma data, mesmo formato do masthead de impressão, sem
+ * duplicar a lógica.
+ */
+export function formatPrintDate(iso?: string | null): string {
   if (iso) {
     const d = new Date(iso)
     if (!Number.isNaN(d.getTime())) {
@@ -31,6 +36,7 @@ export function PrintReportHeader({
   clientLogoUrl,
   simulationContextLine,
   scenarioLine,
+  focusYear,
 }: {
   generatedAtIso?: string | null
   className?: string
@@ -45,9 +51,18 @@ export function PrintReportHeader({
   simulationContextLine?: string | null
   /** Rótulo do cenário activo (simulação base, A/B, ano) — espelha o carimbo. */
   scenarioLine?: string | null
+  /**
+   * D2/Frente D — o ano de foco impresso precisa estar declarado na
+   * identidade do documento; o controle canônico em si é print:hidden. O
+   * selo "Ano de foco" do Veredito (financial-verdict-hero-card.tsx) já
+   * cobre isto quando o veredito monta — esta linha é a rede de segurança
+   * do masthead, sempre presente independente do estado do veredito.
+   */
+  focusYear?: number
 }) {
   const hasContextId = Boolean(simulationContextLine?.trim())
   const hasScenario = Boolean(scenarioLine?.trim())
+  const hasFocusYear = focusYear != null
 
   return (
     <div
@@ -76,19 +91,19 @@ export function PrintReportHeader({
                 TribIA
               </span>
               <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">
-                Tax Intelligence Framework
+                Diagnóstico da reforma tributária
               </span>
             </>
           )}
         </div>
         <div className="text-right text-xs text-muted-foreground space-y-0.5">
           <p>Relatório gerado em {formatPrintDate(generatedAtIso)}</p>
-          {!whiteLabel && <p>Simulação processada pelo motor TribIA (backend Go)</p>}
+          {!whiteLabel && <p>Simulação processada pelo motor determinístico TribIA</p>}
         </div>
       </div>
 
       {/* Linha de identificação do cliente/cenário — paridade com o carimbo digital */}
-      {(hasContextId || hasScenario) && (
+      {(hasContextId || hasScenario || hasFocusYear) && (
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5 text-xs text-foreground border-t border-foreground/20 pt-2">
           {hasContextId && (
             <span>
@@ -98,7 +113,7 @@ export function PrintReportHeader({
               <span className="font-medium">{simulationContextLine}</span>
             </span>
           )}
-          {hasContextId && hasScenario && (
+          {hasContextId && (hasScenario || hasFocusYear) && (
             <span aria-hidden className="text-border/60">·</span>
           )}
           {hasScenario && (
@@ -107,6 +122,17 @@ export function PrintReportHeader({
                 Cenário{" "}
               </span>
               <span className="font-medium">{scenarioLine}</span>
+            </span>
+          )}
+          {hasScenario && hasFocusYear && (
+            <span aria-hidden className="text-border/60">·</span>
+          )}
+          {hasFocusYear && (
+            <span>
+              <span className="font-semibold uppercase tracking-[0.1em] text-muted-foreground text-[10px]">
+                Ano de foco{" "}
+              </span>
+              <span className="font-medium tabular-nums">{focusYear}</span>
             </span>
           )}
         </div>
@@ -125,6 +151,12 @@ export interface PrintReportFooterProps {
   isComparing?: boolean
   /** Override explícito; por omissão usa a versão ao vivo de useLawCorpus(). */
   lawVersion?: string
+  /**
+   * D3/Frente D — só no dossiê público (`mode === "public-linear"`,
+   * ver rodape-legal.tsx): referência discreta de origem no papel, a URL
+   * real da página (window.location), nunca um domínio fixo no código.
+   */
+  publicVerifyUrl?: string | null
 }
 
 /** Rodapé legal só na impressão — varia por plano e modo de simulação. */
@@ -134,10 +166,16 @@ export function PrintReportFooter({
   freeWatermark = false,
   isComparing = false,
   lawVersion,
+  publicVerifyUrl,
 }: PrintReportFooterProps) {
   const { changelog } = useLawCorpus()
   const law = fiscalLawVersionLabel(lawVersion ?? changelog.version, changelog.label)
   const simLine = isComparing ? "Comparativo A/B (dois cenários)" : "Simulação única"
+  const verifyLine = publicVerifyUrl ? (
+    <p className="text-[10px] text-muted-foreground/70 font-sans break-all">
+      Dossiê verificável em {publicVerifyUrl}
+    </p>
+  ) : null
 
   if (whiteLabel) {
     return (
@@ -152,12 +190,13 @@ export function PrintReportFooter({
         </p>
         <p className="text-xs font-medium text-muted-foreground font-sans">{simLine}</p>
         <p className="text-[11px] text-muted-foreground/85 font-sans leading-relaxed max-w-3xl mx-auto">
-          Auditoria legislativa assistida por IA (RAG)
+          Classificação assistida por IA com evidência citada da lei
         </p>
         <p className="text-xs text-muted-foreground italic leading-relaxed max-w-3xl mx-auto font-board-report">
           Documento confidencial. Simulação baseada na {changelog.label} e nos dados fornecidos. Não substitui parecer
           jurídico-contábil formal. Classificação assistida com recuperação legislativa e motor determinístico.
         </p>
+        {verifyLine}
       </div>
     )
   }
@@ -182,6 +221,7 @@ export function PrintReportFooter({
           O plano Free pode aplicar limites de precisão e de funcionalidades face aos planos pagos. Este relatório
           não substitui parecer jurídico-contábil formal.
         </p>
+        {verifyLine}
       </div>
     )
   }
@@ -203,6 +243,7 @@ export function PrintReportFooter({
         legal nem garantia de resultado fiscal. Este relatório é uma simulação baseada nas premissas da {changelog.label} e
         nos dados fornecidos pelo usuário. Não substitui parecer jurídico-contábil formal.
       </p>
+      {verifyLine}
     </div>
   )
 }

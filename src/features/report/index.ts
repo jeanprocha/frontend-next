@@ -7,6 +7,7 @@ export {
   printMastheadSection,
   boardMastheadSection,
   watermarkSection,
+  seloAutoridadeSection,
   vereditoSection,
   comparativoABSection,
   anatomiaSection,

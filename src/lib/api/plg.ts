@@ -1,4 +1,4 @@
-import { API_BASE, authHeaders, throwApiError, tribiaPlanHeader } from "@/lib/http"
+import { API_BASE, authHeaders, throwApiError, tribiaFetch, tribiaPlanHeader } from "@/lib/http"
 
 export interface PlgQuotaResponse {
   plan: string
@@ -14,7 +14,7 @@ export async function fetchPlgQuota(
   userId: string,
   plan: string,
 ): Promise<PlgQuotaResponse> {
-  const res = await fetch(`${API_BASE}/plg/quota`, {
+  const res = await tribiaFetch(`${API_BASE}/plg/quota`, {
     headers: authHeaders(token, userId, {
       ...tribiaPlanHeader(plan),
     }),

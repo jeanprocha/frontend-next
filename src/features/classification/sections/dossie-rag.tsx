@@ -25,7 +25,7 @@ function DossieRagSection({ record }: ReportSectionProps) {
             3
           </span>
           <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground board-ready:font-board-report board-ready:text-lg board-ready:normal-case board-ready:tracking-normal board-ready:font-semibold board-ready:text-foreground">
-            Dossiê de Auditoria (RAG)
+            Dossiê de auditoria
           </h2>
         </div>
         <div className="space-y-5">
@@ -47,7 +47,7 @@ function DossieRagSection({ record }: ReportSectionProps) {
 
 export const dossieRagSection: ReportSection = {
   id: "dossie-rag",
-  title: "Dossiê de auditoria (RAG)",
+  title: "Dossiê de auditoria",
   print: "always",
   screenTab: "dossie",
   Component: DossieRagSection,

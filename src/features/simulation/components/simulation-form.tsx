@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { FormExpense, FormService } from "@/types/api"
 import { ContextHub } from "./context-hub"
-import { DemoScenarioPicker } from "./demo-scenario-picker"
 import { RegimeFollowUps } from "./regime-follow-ups"
 import { ResultSidebar } from "./result-sidebar"
 import { TransactionRow } from "./transaction-row"
@@ -138,7 +137,6 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
         <div className="space-y-4 lg:col-span-8">
           <ContextHub />
-          {services.length === 0 && expenses.length === 0 && <DemoScenarioPicker />}
           <RegimeFollowUps />
 
           {/* Etapa N/PR 7 (fato 9) — fim do return silencioso: mensagem
@@ -216,7 +214,7 @@ export function SimulationForm({ onSubmit, loading }: SimulationFormProps) {
                       Análise de despesas
                     </span>
                     <span className="text-xs font-normal normal-case tracking-normal text-emerald-600/80 dark:text-emerald-400/80">
-                      (RAG ativo)
+                      (classificação assistida ativa)
                     </span>
                   </span>
                   {validExpenses.length > 0 && (

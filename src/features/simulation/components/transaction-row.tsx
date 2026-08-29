@@ -94,12 +94,13 @@ export function TransactionRow(props: TransactionRowProps) {
   const descId = `${id}-description`
   const amountId = `${id}-amount`
   const issId = `${id}-iss`
+  const invalidAlertId = `${id}-invalid-alert`
 
   return (
     <div
       className={cn(
         "group/row relative border-y border-r border-border transition-colors duration-150 motion-reduce:transition-none",
-        "rounded-r-2xl border-l-4 pl-4 pr-3 py-4 sm:pl-5 sm:pr-4",
+        "rounded-r-2xl border-l pl-4 pr-3 py-4 sm:pl-5 sm:pr-4",
         shell.bar,
         "hover:border-border hover:bg-card/80 hover:shadow-sm dark:hover:bg-card/60",
         invalid && "border-l-destructive bg-destructive/[0.05] dark:bg-destructive/[0.08]",
@@ -159,6 +160,7 @@ export function TransactionRow(props: TransactionRowProps) {
               onChange={(e) => onAmountChange(e.target.value)}
               required={variant === "service"}
               aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? invalidAlertId : undefined}
               className={cn(
                 ghostInput,
                 "min-w-0 flex-1 font-mono text-base font-black tabular-nums text-foreground",
@@ -181,6 +183,7 @@ export function TransactionRow(props: TransactionRowProps) {
               onChange={(e) => props.onIssRateChange(e.target.value)}
               required
               aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? invalidAlertId : undefined}
               className={cn(
                 ghostInput,
                 "font-mono text-sm font-semibold tabular-nums text-foreground",
@@ -217,6 +220,11 @@ export function TransactionRow(props: TransactionRowProps) {
       <span className="sr-only" id={`row-label-${id}`}>
         {variant === "service" ? "Linha de receita" : "Linha de despesa"}
       </span>
+      {invalid && (
+        <span className="sr-only" id={invalidAlertId} role="alert">
+          Linha com valor inválido — revise antes de simular.
+        </span>
+      )}
     </div>
   )
 }

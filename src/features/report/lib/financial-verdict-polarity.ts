@@ -50,3 +50,18 @@ export function deriveFinancialVerdictPolarity(
   if (d.lt(0)) return "economy"
   return "increase"
 }
+
+/**
+ * Rótulo canônico da polaridade — fonte ÚNICA de vocabulário para hero,
+ * indicadores e badges. Achado do re-critique: "Carga adicional projetada"
+ * (hero) e "Aumento de carga" (indicadores) conviviam para o MESMO delta na
+ * mesma dobra — duas fontes de verdade para um rótulo.
+ */
+export function verdictPolarityLabel(
+  polarity: Exclude<FinancialVerdictPolarity, "invalid">,
+  isPro: boolean,
+): string {
+  if (polarity === "economy") return "Economia identificada"
+  if (polarity === "increase") return isPro ? "Carga adicional projetada" : "Aumento de carga"
+  return "Sem variação material"
+}

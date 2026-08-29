@@ -1,6 +1,7 @@
 "use client"
 
 import { ExpenseTable } from "@/components/shared/expense-table"
+import { DivergenceTrailPrint } from "../components/divergence-trail-print"
 import { cn } from "@/lib/utils"
 import { useLawCorpus } from "@/lib/use-law-corpus"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
@@ -18,7 +19,7 @@ function FundamentacaoCreditosSection({ record, mode }: ReportSectionProps) {
     >
       <div className="border-b border-border/60 bg-muted/25 px-4 py-3 print:border-foreground/20 print:bg-transparent">
         <h3 className={cn("text-sm font-semibold", presentationMode && "font-board-report text-base")}>
-          <span className="board-ready:hidden print:hidden">Análise de Créditos — IA</span>
+          <span className="board-ready:hidden print:hidden">Fundamentação de créditos</span>
           <span className="hidden board-ready:inline print:inline">Fundamentação de créditos — {changelog.label}</span>
         </h3>
         {showCreditsRagLegend ? (
@@ -31,17 +32,20 @@ function FundamentacaoCreditosSection({ record, mode }: ReportSectionProps) {
           </p>
         ) : null}
         <p className="mt-0.5 text-xs text-muted-foreground board-ready:hidden print:hidden">
-          Borda à esquerda: verde elegível, âmbar atenção (inelegível ou vazamento de crédito), ardósia neutro.
-          &quot;Ver lei&quot; abre a Cédula de auditoria (diagnóstico, evidências e dispositivo legal {changelog.label}).
+          Borda fina à esquerda acompanha o selo Elegibilidade: verde elegível, âmbar atenção (inelegível ou
+          vazamento de crédito), ardósia neutro. Cada linha traz o porquê e a citação da lei; &quot;Ver lei&quot;
+          abre o artigo completo (diagnóstico, evidências e dispositivo legal {changelog.label}).
         </p>
       </div>
       <ExpenseTable
         expenses={expenses}
         classifications={classifications}
         creditLeaks={record.simulation.credit_leaks}
-        presentationMode={presentationMode}
         ariaDescribedBy={showCreditsRagLegend ? "tribia-credits-rag-legend" : undefined}
       />
+      <div className="px-4 pb-4">
+        <DivergenceTrailPrint classifications={classifications} />
+      </div>
     </div>
   )
 }

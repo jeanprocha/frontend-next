@@ -25,7 +25,11 @@ export interface SimulationPipelineActions {
   requestRecalc(): void
   /** Retry manual após lastPersistError (Etapa M/PR 8) — reemite a mesma origem que falhou. */
   retryPersist(): void
-  openDossier(opts: { reportBrand: { logo_url?: string | null; org_name?: string | null } | null }): Promise<void>
+  /** copyOnly (D3/Frente D): copia o link em vez de abrir nova aba; devolve a URL/id como sinal de sucesso. */
+  openDossier(opts: {
+    reportBrand: { logo_url?: string | null; org_name?: string | null } | null
+    copyOnly?: boolean
+  }): Promise<string | null>
   /** Consome pendingHistoryComparison — quem chama já leu o valor. */
   consumeHistoryComparison(): void
   /**

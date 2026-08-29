@@ -9,9 +9,15 @@
  *   - PROIBIDO literais 0.85 / 0.60 nesta lógica de mensagem.
  *   - Y% e Z% são métricas de interface sobre cobertura de evidências (RAG);
  *     NÃO são cálculos fiscais — não derivam impostos nem séries temporais.
- *   - `resolveReviewPercentForDiagnostic` usa `evidence_coverage` quando
- *     disponível (proporção de linhas com fundamento recuperado), com fallback
- *     em (1 - score). Ambos são transformações de metadados, não lógica Go.
+ *   - O percentual citado na frase é SEMPRE `aggregatedScoreToPercent(score)`
+ *     — o mesmo número que `SolidityTrafficLight` desenha na barra ao lado
+ *     (`components/shared/solidity-traffic-light.tsx`). Antes, a frase
+ *     preferia `evidence_coverage` quando disponível — uma métrica distinta
+ *     que diverge do score (achado do critique 2026-08-29: barra em 92%
+ *     convivendo com "cerca de 100%" na frase vizinha, "duas verdades na
+ *     mesma dobra"). `resolveReviewPercentForDiagnostic` /
+ *     `resolveAdherencePercentForDiagnostic` continuam exportadas (têm testes
+ *     e uso próprios) mas não alimentam mais esta mensagem.
  *
  * VOZ (system.md — Institucional Moderno):
  *   - Léxico de dossié / auditoria: admissibilidade, divergência interpretativa,
@@ -34,6 +40,11 @@ export interface DiagnosticMessageInput {
   /**
    * `breakdown.evidence_coverage` da API: proporção de linhas com pelo menos
    * um fragmento recuperado da lei (0–1). Null quando indisponível.
+   *
+   * Mantido no contrato por compatibilidade com os chamadores (ex.:
+   * `SolidityAggregateDiagnostic`) mas não alimenta mais a frase — o
+   * percentual citado é sempre `aggregatedScoreToPercent(score)`, o mesmo da
+   * barra de solidez (ver nota no topo do arquivo).
    */
   evidenceCoverage01: number | null | undefined
   /**
@@ -104,14 +115,16 @@ export function resolveAdherencePercentForDiagnostic(
 export function buildAggregateSolidityDiagnosticMessage(
   input: DiagnosticMessageInput,
 ): DiagnosticMessageResult {
-  const { score, evidenceCoverage01, isPro } = input
+  // evidenceCoverage01 permanece em DiagnosticMessageInput (contrato externo)
+  // mas não é lido aqui — ver o JSDoc do campo.
+  const { score, isPro } = input
   const tier = confidenceTierFromScore01(score)
 
   switch (tier) {
     case "green": {
-      const adherencePct = isPro
-        ? resolveAdherencePercentForDiagnostic(score, evidenceCoverage01)
-        : null
+      // Mesmo número da barra de solidez (score) — nunca evidence_coverage,
+      // que é outra métrica e pode divergir (ver nota no topo do arquivo).
+      const adherencePct = isPro ? aggregatedScoreToPercent(score) : null
 
       const message =
         isPro && adherencePct != null
@@ -122,9 +135,8 @@ export function buildAggregateSolidityDiagnosticMessage(
     }
 
     case "yellow": {
-      const reviewPct = isPro
-        ? resolveReviewPercentForDiagnostic(score, evidenceCoverage01)
-        : null
+      // Complemento do mesmo score da barra (100% − solidez), não evidence_coverage.
+      const reviewPct = isPro ? 100 - aggregatedScoreToPercent(score) : null
 
       const message =
         isPro && reviewPct != null
@@ -135,9 +147,7 @@ export function buildAggregateSolidityDiagnosticMessage(
     }
 
     case "red": {
-      const reviewPct = isPro
-        ? resolveReviewPercentForDiagnostic(score, evidenceCoverage01)
-        : null
+      const reviewPct = isPro ? 100 - aggregatedScoreToPercent(score) : null
 
       const message =
         isPro && reviewPct != null

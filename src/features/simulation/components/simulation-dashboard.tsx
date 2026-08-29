@@ -33,11 +33,13 @@ import {
   PIPELINE_GLOW_POSITION,
 } from "../hooks/use-pipeline-stage"
 import { BoardReadyTeaseSheet } from "./board-ready-tease-sheet"
+import { CopyDossierLinkButton } from "./copy-dossier-link-button"
 import { PrintButton } from "./print-button"
 import {
   CONTAINER_VARIANTS,
   FADE_IN_VARIANTS,
 } from "../lib/motion-variants"
+import { usePrintFullDocument } from "../hooks/use-print-full-document"
 import {
   clearDashboardCommandBridge,
   setDashboardCommandBridge,
@@ -63,6 +65,21 @@ import type { FormExpense, FormService } from "@/types/api"
 import type { ImporterPanelEntry } from "@/lib/importer-contract"
 import type { ReportRenderInput } from "@/lib/report-contract"
 import type { ShellBreadcrumbItem } from "@/components/shell/shell-breadcrumb"
+
+/** Banner de erro com recuperação — compartilhado entre falha de execução e falha ao salvar (C5/Frente C). */
+function ErrorRetryBanner({ message, requestId, onRetry }: { message: ReactNode; requestId?: string; onRetry: () => void }) {
+  return (
+    <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
+      <div className="min-w-0">
+        {message}
+        {requestId ? <RequestIdSupportRow requestId={requestId} /> : null}
+      </div>
+      <Button type="button" variant="outline" size="sm" onClick={onRetry} className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10">
+        Tentar novamente
+      </Button>
+    </div>
+  )
+}
 
 export interface SimulationDashboardProps {
   /** Renderer do dossié (features/report) — injectado por app/ para não criar aresta simulation→report. */
@@ -314,13 +331,12 @@ export function SimulationDashboard({
 
   const isProOrPremium = plgCap.compareAB
 
-  /** Atalhos PRO (bridge): alternar A/B sem depender do botão do veredito. */
+  /**
+   * Atalhos PRO (bridge): alternar A/B sem depender do botão do veredito.
+   * isProOrPremium já É plgCap.compareAB (linha acima) — o guard cobre os dois.
+   */
   const toggleComparisonABFromBridge = useCallback(() => {
     if (!isProOrPremium) return
-    if (!plgCap.compareAB) {
-      setCompareUpgradeOpen(true)
-      return
-    }
     if (isComparing) {
       clearComparison()
       return
@@ -328,14 +344,7 @@ export function SimulationDashboard({
     if (formResults) {
       startComparison(formResults)
     }
-  }, [
-    isProOrPremium,
-    plgCap.compareAB,
-    isComparing,
-    formResults,
-    clearComparison,
-    startComparison,
-  ])
+  }, [isProOrPremium, isComparing, formResults, clearComparison, startComparison])
 
   const confirmAiDiagnosticFromBridge = useCallback(() => {
     if (!isProOrPremium) return
@@ -371,6 +380,21 @@ export function SimulationDashboard({
         : null,
     })
   }, [formResults, clerkUserId, pipeline.actions, plgCap.whiteLabelExport, brandingLogoUrl, brandingOrgName])
+
+  // D3/Frente D — "Copiar link do dossiê": mesmo fluxo de garantia de
+  // persistência do handleOpenDossier acima, só muda o destino (clipboard,
+  // não nova aba — ver machine-store.ts#openDossier `copyOnly`).
+  const handleCopyDossierLink = useCallback(async () => {
+    if (!formResults || !clerkUserId) return null
+    return pipeline.actions.openDossier({
+      reportBrand: plgCap.whiteLabelExport
+        ? { logo_url: brandingLogoUrl, org_name: brandingOrgName }
+        : null,
+      copyOnly: true,
+    })
+  }, [formResults, clerkUserId, pipeline.actions, plgCap.whiteLabelExport, brandingLogoUrl, brandingOrgName])
+
+  const handlePrintFull = usePrintFullDocument({ isBoardReady, setIsBoardReady })
 
   const phase = loading ? "loading" : formResults ? "results" : "input"
 
@@ -419,6 +443,7 @@ export function SimulationDashboard({
     setDashboardCommandBridge({
       runSimulation: isInputPhase && !loading ? runSimulationFromBridge : null,
       toggleBoardReady: canBoard ? handlePresentationMode : null,
+      printFullDocument: canBoard ? handlePrintFull : null,
       isSimulationInputPhase: isInputPhase,
       hasFormResults: Boolean(formResults),
       isLoadingSimulation: loading,
@@ -435,6 +460,7 @@ export function SimulationDashboard({
     formResults,
     runSimulationFromBridge,
     handlePresentationMode,
+    handlePrintFull,
     isProOrPremium,
     isComparing,
     toggleComparisonABFromBridge,
@@ -548,7 +574,11 @@ export function SimulationDashboard({
                   Modo edição
                 </Button>
               )}
-              {boardReadyActive && <PrintButton />}
+              {/* D3 — "Exportar PDF" e "Copiar link do dossiê" lado a lado,
+                  em qualquer superfície (não só em apresentação): o botão
+                  garante o documento completo antes de imprimir. */}
+              <PrintButton onPrint={handlePrintFull} />
+              <CopyDossierLinkButton onCopyLink={handleCopyDossierLink} disabled={loading || dossierBusy} />
               {!isComparing && !loading && (
                 <Button
                   type="button"
@@ -571,37 +601,25 @@ export function SimulationDashboard({
           )}
         </div>
 
-        {/* ── Erro ───────────────────────────────────────────────────────── */}
+        {/* ── Erro / falha ao salvar (banner compartilhado, ErrorRetryBanner) ── */}
         {error && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive">
-            <strong>Erro:</strong> {error}
-            {mutationRequestId ? <RequestIdSupportRow requestId={mutationRequestId} /> : null}
-          </div>
+          <ErrorRetryBanner
+            message={<><strong>Erro:</strong> {error}</>}
+            requestId={mutationRequestId}
+            onRetry={() => pipeline.actions.reset()}
+          />
         )}
-
-        {/* ── Falha ao salvar (Etapa M/PR 8) ──────────────────────────────── */}
         {persistFailureDetail && (
-          <div
-            role="alert"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm text-destructive"
-          >
-            <div className="min-w-0">
-              <strong>Não foi possível salvar esta simulação.</strong>{" "}
-              <span className="text-destructive/90">{persistFailureDetail.message}</span>
-              {persistFailureDetail.requestId ? (
-                <RequestIdSupportRow requestId={persistFailureDetail.requestId} />
-              ) : null}
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={retryPersist}
-              className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
-            >
-              Tentar novamente
-            </Button>
-          </div>
+          <ErrorRetryBanner
+            message={
+              <>
+                <strong>Não foi possível salvar esta simulação.</strong>{" "}
+                <span className="text-destructive/90">{persistFailureDetail.message}</span>
+              </>
+            }
+            requestId={persistFailureDetail.requestId}
+            onRetry={retryPersist}
+          />
         )}
 
         {/* ── Máquina de estados: input | loading | results (Motion) ─────── */}

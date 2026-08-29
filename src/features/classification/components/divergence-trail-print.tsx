@@ -18,12 +18,16 @@ function formatOverriddenAt(iso: string): string {
  * de CalculationTracePrint/TransitionPrintTable (`hidden print:block`).
  *
  * Existe porque hoje a única superfície desse rastro é OverrideAuditTooltip
- * (expense-semantic-audit-table.tsx), um Radix Tooltip: só entra no DOM sob
+ * (classification-override-cell.tsx), um Radix Tooltip: só entra no DOM sob
  * hover/foco, nunca ao imprimir. `window.print()` é o mecanismo real de
  * "Exportar para PDF" deste produto (achado 6, docs/roadmap-execucao.md
  * 4.1) — sem este gêmeo, um dossiê impresso com uma linha divergente não
  * mostraria a divergência, mesmo que o override tivesse sido aplicado e
  * persistido. Nunca depende de hover/clique.
+ *
+ * Montado em fundamentacao-creditos.tsx (a cédula canônica do documento —
+ * decisão B1): a Mesa de operações só existe na aba "Mesa" do screen-tabs e
+ * não participa do board/público/impresso.
  */
 export function DivergenceTrailPrint({ classifications }: { classifications: ClassificationItem[] }) {
   const divergent = classifications.filter(hasConsultantOverride)

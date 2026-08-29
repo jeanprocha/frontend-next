@@ -65,6 +65,7 @@ function VereditoSection({ record, mode, focusYear, comparison, overrides, onNav
       >
         <FinancialVerdictHeroCard
           simulation={displaySimulation}
+          focusYear={focusYear}
           presentationMode={presentationMode}
           isRecalculating={overrides?.isRecalculating}
           pendingSimulationSync={overrides?.pendingSimulationSync}

@@ -44,5 +44,5 @@ test("onboarding: carteira vazia → CSV de exemplo → veredito → dossiê", a
   // Dossiê: cold load em outra "aba" — prova de ponta a ponta sem depender
   // de estado local (mesmo padrão de smoke-dossie.spec.ts).
   await page.goto(`/report/${E2E_RECORD_ID}`)
-  await expect(page.getByRole("heading", { name: /Mesa de operações/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /Fundamentação de créditos/ })).toBeVisible()
 })

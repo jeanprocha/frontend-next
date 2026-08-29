@@ -5,6 +5,7 @@ import { useMemo } from "react"
 import type { SankeyLinkDatum, SankeyNodeDatum } from "@nivo/sankey"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatBRL } from "@/lib/format-money"
+import { PRINT_PENDING_ATTR } from "@/lib/print-readiness"
 import {
   buildCreditFlowSankey,
   SANKEY_NODE_LABELS,
@@ -28,9 +29,20 @@ const NODE_COLORS: Record<string, string> = {
   posicao_credor: "#10b981",
 }
 
+// D3 — marcado como "impressão pendente" (lib/print-readiness.ts): a lib de
+// gráfico em si (@nivo/sankey) é um segundo nível de lazy-load dentro deste
+// módulo já lazy — usePrintFullDocument precisa saber que ainda não chegou.
 const ResponsiveSankey = dynamic(
   () => import("@nivo/sankey").then((m) => m.ResponsiveSankey),
-  { ssr: false, loading: () => <div className="h-[480px] w-full animate-pulse rounded-md bg-muted/40" /> },
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        {...{ [PRINT_PENDING_ATTR]: "" }}
+        className="h-[480px] w-full animate-pulse rounded-md bg-muted/40"
+      />
+    ),
+  },
 )
 
 function LinkTooltip({ link }: { link: SankeyLinkDatum<FlowNode, { source: string; target: string; value: number }> }) {

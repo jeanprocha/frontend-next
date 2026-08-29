@@ -1,6 +1,7 @@
 export { printMastheadSection } from "./print-masthead"
 export { boardMastheadSection } from "./board-masthead"
 export { watermarkSection } from "./watermark"
+export { seloAutoridadeSection } from "./selo-autoridade"
 export { vereditoSection } from "./veredito"
 export { comparativoABSection } from "./comparativo-ab"
 export { anatomiaSection } from "./anatomia"

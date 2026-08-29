@@ -9,7 +9,7 @@ export function HowItWorks() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-14">
       <div className="flex flex-wrap items-baseline gap-4">
-        <span className="font-mono text-xs font-medium tracking-[0.12em] text-accent uppercase">
+        <span className="font-mono text-xs font-medium tracking-[0.12em] text-emerald-700 uppercase dark:text-emerald-300">
           06 · O processo
         </span>
         <h2 className="font-board-report text-[28px] leading-tight font-semibold tracking-tight text-foreground">
@@ -23,7 +23,7 @@ export function HowItWorks() {
       <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s) => (
           <div key={s.n} className="rounded-xl border border-border bg-card p-5">
-            <span className="font-mono text-xs text-accent">{s.n}</span>
+            <span className="font-mono text-xs text-emerald-700 dark:text-emerald-300">{s.n}</span>
             <p className="mt-2 text-[17px] font-semibold text-foreground">{s.title}</p>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
           </div>

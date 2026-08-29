@@ -1,11 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { Fragment, useState } from "react"
 import { Info } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ExpenseCedulaDetails } from "./expense-cedula-details"
 import { ExpenseEvidenceColumns } from "./expense-evidence-columns"
+import {
+  ExpenseEligibilityBadge,
+  ExpenseRegimeBadge,
+  ExpenseRiskBadge,
+  ExpenseSignalCell,
+  expenseRowAccentBorderClass,
+} from "./expense-table-badges"
 import { LineUnifiedEvidencePanel } from "./line-evidence-popover-body"
 import { formatBRL } from "@/lib/format-money"
 import { useTouchMeetingMode } from "@/hooks/use-touch-meeting-mode"
@@ -16,96 +23,53 @@ import { cn } from "@/lib/utils"
 import type { ClassificationItem, CreditLeak, FormExpense } from "@/types/api"
 
 /**
- * Tabela de créditos. Elegibilidade e regime mostram a decisão **efectiva** para o
- * motor (IA ou override) via getEffectiveExpenseSimulationFields — paridade com
- * a ExpenseSemanticAuditTable e o POST de simulação.
+ * Cédula de auditoria — a tabela canônica de despesas do documento (dossiê
+ * público, board e aba Mesa). Elegibilidade e regime mostram a decisão
+ * **efetiva** para o motor (IA ou override) via getEffectiveExpenseSimulationFields
+ * — paridade com a ExpenseSemanticAuditTable e o POST de simulação.
+ *
+ * Cada linha traz o porquê e a citação da lei sempre montados (ExpenseCedulaDetails)
+ * — nada fica atrás de hover; ≥ sm/impressão usa uma linha de detalhe na tabela,
+ * < sm usa o gêmeo em cartões (mesmo padrão de features/report/sections/plano-de-acao.tsx).
  */
 interface ExpenseTableProps {
   expenses: FormExpense[]
   classifications: ClassificationItem[]
-  /** Vazamentos ilustrativos da simulação — borda âmbar quando a linha coincide. */
+  /** Vazamentos ilustrativos da simulação — acento âmbar quando a linha coincide. */
   creditLeaks?: CreditLeak[]
-  /** Oculta coluna Base Legal / Ver lei (modo apresentação ou impressão). */
-  presentationMode?: boolean
   /** Liga a região da tabela a uma legenda contextual (ex. elo macro RAG no dashboard). */
   ariaDescribedBy?: string
 }
 
-const riskVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  baixo: "default",
-  medio: "secondary",
-  alto: "destructive",
-}
-
-const regimeLabel: Record<string, string> = {
-  diferenciado_60: "Reduzido 60%",
-  reduzido_zero: "Alíquota Zero",
-  padrao: "Padrão",
-}
-
-const regimeVariant: Record<string, "default" | "secondary" | "outline"> = {
-  diferenciado_60: "secondary",
-  reduzido_zero: "default",
-  padrao: "outline",
-}
-
-
-function regimeBadgeClass(regimeType: string): string {
-  const v = regimeVariant[regimeType] ?? "outline"
-  if (v === "outline" || v === "secondary") return "font-normal text-muted-foreground"
-  return "font-normal"
-}
-
-function riskBadgeClass(riskLevel: string): string {
-  const v = riskVariant[riskLevel] ?? "outline"
-  if (v === "outline" || v === "secondary") return "font-normal text-muted-foreground"
-  return "font-normal"
-}
-
-function rowLeftBorderClass(
-  hasErr: boolean,
-  hasClassification: boolean,
-  noRagEvidence: boolean,
-  isEligible: boolean,
-  hasLeak: boolean,
-): string {
-  if (hasErr || !hasClassification) {
-    return "border-l-slate-400/85 dark:border-l-slate-500"
-  }
-  if (noRagEvidence) {
-    return "border-l-slate-400/85 dark:border-l-slate-500"
-  }
-  if (isEligible && !hasLeak) {
-    return "border-l-emerald-500 dark:border-l-emerald-400"
-  }
-  return "border-l-amber-500 dark:border-l-amber-400"
-}
-
-export function ExpenseTable({
-  expenses,
-  classifications,
-  creditLeaks,
-  presentationMode = false,
-  ariaDescribedBy,
-}: ExpenseTableProps) {
+export function ExpenseTable({ expenses, classifications, creditLeaks, ariaDescribedBy }: ExpenseTableProps) {
   const touchMeeting = useTouchMeetingMode()
   const [touchEvidence, setTouchEvidence] = useState<{
     rowKey: string
     c: ClassificationItem
   } | null>(null)
 
-  const rows = expenses.map((exp) => ({
-    ...exp,
-    classification:
-      classifications.find((c) => c.client_id === exp.id) ??
-      classifications.find((c) => c.description === exp.description) ??
-      null,
-  }))
+  const rows = expenses.map((exp) => {
+    const c =
+      classifications.find((cl) => cl.client_id === exp.id) ??
+      classifications.find((cl) => cl.description === exp.description) ??
+      null
+    const errMsg = c?.error?.trim()
+    const hasErr = Boolean(errMsg)
+    const noRagEvidence = Boolean(c && !hasErr && (!c.evidence || c.evidence.length === 0))
+    const hasLeak = expenseInLeakList(creditLeaks, exp.description)
+    const eff = c && !hasErr ? getEffectiveExpenseSimulationFields(c) : null
+    const borderAccent = expenseRowAccentBorderClass(hasErr, Boolean(c), noRagEvidence, Boolean(eff?.is_eligible), hasLeak)
+    return { ...exp, c, errMsg, hasErr, eff, borderAccent }
+  })
 
   return (
     <>
+      {/* Tabela: telas ≥ sm e impressão. Cada despesa ocupa duas linhas — a
+          linha de dados e uma linha de detalhe com porquê + citação, sempre
+          montada (nunca atrás de hover). No celular, o gêmeo em cartões
+          abaixo assume — valor e classificação sempre visíveis. */}
       <div
-        className="rounded-md border overflow-x-auto"
+        className="hidden overflow-x-auto rounded-md border sm:block print:block print:overflow-visible"
         {...(ariaDescribedBy ? { "aria-describedby": ariaDescribedBy } : {})}
       >
         <table className="w-full text-sm">
@@ -139,110 +103,94 @@ export function ExpenseTable({
                 </span>
               </th>
               <th className="px-4 py-3 text-center font-medium">Risco</th>
-              {!presentationMode && (
-                <th className="px-4 py-3 text-right font-medium">Base Legal</th>
-              )}
+              <th className="px-4 py-3 text-center font-medium">Sinal</th>
+              <th className="px-4 py-3 text-right font-medium">Base Legal</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => {
-              const c = row.classification
-              const errMsg = c?.error?.trim()
-              const hasErr = Boolean(errMsg)
-              const noRagEvidence = c && !hasErr && (!c.evidence || c.evidence.length === 0)
-              const hasLeak = expenseInLeakList(creditLeaks, row.description)
-              const eff = c && !hasErr ? getEffectiveExpenseSimulationFields(c) : null
-              const borderAccent = rowLeftBorderClass(
-                hasErr,
-                Boolean(c),
-                Boolean(noRagEvidence),
-                Boolean(eff?.is_eligible),
-                hasLeak,
-              )
-
+              const { c, errMsg, hasErr, eff, borderAccent } = row
               return (
-                <tr
-                  key={row.id}
-                  className="group border-b last:border-0 transition-colors hover:bg-muted/30"
-                >
-                  <td className={cn("border-l-4 py-3 pl-3 pr-4 font-medium", borderAccent)}>
-                    {row.description}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-foreground">
-                    {formatBRL(row.amount)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {hasErr ? (
-                      <Badge variant="outline" title={errMsg}>
-                        Erro na classificação
-                      </Badge>
-                    ) : c && eff ? (
-                      <Badge variant={eff.is_eligible ? "default" : "destructive"}>
-                        {eff.is_eligible ? "Elegível" : "Não Elegível"}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">—</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {hasErr ? (
-                      <span className="text-muted-foreground">—</span>
-                    ) : c && eff ? (
-                      <Badge
-                        variant={regimeVariant[eff.regime_type] ?? "outline"}
-                        className={regimeBadgeClass(eff.regime_type)}
-                      >
-                        {regimeLabel[eff.regime_type] ?? "Padrão"}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {hasErr ? (
-                      <span className="text-muted-foreground">—</span>
-                    ) : c ? (
-                      <Badge
-                        variant={riskVariant[c.risk_level] ?? "outline"}
-                        className={riskBadgeClass(c.risk_level)}
-                      >
-                        {c.risk_level}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  {!presentationMode && c && !hasErr ? (
-                    <ExpenseEvidenceColumns
-                      rowKey={row.id}
-                      c={c}
-                      touchMeeting={touchMeeting}
-                      onTouchOpen={() => setTouchEvidence({ rowKey: row.id, c })}
-                    />
-                  ) : !presentationMode ? (
-                    <td className="px-4 py-3 text-right">
-                      {hasErr ? (
-                        <span
-                          className="text-xs text-destructive line-clamp-3 max-w-[min(18rem,100%)] ml-auto block text-right"
-                          title={errMsg}
-                        >
-                          {classificationErrorCellText(errMsg ?? "")}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">sem dados</span>
-                      )}
+                <Fragment key={row.id}>
+                  <tr className="group border-b-0 transition-colors hover:bg-muted/30">
+                    <td className={cn("border-l py-3 pl-3 pr-4 font-medium", borderAccent)}>{row.description}</td>
+                    <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-foreground">
+                      {formatBRL(row.amount)}
                     </td>
-                  ) : null}
-                </tr>
+                    <td className="px-4 py-3 text-center">
+                      <ExpenseEligibilityBadge hasErr={hasErr} errMsg={errMsg} c={c} eff={eff} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <ExpenseRegimeBadge hasErr={hasErr} c={c} eff={eff} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <ExpenseRiskBadge hasErr={hasErr} c={c} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <ExpenseSignalCell hasErr={hasErr} c={c} />
+                    </td>
+                    {c && !hasErr ? (
+                      <ExpenseEvidenceColumns
+                        rowKey={row.id}
+                        c={c}
+                        touchMeeting={touchMeeting}
+                        onTouchOpen={() => setTouchEvidence({ rowKey: row.id, c })}
+                      />
+                    ) : (
+                      <td className="px-4 py-3 text-right">
+                        {hasErr ? (
+                          <span
+                            className="ml-auto line-clamp-3 block max-w-[min(18rem,100%)] text-right text-xs text-destructive"
+                            title={errMsg}
+                          >
+                            {classificationErrorCellText(errMsg ?? "")}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">sem dados</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                  <tr className="border-b bg-muted/10 last:border-0 print:bg-transparent">
+                    <td colSpan={7} className={cn("border-l px-4 pt-0 pb-3", borderAccent)}>
+                      <ExpenseCedulaDetails classification={c} />
+                    </td>
+                  </tr>
+                </Fragment>
               )
             })}
           </tbody>
         </table>
       </div>
 
+      {/* Gêmeo mobile: um cartão por despesa, valor sempre na tela — mesmo
+          padrão de features/report/sections/plano-de-acao.tsx. */}
+      <ul className="flex list-none flex-col gap-2.5 p-0 sm:hidden print:hidden">
+        {rows.map((row) => {
+          const { c, errMsg, hasErr, eff, borderAccent } = row
+          return (
+            <li key={row.id} className={cn("rounded-lg border border-l bg-card p-3", borderAccent)}>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="min-w-0 flex-1 font-medium text-foreground">{row.description}</p>
+                <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+                  {formatBRL(row.amount)}
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <ExpenseEligibilityBadge hasErr={hasErr} errMsg={errMsg} c={c} eff={eff} />
+                <ExpenseRegimeBadge hasErr={hasErr} c={c} eff={eff} />
+                <ExpenseRiskBadge hasErr={hasErr} c={c} />
+                <ExpenseSignalCell hasErr={hasErr} c={c} />
+              </div>
+              <ExpenseCedulaDetails classification={c} className="mt-2.5" />
+            </li>
+          )
+        })}
+      </ul>
+
       {touchMeeting && (
         <Sheet
-          open={!presentationMode && touchEvidence !== null}
+          open={touchEvidence !== null}
           onOpenChange={(open) => {
             if (!open) setTouchEvidence(null)
           }}

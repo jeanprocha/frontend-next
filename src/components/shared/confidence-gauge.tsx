@@ -93,7 +93,7 @@ export function ConfidenceGauge({
         className="overflow-visible"
         aria-hidden={indeterminate || pct == null}
         role={pct != null && !indeterminate ? "img" : undefined}
-        aria-label={pct != null && !indeterminate ? `Relevância RAG ${pct} por cento` : undefined}
+        aria-label={pct != null && !indeterminate ? `Índice de auditoria ${pct} por cento` : undefined}
       >
         <defs>
           <linearGradient id="ragGaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -175,7 +175,7 @@ export function ConfidenceGauge({
   const footer = (
     <div className="mt-1 flex items-center justify-center gap-1.5">
       <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        Relevância RAG
+        Índice de auditoria
       </span>
       <GlossaryHelpTrigger
         preferSheetOnTouch

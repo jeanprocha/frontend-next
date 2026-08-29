@@ -29,7 +29,7 @@ const COPY: Record<
   rayx: {
     title: "Raio-X completo no contexto e na lei",
     body:
-      "No Pro o trecho do contexto que sustenta a auditoria fica nítido no campo central, com base legal integral na legislação vigente e lista de evidências RAG sem borrão — trilha completa para consultores e CFO.",
+      "No Pro o trecho do contexto que sustenta a auditoria fica nítido no campo central, com base legal integral na legislação vigente e a lista de evidências sem borrão — trilha completa para consultores e CFO.",
   },
   white_label: {
     title: "Marca do escritório no dossiê",

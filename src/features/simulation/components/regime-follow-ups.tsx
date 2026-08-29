@@ -82,17 +82,17 @@ export function RegimeFollowUps() {
         )}
         {companyRegime === "prof_liberal" && (
           <div
-            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-indigo-100 border-l-4 border-l-indigo-500 bg-indigo-50/50 p-4 duration-300 dark:border-indigo-900/40 dark:border-l-indigo-400 dark:bg-indigo-950/20"
+            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-4 duration-300 dark:bg-muted/10"
             role="note"
           >
-            <div className="shrink-0 rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-300">
+            <div className="shrink-0 rounded-lg bg-muted p-2 text-muted-foreground dark:bg-muted/40">
               <Scale className="size-5" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-50">
+              <h4 className="text-sm font-bold text-foreground">
                 Profissões regulamentadas (ilustrativo)
               </h4>
-              <p className="mt-1 text-xs leading-relaxed text-indigo-800 dark:text-indigo-200/90">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Sociedades de advogados, engenheiros, contadores, arquitetos e demais profissões com registro
                 podem enquadrar-se em benefícios específicos na legislação vigente. O TribIA aplica na projeção{" "}
                 <strong>70% da alíquota CBS+IBS padrão do ano selecionado</strong> (redução ilustrativa de 30%
@@ -105,15 +105,15 @@ export function RegimeFollowUps() {
         )}
         {companyRegime === "diferenciado_60" && (
           <div
-            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-blue-100 border-l-4 border-l-blue-500 bg-blue-50/50 p-4 duration-300 dark:border-blue-900/40 dark:border-l-blue-400 dark:bg-blue-950/20"
+            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-4 duration-300 dark:bg-muted/10"
             role="note"
           >
-            <div className="shrink-0 rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
+            <div className="shrink-0 rounded-lg bg-muted p-2 text-muted-foreground dark:bg-muted/40">
               <GraduationCap className="size-5" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-blue-900 dark:text-blue-50">Setor favorecido</h4>
-              <p className="mt-1 text-xs leading-relaxed text-blue-700 dark:text-blue-200/90">
+              <h4 className="text-sm font-bold text-foreground">Setor favorecido</h4>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Sua atividade possui <strong>60% de redução</strong> na alíquota padrão CBS+IBS. O TribIA aplica{" "}
                 <strong>40% dessa alíquota</strong> sobre a receita do <strong>ano selecionado</strong>; na
                 referência plena (26,5%), isso equivale a cerca de <strong>10,6%</strong>. Você mantém o direito
@@ -125,17 +125,17 @@ export function RegimeFollowUps() {
         )}
         {companyRegime === "aliquota_zero" && (
           <div
-            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-emerald-100 border-l-4 border-l-emerald-500 bg-emerald-50/50 p-4 duration-300 dark:border-emerald-900/40 dark:border-l-emerald-500 dark:bg-emerald-950/20"
+            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-4 duration-300 dark:bg-muted/10"
             role="note"
           >
-            <div className="shrink-0 rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300">
+            <div className="shrink-0 rounded-lg bg-muted p-2 text-muted-foreground dark:bg-muted/40">
               <Apple className="size-5" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-50">
+              <h4 className="text-sm font-bold text-foreground">
                 Alíquota zero com manutenção de crédito
               </h4>
-              <p className="mt-1 text-xs leading-relaxed text-emerald-700 dark:text-emerald-200/90">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 A projeção trata a saída como <strong>isenta de CBS+IBS</strong> sobre a receita de serviços
                 (ilustrativo, Anexo I / cesta básica). Um valor <strong>negativo</strong> no líquido projetado
                 indica <strong>saldo credor</strong>: créditos de compras elegíveis superam o tributo na saída —
@@ -146,17 +146,17 @@ export function RegimeFollowUps() {
         )}
         {companyRegime === "entidade_imune" && (
           <div
-            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50/50 p-4 duration-300 dark:border-slate-700 dark:border-l-slate-500 dark:bg-slate-900/25"
+            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-4 duration-300 dark:bg-muted/10"
             role="note"
           >
-            <div className="shrink-0 rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            <div className="shrink-0 rounded-lg bg-muted p-2 text-muted-foreground dark:bg-muted/40">
               <HeartHandshake className="size-5" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-50">
+              <h4 className="text-sm font-bold text-foreground">
                 Imunidade de saída (sem créditos no modelo)
               </h4>
-              <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-200/90">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 O TribIA trata a <strong>projeção</strong> como{" "}
                 <strong>CBS+IBS zero sobre a receita informada</strong> (ilustrativo para doações, anuidades
                 etc., sem modelar imunidade integral no regime atual). <strong>Não há apropriação de créditos</strong>{" "}
@@ -171,17 +171,17 @@ export function RegimeFollowUps() {
         )}
         {companyRegime === "exportadora" && (
           <div
-            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-sky-100 border-l-4 border-l-sky-500 bg-sky-50/50 p-4 duration-300 dark:border-sky-900/40 dark:border-l-sky-400 dark:bg-sky-950/20"
+            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-4 duration-300 dark:bg-muted/10"
             role="note"
           >
-            <div className="shrink-0 rounded-lg bg-sky-100 p-2 text-sky-600 dark:bg-sky-900/50 dark:text-sky-300">
+            <div className="shrink-0 rounded-lg bg-muted p-2 text-muted-foreground dark:bg-muted/40">
               <Globe className="size-5" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-sky-900 dark:text-sky-50">
+              <h4 className="text-sm font-bold text-foreground">
                 Exportação — imunidade ilustrativa na saída
               </h4>
-              <p className="mt-1 text-xs leading-relaxed text-sky-800 dark:text-sky-200/90">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 O TribIA projeta <strong>CBS+IBS zero sobre a receita de serviços</strong> (modelo ilustrativo de
                 imunidade na saída), mantendo <strong>créditos nas compras elegíveis</strong> conforme o regime
                 de cada fornecedor. A conta é distinta da cesta básica na narrativa de produto. Um{" "}
@@ -194,17 +194,17 @@ export function RegimeFollowUps() {
         )}
         {isImobiliarioRegime(companyRegime) && (
           <div
-            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-purple-100 border-l-4 border-l-purple-500 bg-purple-50/50 p-4 duration-300 dark:border-purple-900/40 dark:border-l-purple-400 dark:bg-purple-950/25"
+            className="flex animate-in fade-in-0 slide-in-from-top-2 items-start gap-3 rounded-xl border border-border/80 bg-muted/20 p-4 duration-300 dark:bg-muted/10"
             role="note"
           >
-            <div className="shrink-0 rounded-lg bg-purple-100 p-2 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300">
+            <div className="shrink-0 rounded-lg bg-muted p-2 text-muted-foreground dark:bg-muted/40">
               <Home className="size-5" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-purple-900 dark:text-purple-50">
+              <h4 className="text-sm font-bold text-foreground">
                 Mecanismo de ajuste imobiliário
               </h4>
-              <p className="mt-1 text-xs leading-relaxed text-purple-700 dark:text-purple-200/90">
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 A projeção aplica uma <strong>alíquota CBS+IBS efetiva reduzida</strong> conforme o perfil
                 (percentual da alíquota padrão do <strong>ano da simulação</strong>) e, se informado, o{" "}
                 <strong>redutor de ajuste</strong> em R$ sobre a receita agregada — modelo ilustrativo da{" "}

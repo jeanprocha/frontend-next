@@ -224,9 +224,9 @@ export function SummaryCards({
         {/* Regime atual / Bloco legado */}
         <Card
           className={cn(
-            "border border-border/80 border-l-4 border-l-muted-foreground/30 print:border print:border-foreground/25 print:bg-transparent print:shadow-none",
+            "border border-border/80 print:border print:border-foreground/25 print:bg-transparent print:shadow-none",
             currentNetMeta.isCreditor &&
-              "border-l-emerald-500/60 bg-emerald-50/50 dark:bg-emerald-950/15 dark:border-l-emerald-500/50 print:border-l-foreground/35 print:bg-transparent",
+              "border-emerald-500/35 bg-emerald-50/50 dark:bg-emerald-950/15 dark:border-emerald-500/30 print:border-foreground/35 print:bg-transparent",
           )}
         >
           <CardHeader className="pb-2">
@@ -267,9 +267,9 @@ export function SummaryCards({
         {/* Projetado / Bloco destino */}
         <Card
           className={cn(
-            "border border-border/80 border-l-4 border-l-accent print:border print:border-foreground/25 print:bg-transparent print:shadow-none",
+            "border border-border/80 print:border print:border-foreground/25 print:bg-transparent print:shadow-none",
             projectedNetMeta.isCreditor &&
-              "border-l-emerald-500/70 bg-emerald-50/55 dark:bg-emerald-950/20 dark:border-l-emerald-400/60 print:border-l-foreground/35 print:bg-transparent",
+              "border-emerald-500/40 bg-emerald-50/55 dark:bg-emerald-950/20 dark:border-emerald-400/35 print:border-foreground/35 print:bg-transparent",
           )}
         >
           <CardHeader className="pb-2">

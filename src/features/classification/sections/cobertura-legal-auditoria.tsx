@@ -1,7 +1,6 @@
 "use client"
 
 import { BoardAuditCertificate } from "../components/board-audit-certificate"
-import { BoardLegalCoverageShield } from "../components/board-legal-coverage-shield"
 import { confidenceTierFromScore01, humanSolidityHintFromAggregatedScore01 } from "@/lib/confidence-tiers"
 import { avgEvidenceCountAmongLinesWithEvidence, countTenuousNexusLines } from "../lib/rag-tab-stats"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
@@ -26,24 +25,22 @@ function CoberturaLegalAuditoriaSection({ record }: ReportSectionProps) {
   const avgEvPerLine = avgEvidenceCountAmongLinesWithEvidence(classifications)
   const tenuousLineCount = countTenuousNexusLines(classifications)
 
+  // A3 — cobertura legal deixou de ter card próprio com escudo ~130px; agora
+  // é uma linha discreta dentro do mesmo bloco das demais métricas de
+  // auditoria (ver board-audit-certificate.tsx), então esta seção volta a
+  // ter um único bloco.
   return (
-    <div className="space-y-5">
-      {tier != null && (
-        <BoardLegalCoverageShield
-          coveragePct={coveragePct}
-          withEvidence={withEvidenceCount}
-          total={Math.max(1, classifiedCount)}
-          tier={tier}
-          score={score}
-          solidityHint={solidityHint}
-        />
-      )}
-      <BoardAuditCertificate
-        literalPct={literalPct}
-        avgEvPerLine={avgEvPerLine}
-        tenuousLineCount={tenuousLineCount}
-      />
-    </div>
+    <BoardAuditCertificate
+      literalPct={literalPct}
+      avgEvPerLine={avgEvPerLine}
+      tenuousLineCount={tenuousLineCount}
+      coveragePct={coveragePct}
+      withEvidence={withEvidenceCount}
+      total={Math.max(1, classifiedCount)}
+      tier={tier}
+      score={score}
+      solidityHint={solidityHint}
+    />
   )
 }
 

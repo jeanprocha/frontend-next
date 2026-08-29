@@ -70,7 +70,10 @@ export function LawPdfAuthorityCard({
       } catch (e: unknown) {
         if (!cancelled) {
           setData(null)
-          setError(e instanceof Error ? e.message : "Não foi possível obter a ancoragem.")
+          // Detalhe técnico só no console — a tela mantém a voz de parecer
+          // (declara a ausência, não expõe a mensagem crua do fetch/HTTP).
+          if (e instanceof Error) console.error("[LawPdfAuthorityCard] falha ao obter ancoragem PDF:", e)
+          setError("Não foi possível confirmar a âncora no documento oficial nesta sessão.")
         }
       } finally {
         if (!cancelled) setLoading(false)

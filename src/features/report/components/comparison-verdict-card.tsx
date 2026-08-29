@@ -18,21 +18,14 @@ import { heuristicRagHeroArticle } from "@/lib/rag-hero-article-heuristic"
 import {
   parseNet,
   simulationDeltaValue,
+  singleRacionalBody,
   singleVereditoSentence,
 } from "@/lib/simulation-verdict"
+import { verdictPolarityLabel } from "../lib/financial-verdict-polarity"
+import { useCapability } from "@/features/plg"
 import { useTaxStore } from "@/store/useTaxStore"
 import type { AiMetadata, ClassificationItem, SimulationResponse } from "@/types/api"
 import { useLawCorpus } from "@/lib/use-law-corpus"
-
-function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): string {
-  const base = `A simulação parte das premissas do modelo TribIA para a ${lawLabel}, com regimes de transição e elegibilidade a créditos conforme o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
-  if (ragSources && ragSources.length > 0) {
-    const list = ragSources.slice(0, 6).join(", ")
-    const more = ragSources.length > 6 ? ` (+${ragSources.length - 6} outras)` : ""
-    return `${base} Fontes legislativas priorizadas na recuperação RAG: ${list}${more}.`
-  }
-  return `${base} Sem lista de artigos consolidada neste registro — valide premissas com a área fiscal.`
-}
 
 export interface ComparisonVerdictCardProps {
   mode: "single" | "comparison"
@@ -112,6 +105,7 @@ export function ComparisonVerdictCard({
   const showAbTable = isComparison && Boolean(baselineSimulation && currentSimulation)
 
   // Cockpit: faixa de delta no topo + Hero com o número; layout default: grelha de indicadores.
+  const isPro = useCapability("rayxFull")
   const singleDelta = !isComparison ? simulationDeltaValue(currentSimulation) : 0
   const singleNeutral = !isComparison && (!Number.isFinite(singleDelta) || singleDelta === 0)
   const singleSaving = !isComparison && singleDelta < 0
@@ -162,7 +156,7 @@ export function ComparisonVerdictCard({
                   "font-sans text-3xl font-bold tabular-nums tracking-tight sm:text-4xl",
                   singleNeutral && "text-muted-foreground",
                   !singleNeutral && singleSaving && "text-emerald-600 dark:text-emerald-400",
-                  !singleNeutral && !singleSaving && "text-amber-600 dark:text-amber-400",
+                  !singleNeutral && !singleSaving && "text-red-900 dark:text-red-400",
                 )}
               >
                 {singleNeutral
@@ -171,13 +165,10 @@ export function ComparisonVerdictCard({
               </span>
               {!singleNeutral && (
                 <Badge
-                  className={cn(
-                    "border-0 px-2 py-0.5 text-xs font-semibold font-sans",
-                    singleSaving && "bg-emerald-600 text-white hover:bg-emerald-600",
-                    !singleSaving && "bg-amber-600 text-white hover:bg-amber-600",
-                  )}
+                  variant={singleSaving ? "verdictEconomy" : "verdictIncrease"}
+                  className="px-2 py-0.5 text-xs font-semibold font-sans"
                 >
-                  {singleSaving ? "Economia projetada" : "Aumento de carga"}
+                  {verdictPolarityLabel(singleSaving ? "economy" : "increase", isPro)}
                 </Badge>
               )}
             </div>
@@ -285,7 +276,7 @@ export function ComparisonVerdictCard({
               {heroPick ? (
                 <div className="rounded-xl border border-border/70 bg-muted/15 px-3 py-2.5 dark:bg-muted/25">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Artigo de maior peso (RAG por linha)
+                    Artigo de maior peso por linha
                   </p>
                   <p className="mt-1 font-board-report text-sm font-semibold leading-snug text-foreground">
                     {heroPick.articleLabel}
@@ -449,7 +440,18 @@ export function ComparisonVerdictCard({
                 <h4 className="font-board-report text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   A recomendação
                 </h4>
-                <p className="font-board-report text-sm leading-relaxed text-foreground/90">{recomendacao}</p>
+                {executiveThesisDisplayed && !isComparison ? (
+                  /* Remissão curta — mesma dedupe do layout cockpit (A2): este
+                   * bloco é o que efetivamente renderiza no dossiê público
+                   * (single, sem onEsteiraTabChange cai aqui) e repetia o
+                   * parecer executivo verbatim, já visível no VerdictThesisPanel
+                   * acima. Um protagonista por ideia (tribia_core_rules + system.md). */
+                  <p className="font-board-report text-sm leading-relaxed text-muted-foreground">
+                    O parecer executivo encontra-se no painel ao lado do veredito financeiro.
+                  </p>
+                ) : (
+                  <p className="font-board-report text-sm leading-relaxed text-foreground/90">{recomendacao}</p>
+                )}
               </section>
             </div>
 
@@ -478,7 +480,7 @@ export function ComparisonVerdictCard({
                         : `${accumulatedDiff < 0 ? "−" : "+"}${formatBRL(Math.abs(accumulatedDiff).toFixed(2))}`}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground leading-snug font-sans">
-                      Soma ano a ano da CBS/IBS projetada (new_tax_net): B − A nos anos em comum.
+                      Soma ano a ano da CBS/IBS líquida projetada: B − A nos anos em comum.
                     </p>
                   </div>
                 )}
@@ -540,7 +542,7 @@ export function ComparisonVerdictCard({
                         "font-sans text-3xl font-bold tabular-nums tracking-tight sm:text-4xl print:text-foreground",
                         singleNeutral && "text-slate-700 dark:text-slate-200",
                         !singleNeutral && singleSaving && "text-emerald-600 dark:text-emerald-400 print:!text-foreground",
-                        !singleNeutral && !singleSaving && "text-amber-600 dark:text-amber-400 print:!text-foreground",
+                        !singleNeutral && !singleSaving && "text-red-900 dark:text-red-400 print:!text-foreground",
                       )}
                     >
                       {singleNeutral
@@ -549,13 +551,10 @@ export function ComparisonVerdictCard({
                     </span>
                     {!singleNeutral && (
                       <Badge
-                        className={cn(
-                          "border-0 px-2 py-0.5 text-xs font-semibold font-sans print:border print:border-foreground print:bg-transparent print:text-foreground",
-                          singleSaving && "bg-emerald-600 text-white hover:bg-emerald-600",
-                          !singleSaving && "bg-amber-600 text-white hover:bg-amber-600",
-                        )}
+                        variant={singleSaving ? "verdictEconomy" : "verdictIncrease"}
+                        className="px-2 py-0.5 text-xs font-semibold font-sans"
                       >
-                        {singleSaving ? "Economia projetada" : "Aumento de carga"}
+                        {verdictPolarityLabel(singleSaving ? "economy" : "increase", isPro)}
                       </Badge>
                     )}
                   </div>

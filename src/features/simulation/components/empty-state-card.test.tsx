@@ -23,7 +23,7 @@ describe("EmptyStateCard", () => {
 
     await userEvent.click(
       screen.getByRole("button", {
-        name: "Passo 2 do pipeline: adicionar primeira despesa para análise de créditos com IA e RAG",
+        name: "Passo 2: adicionar a primeira despesa para análise de créditos com citação da lei",
       }),
     )
 

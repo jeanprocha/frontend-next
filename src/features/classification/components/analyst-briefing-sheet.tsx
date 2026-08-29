@@ -31,7 +31,7 @@ export function AnalystBriefingSheet() {
 
   const title =
     kind === "macro" && aiMeta
-      ? "Indicador RAG agregado"
+      ? "Indicador agregado de evidência legal"
       : kind === "chip" && tag
         ? tag.label
         : "Briefing técnico"
@@ -51,20 +51,20 @@ export function AnalystBriefingSheet() {
           }
           return (
             `Score global ${pct(aiMeta.confidence_score)}. ${formula} ` +
-            `Nesta simulação: similaridade RAG média (linhas com evidência) ${pct(b.rag_similarity_mean)}; ` +
+            `Nesta simulação: similaridade média com o texto legal (linhas com evidência) ${pct(b.rag_similarity_mean)}; ` +
             `confiança média do classificador ${pct(b.llm_confidence_mean)}; ` +
             `cobertura de evidências ${pct(b.evidence_coverage)} ` +
             `(${b.with_evidence_count} de ${b.classified_count} linhas classificadas com trechos recuperados). ` +
             "Isto mede aderência da recuperação e coerência estatística das respostas, não certeza jurídica. " +
             "O semáforo do gauge (verde acima de 85%, âmbar entre 60% e 85%, vermelho abaixo de 60%) é o Buffer de Confiança: transparência sobre incerteza, não infalibilidade da IA. " +
-            "No painel de auditoria RAG, a «Jornada da auditoria» liga dados, classificação, lei e cálculo — rastro de migalhas para uma tese auditável, não um número isolado."
+            "No painel de auditoria semântica, a «Jornada da auditoria» liga dados, classificação, lei e cálculo — rastro de migalhas para uma tese auditável, não um número isolado."
           )
         })()
       : kind === "chip" && tag
         ? `O perfil estratégico «${tag.label}» corresponde a um padrão textual do contexto da empresa. ` +
           "Esta classificação resulta do reconhecimento imediato no cliente combinado com o vocabulário atualizado pelo servidor após o processamento da simulação. " +
           "Os chips materializam o vocabulário fiscal do TribIA; a citação integral de dispositivos da legislação vigente " +
-          "liga-se à classificação das despesas com recuperação RAG."
+          "liga-se à classificação das despesas com evidência recuperada na lei."
         : "—"
 
   const legalBase =
@@ -147,7 +147,7 @@ export function AnalystBriefingSheet() {
               {!fullRayx && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/55 px-4 text-center">
                   <p className="text-xs text-foreground/90 max-w-[260px] leading-snug">
-                    O trecho correspondente no contexto aparece desfocado no hub central; no Pro vê o realce nítido. Veja o artigo exacto na lei e a lista de evidências RAG completas — disponível no plano Pro.
+                    O trecho correspondente no contexto aparece desfocado no hub central; no Pro você vê o realce nítido. Veja o artigo exato na lei e a lista completa de evidências — disponível no plano Pro.
                   </p>
                   <Link
                     href="/#planos"
@@ -168,7 +168,7 @@ export function AnalystBriefingSheet() {
 
         <div className="mt-auto border-t border-border/50 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
           {kind === "macro"
-            ? "Indicador macro derivado das classificações e da recuperação RAG. Para evidência por despesa, use a tabela e o briefing por linha."
+            ? "Indicador macro derivado das classificações e da evidência recuperada na lei. Para evidência por despesa, use a tabela e o briefing por linha."
             : kind === "chip"
               ? "Raio-X: o realce aproxima o padrão da etiqueta ao texto por heurística no cliente; se não houver trecho destacado, o padrão não foi localizado de forma única neste contexto — confie no racional acima."
               : "—"}

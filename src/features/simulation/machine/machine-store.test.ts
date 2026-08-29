@@ -167,4 +167,24 @@ describe("machine-store — timer de debounce único", () => {
       expect(finalState.dossierBusy).toBe(false)
     }
   })
+
+  it("openDossier com copyOnly copia o link para a área de transferência em vez de abrir nova aba (D3)", async () => {
+    const { createSimulationMachineStore } = await import("./machine-store")
+    const { runPersist } = await import("./steps")
+    vi.mocked(runPersist).mockResolvedValue({ type: "PERSIST_SUCCEEDED", recordId: "r2" })
+
+    const machine = createSimulationMachineStore()
+    machine.store.setState({ fsm: readyState() })
+
+    const openSpy = vi.fn()
+    const writeTextSpy = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal("window", { open: openSpy, location: { origin: "https://tribia.app" } })
+    vi.stubGlobal("navigator", { clipboard: { writeText: writeTextSpy } })
+
+    const url = await machine.openDossier({ reportBrand: null, copyOnly: true })
+
+    expect(writeTextSpy).toHaveBeenCalledWith("https://tribia.app/report/r2")
+    expect(openSpy).not.toHaveBeenCalled()
+    expect(url).toBe("https://tribia.app/report/r2")
+  })
 })

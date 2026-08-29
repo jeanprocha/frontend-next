@@ -115,7 +115,9 @@ export function CommandMenu() {
   }, [close])
 
   const runPrint = useCallback(() => {
-    window.print()
+    // D3/Frente D — nunca window.print() cru: o bridge ativa a composição
+    // completa (mode="board") antes de imprimir, ver use-print-full-document.ts.
+    getDashboardCommandBridge().printFullDocument?.()
     close()
   }, [close])
 

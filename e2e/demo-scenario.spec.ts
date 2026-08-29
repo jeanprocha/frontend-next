@@ -20,19 +20,19 @@ test("simulador vazio mostra o placeholder, sem contexto pré-preenchido", async
   await expect(contextField).toHaveValue("")
   await expect(contextField).toHaveAttribute("placeholder", /empresa SaaS|regime regular/)
 
-  await expect(page.getByText("Quer testar sem digitar nada?")).toBeVisible()
+  await expect(page.getByText("Quer só entender a plataforma?")).toBeVisible()
 })
 
 test("carregar um cenário de exemplo e simular sem digitar nada", async ({ page }) => {
   await mockEngine(page)
   await page.goto("/simulador")
 
-  await expect(page.getByText("Quer testar sem digitar nada?")).toBeVisible()
+  await expect(page.getByText("Quer só entender a plataforma?")).toBeVisible()
   await page.getByRole("button", { name: "Clínica de fisioterapia" }).click()
 
   // O picker some assim que o formulário deixa de estar vazio (fato 7 —
   // carregar por cima de dados já digitados seria perda de trabalho silenciosa).
-  await expect(page.getByText("Quer testar sem digitar nada?")).toHaveCount(0)
+  await expect(page.getByText("Quer só entender a plataforma?")).toHaveCount(0)
 
   // Regime, serviços e despesas do cenário vieram prontos (campos são inputs).
   await expect(page.locator('input[value="Sessões de fisioterapia"]')).toBeVisible()

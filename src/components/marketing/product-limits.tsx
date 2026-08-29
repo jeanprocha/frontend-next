@@ -9,7 +9,7 @@ export function ProductLimits() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-14">
       <div className="mb-6 flex flex-wrap items-baseline gap-4">
-        <span className="font-mono text-xs font-medium tracking-[0.12em] text-accent uppercase">
+        <span className="font-mono text-xs font-medium tracking-[0.12em] text-emerald-700 uppercase dark:text-emerald-300">
           08 · Limites
         </span>
         <h2 className="font-board-report text-[28px] leading-tight font-semibold tracking-tight text-foreground">

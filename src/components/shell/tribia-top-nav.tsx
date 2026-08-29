@@ -79,14 +79,16 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
               aria-label="Navegação principal"
               className="flex items-center gap-1 shrink-0"
             >
-              <Link
-                href={ROTAS.clientes}
-                className={navLinkClass(clientesActive)}
-                aria-current={clientesActive ? "page" : undefined}
-              >
-                {NAV_LINK_LABELS.clientes}
-              </Link>
+              {/* P0 do re-critique: em 375px este link colidia com o logo —
+                  no mobile ele vive dentro do Sheet, como os demais. */}
               <div className="hidden items-center gap-1 md:flex">
+                <Link
+                  href={ROTAS.clientes}
+                  className={navLinkClass(clientesActive)}
+                  aria-current={clientesActive ? "page" : undefined}
+                >
+                  {NAV_LINK_LABELS.clientes}
+                </Link>
                 <Link
                   href={ROTAS.simulador}
                   className={navLinkClass(simuladorActive)}
@@ -122,6 +124,14 @@ export function TribiaTopNav({ legalIndicatorSlot }: TribiaTopNavProps) {
                       <SheetTitle>Navegação</SheetTitle>
                     </SheetHeader>
                     <div className="flex flex-col gap-1 p-4">
+                      <Link
+                        href={ROTAS.clientes}
+                        className={cn(navLinkClass(clientesActive), "w-full justify-start")}
+                        aria-current={clientesActive ? "page" : undefined}
+                        onClick={() => setMobileNavOpen(false)}
+                      >
+                        {NAV_LINK_LABELS.clientes}
+                      </Link>
                       <Link
                         href={ROTAS.simulador}
                         className={cn(navLinkClass(simuladorActive), "w-full justify-start")}

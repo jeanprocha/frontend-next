@@ -1,4 +1,4 @@
-import { API_BASE, authHeaders, throwApiError, tribiaPlanHeader } from "@/lib/http"
+import { API_BASE, authHeaders, throwApiError, tribiaFetch, tribiaPlanHeader } from "@/lib/http"
 import type { LawArticleResponse, LawPdfAnchorResponse } from "@/types/api"
 import type { FiscalChangelogEntry } from "@/lib/fiscal-law-changelog"
 
@@ -26,7 +26,7 @@ export interface LawCorpusResponse {
  * desligado via `LAW_CORPUS_API_ENABLED = false` até o W1 entregar).
  */
 export async function fetchLawCorpus(): Promise<LawCorpusResponse> {
-  const res = await fetch(`${API_BASE}/law/corpus`)
+  const res = await tribiaFetch(`${API_BASE}/law/corpus`)
   if (!res.ok) {
     const raw = await res.json().catch(() => ({ error: res.statusText }))
     throwApiError(res, raw, "Erro ao carregar corpus legal")
@@ -37,7 +37,7 @@ export async function fetchLawCorpus(): Promise<LawCorpusResponse> {
 /** Texto integral do artigo (chunks agregados no backend). id = article_id da linha do chunk. */
 export async function fetchLawArticle(chunkArticleId: string): Promise<LawArticleResponse> {
   const enc = encodeURIComponent(chunkArticleId)
-  const res = await fetch(`${API_BASE}/law/articles/${enc}`)
+  const res = await tribiaFetch(`${API_BASE}/law/articles/${enc}`)
   if (!res.ok) {
     const raw = await res.json().catch(() => ({ error: res.statusText }))
     throwApiError(res, raw, "Erro ao carregar artigo")
@@ -53,7 +53,7 @@ export async function fetchLawPdfAnchor(
   plan: string,
 ): Promise<LawPdfAnchorResponse> {
   const enc = encodeURIComponent(chunkArticleId)
-  const res = await fetch(`${API_BASE}/law/articles/${enc}/pdf-anchor`, {
+  const res = await tribiaFetch(`${API_BASE}/law/articles/${enc}/pdf-anchor`, {
     headers: {
       ...authHeaders(token, userId),
       ...tribiaPlanHeader(plan),
@@ -76,7 +76,7 @@ export async function fetchPublicLawPdfAnchor(
   chunkArticleId: string,
 ): Promise<LawPdfAnchorResponse> {
   const enc = encodeURIComponent(chunkArticleId)
-  const res = await fetch(`${API_BASE}/public/law-articles/${enc}/pdf-anchor`)
+  const res = await tribiaFetch(`${API_BASE}/public/law-articles/${enc}/pdf-anchor`)
   if (!res.ok) {
     const raw = await res.json().catch(() => ({ error: res.statusText }))
     throwApiError(res, raw, "Erro ao carregar ancoragem PDF")

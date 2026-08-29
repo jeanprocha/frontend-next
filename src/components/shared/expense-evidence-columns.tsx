@@ -265,7 +265,7 @@ export function ExpenseEvidenceColumns({
 
           size="sm"
 
-          className="text-primary hover:text-primary h-auto py-1 px-2"
+          className="text-primary hover:text-primary h-auto py-1 px-2 print:hidden"
 
           onClick={onTouchOpen}
 
@@ -353,7 +353,7 @@ export function ExpenseEvidenceColumns({
 
         size="sm"
 
-        className="text-primary hover:text-primary h-auto py-1 px-2"
+        className="text-primary hover:text-primary h-auto py-1 px-2 print:hidden"
 
         aria-expanded={open}
 

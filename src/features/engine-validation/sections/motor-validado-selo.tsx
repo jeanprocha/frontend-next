@@ -1,26 +1,8 @@
 "use client"
 
 import { useEngineValidation } from "@/lib/use-engine-validation"
+import { formatIsoDatePtBR as formatRunAt } from "@/lib/format-iso-date-ptbr"
 import type { ReportSection } from "@/lib/report-contract"
-
-/**
- * timeZone: "UTC" — mesma correção da PR 9/W1 (base-legal-selo.tsx): o
- * backend emite datas ISO "YYYY-MM-DD" (meia-noite UTC); sem isso, qualquer
- * fuso negativo (Brasil, UTC-3) mostraria o dia anterior.
- */
-function formatRunAt(iso?: string): string {
-  if (!iso) return ""
-  try {
-    return new Date(iso).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      timeZone: "UTC",
-    })
-  } catch {
-    return iso
-  }
-}
 
 /**
  * PRODUCT.md: "selos de validação... trabalho futuro não pode fabricar" —
@@ -57,12 +39,14 @@ function MotorValidadoSeloSection() {
 
   return (
     <div className="px-1 pb-2">
+      {/* Fluxo de prosa, não flex: com flex o texto quebrava em blocos
+          desalinhados em telas estreitas (achado do critique). */}
       <p
         role="note"
         aria-label={`${escopo} validados contra a Calculadora de Tributos RFB versão ${versao} — ${validation.cases_total} casos, ${dataExecucao}`}
-        className="flex items-center gap-1.5 text-[11px] leading-none text-muted-foreground"
+        className="text-[11px] leading-snug text-muted-foreground"
       >
-        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
+        <span aria-hidden className="mr-1.5 inline-block size-1.5 rounded-full bg-accent align-middle" />
         <span className="font-medium text-foreground">{escopo}</span> validados contra a Calculadora de Tributos RFB versão{" "}
         {versao} — {validation.cases_total} casos, {dataExecucao}
       </p>

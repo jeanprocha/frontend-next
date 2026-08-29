@@ -8,6 +8,8 @@
 export type DashboardCommandBridge = {
   runSimulation: (() => void) | null
   toggleBoardReady: (() => void) | null
+  /** D3/Frente D — imprime o documento completo (ativa apresentação + espera gráficos lazy antes de window.print()). */
+  printFullDocument: (() => void) | null
   /** true quando estamos na fase de input do simulador (form manual, não CSV nem resultados) */
   isSimulationInputPhase: boolean
   /** Resultado form disponível para modo apresentação / impressão */
@@ -33,6 +35,7 @@ export type DashboardCommandBridge = {
 const defaultBridge: DashboardCommandBridge = {
   runSimulation: null,
   toggleBoardReady: null,
+  printFullDocument: null,
   isSimulationInputPhase: false,
   hasFormResults: false,
   isLoadingSimulation: false,

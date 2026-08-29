@@ -31,7 +31,7 @@ export function TribiaInsights({
   const focusMismatch = insightYearMismatch(result.year, simulationRunYear)
 
   return (
-    <Card className="border-l-4 border-l-amber-400/80 bg-amber-50/40 dark:border-l-amber-500/70 dark:bg-amber-950/20 print:border-l print:border-foreground/30 print:bg-transparent print:shadow-none">
+    <Card className="border border-amber-400/40 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-950/20 print:border print:border-foreground/30 print:bg-transparent print:shadow-none">
       <CardHeader className="pb-2">
         <CardTitle className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
           <Lightbulb

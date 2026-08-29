@@ -57,7 +57,7 @@ export function WhatsIncluded() {
       <div className="rounded-xl border border-border bg-card p-6 tribia-shadow-elevated sm:p-8">
         <div className="flex flex-col items-start justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-end">
           <div>
-            <span className="font-mono text-xs font-medium tracking-[0.12em] text-accent uppercase">07 · Acesso</span>
+            <span className="font-mono text-xs font-medium tracking-[0.12em] text-emerald-700 uppercase dark:text-emerald-300">07 · Acesso</span>
             <h2 className="font-board-report mt-1.5 text-[28px] leading-tight font-semibold tracking-tight text-foreground">
               O que está incluído
             </h2>

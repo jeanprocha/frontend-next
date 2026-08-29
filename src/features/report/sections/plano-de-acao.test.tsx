@@ -27,7 +27,8 @@ describe("planoDeAcaoSection", () => {
   it("registrada com id/print/screenTab corretos", () => {
     expect(planoDeAcaoSection.id).toBe("plano-de-acao")
     expect(planoDeAcaoSection.print).toBe("always")
-    expect(planoDeAcaoSection.screenTab).toBe("cronograma")
+    // Aba Veredito: o desfecho mora junto do veredito, não escondido no cronograma.
+    expect(planoDeAcaoSection.screenTab).toBe("veredito")
   })
 
   it("sem credit_leaks, a seção não monta (perfis MEI/Simples/entidade imune já vêm sem leaks do backend)", () => {
@@ -58,14 +59,36 @@ describe("planoDeAcaoSection", () => {
     ]
     render(<planoDeAcaoSection.Component {...propsPara(recordCom(leaks))} />)
 
-    expect(screen.getByText("Licença de software ERP")).toBeInTheDocument()
-    expect(screen.getByText("Alta")).toBeInTheDocument()
-    expect(screen.getByText("baixo · baixo")).toBeInTheDocument()
-    expect(screen.getByText("Art. 47, LC 214/2025")).toBeInTheDocument()
-    expect(screen.getByText(/Sem nexo documental/)).toBeInTheDocument()
-    expect(screen.getByText(/Reclassificar como elegível padrão/)).toBeInTheDocument()
-    expect(screen.getByText("Total recuperável (ano simulado)")).toBeInTheDocument()
-    expect(screen.getAllByText("−R$ 30,00").length).toBeGreaterThanOrEqual(2) // linha + total
+    // Tabela (≥sm/impressão) e gêmeo mobile montam ambos — textos aparecem 2x.
+    expect(screen.getAllByText("Licença de software ERP").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("Alta").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("baixo · baixo").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("Art. 47, LC 214/2025").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/Sem nexo documental/).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/Reclassificar como elegível padrão/).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("Total recuperável se documentado").length).toBeGreaterThanOrEqual(1)
+    // Convenção de sinal: oportunidade em positivo — linha + total, nas duas vistas.
+    expect(screen.getAllByText("+R$ 30,00").length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryByText("−R$ 30,00")).not.toBeInTheDocument()
+  })
+
+  it("a métrica exibida é a que ordena: com série completa, mostra o acumulado 2026–2033", () => {
+    const leaks: CreditLeak[] = [
+      {
+        description: "Despesa com série",
+        value: "1000.00",
+        lost_credit: "10.00",
+        regime_type: "padrao",
+        annual_values: [
+          { year: 2026, lost_credit: "10.00" },
+          { year: 2027, lost_credit: "90.00" },
+        ],
+      },
+    ]
+    render(<planoDeAcaoSection.Component {...propsPara(recordCom(leaks))} />)
+    expect(screen.getByText("Crédito recuperável 2026–2033")).toBeInTheDocument()
+    // 10 + 90 acumulados — nunca o lost_credit do ano (10,00) na coluna exibida.
+    expect(screen.getAllByText("+R$ 100,00").length).toBeGreaterThanOrEqual(2) // linha + total, 2 vistas
   })
 
   it("item sem legal_base mostra o aviso de ausência, não inventa citação", () => {
@@ -73,7 +96,7 @@ describe("planoDeAcaoSection", () => {
       { description: "Assinatura sem nexo claro", value: "500.00", lost_credit: "5.00", regime_type: "padrao" },
     ]
     render(<planoDeAcaoSection.Component {...propsPara(recordCom(leaks))} />)
-    expect(screen.getByText("Sem citação — revisar com o fiscal antes de agir")).toBeInTheDocument()
+    expect(screen.getAllByText("Sem citação — revisar com o fiscal antes de agir").length).toBeGreaterThanOrEqual(1)
   })
 
   it("ordena por valor acumulado (annual_values) decrescente, não pela ordem de chegada", () => {
@@ -109,9 +132,11 @@ describe("planoDeAcaoSection", () => {
       { description: "Despesa antiga", value: "1000.00", lost_credit: "10.00", regime_type: "padrao" },
     ]
     render(<planoDeAcaoSection.Component {...propsPara(recordCom(leaks))} />)
-    expect(screen.getByText("Despesa antiga")).toBeInTheDocument()
-    // "—" aparece duas vezes: prioridade desconhecida e esforço/risco desconhecidos.
+    expect(screen.getAllByText("Despesa antiga").length).toBeGreaterThanOrEqual(1)
+    // "—" aparece para prioridade e esforço/risco desconhecidos (2x por vista).
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2)
-    expect(screen.getByText("Total recuperável (ano simulado)")).toBeInTheDocument()
+    // Sem annual_values a coluna declara o fallback honesto: valor do ano simulado.
+    expect(screen.getByText("Crédito recuperável (ano simulado)")).toBeInTheDocument()
+    expect(screen.getAllByText("Total recuperável se documentado").length).toBeGreaterThanOrEqual(1)
   })
 })

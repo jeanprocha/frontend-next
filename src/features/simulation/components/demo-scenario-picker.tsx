@@ -1,8 +1,15 @@
 "use client"
 
-// Etapa N/PR 4 — sair do zero a um veredito sem digitar nada. Só aparece com
-// o formulário vazio (SimulationForm condiciona): carregar por cima de dados
-// já digitados seria uma perda de trabalho silenciosa, não um atalho.
+// Etapa N/PR 4, promovido em D1/Frente D — sair do zero a um veredito sem
+// digitar nada é a primeira das 3 prioridades do dono do produto ("a
+// simulação ser fácil, e ter opção de gerar dados fictícios, apenas para
+// entender o que a plataforma faz"). Montado por DashboardInputPanel como o
+// convite proeminente do estado vazio — única fonte de cenários demo do
+// simulador (não duplicar em SimulationForm). Só aparece com o formulário
+// vazio: carregar por cima de dados já digitados seria uma perda de
+// trabalho silenciosa, não um atalho. Nunca dispara a simulação — só
+// preenche o formulário; "Simular impacto" continua um clique explícito do
+// usuário (custo real de classificação por IA).
 import { Rocket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTaxStore } from "@/store/useTaxStore"
@@ -27,15 +34,28 @@ export function DemoScenarioPicker() {
   }
 
   return (
-    <div className="rounded-2xl border border-dashed border-accent/40 bg-accent/5 p-4 dark:bg-accent/10">
-      <div className="flex items-center gap-2">
-        <Rocket className="size-4 shrink-0 text-accent" aria-hidden />
-        <p className="text-sm font-medium text-foreground">Quer testar sem digitar nada?</p>
+    <div
+      role="region"
+      aria-label="Carregar cenário fictício de demonstração"
+      className="rounded-2xl border-2 border-dashed border-accent/40 bg-accent/5 p-5 sm:p-6 dark:bg-accent/10"
+    >
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-accent/30"
+        >
+          <Rocket className="size-4 text-accent" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">Quer só entender a plataforma?</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            Carregue um cenário fictício de demonstração — contexto, regime, receitas e despesas
+            prontos. Você fica a um clique de{" "}
+            <span className="font-medium text-foreground">&quot;Simular impacto&quot;</span> do veredito.
+          </p>
+        </div>
       </div>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-        Carregue um cenário de exemplo — contexto, regime, receitas e despesas prontos para simular.
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         {DEMO_SCENARIOS.map((scenario) => (
           <Button
             key={scenario.id}
@@ -43,12 +63,15 @@ export function DemoScenarioPicker() {
             variant="outline"
             size="sm"
             onClick={() => loadScenario(scenario)}
-            className="h-8 border-accent/30 text-xs hover:border-accent/50 hover:bg-accent/10"
+            className="tribia-touch-target border-accent/30 px-3.5 text-sm hover:border-accent/50 hover:bg-accent/10"
           >
             {scenario.label}
           </Button>
         ))}
       </div>
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground/85">
+        Dados fictícios, apenas para demonstração — nenhuma empresa real.
+      </p>
     </div>
   )
 }

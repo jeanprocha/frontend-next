@@ -40,7 +40,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { ShieldAlert, ShieldCheck, ShieldMinus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { deriveFinancialVerdictPolarity } from "../lib/financial-verdict-polarity"
+import { deriveFinancialVerdictPolarity, verdictPolarityLabel } from "../lib/financial-verdict-polarity"
 import { parseApiDecimal } from "@/lib/money-decimal"
 import {
   decimalStringToCents,
@@ -57,6 +57,12 @@ import type { SimulationResponse } from "@/types/api"
 
 export interface FinancialVerdictHeroCardProps {
   simulation: SimulationResponse
+  /**
+   * Ano de foco da simulação (item A1 — achado do critique: o leitor caçava
+   * o ano em letra miúda). Renderizado como chip navy ao lado do selo de
+   * polaridade — sempre visível, nunca escondido atrás de hover/clique.
+   */
+  focusYear: number
   /**
    * @deprecated A solidez RAG foi movida para o `VerdictThesisPanel` (item 2.2.1).
    * Mantido na assinatura para compatibilidade; ignorado internamente.
@@ -103,7 +109,7 @@ function buildVerdictVisuals(
     case "economy":
       return {
         SealIcon: ShieldCheck,
-        sealLabel: "Economia identificada",
+        sealLabel: verdictPolarityLabel("economy", isPro),
         badgeVariant: "verdictEconomy" as const,
         borderClass:
           "border-emerald-500/30 dark:border-emerald-500/35",
@@ -118,8 +124,8 @@ function buildVerdictVisuals(
     case "increase":
       return {
         SealIcon: ShieldAlert,
-        // Pro: vocabulário de projeção fiscal. Free: tom mais operacional.
-        sealLabel: isPro ? "Carga adicional projetada" : "Aumento de carga",
+        // Rótulo canônico (fonte única) — Pro: projeção fiscal; Free: operacional.
+        sealLabel: verdictPolarityLabel("increase", isPro),
         badgeVariant: "verdictIncrease" as const,
         borderClass: isPro
           ? "border-red-700/20 dark:border-red-700/30"
@@ -139,7 +145,7 @@ function buildVerdictVisuals(
     case "neutral":
       return {
         SealIcon: ShieldMinus,
-        sealLabel: "Sem variação material",
+        sealLabel: verdictPolarityLabel("neutral", isPro),
         badgeVariant: "verdictNeutral" as const,
         borderClass: "border-border/80",
         bgClass: "bg-card",
@@ -157,6 +163,7 @@ function buildVerdictVisuals(
 
 export function FinancialVerdictHeroCard({
   simulation,
+  focusYear,
   presentationMode = false,
   isRecalculating = false,
   pendingSimulationSync = false,
@@ -269,8 +276,14 @@ export function FinancialVerdictHeroCard({
          * 5. Prov — rastro do motor Go / lei
          */}
 
-        {/* 1. Rótulo — Sans no canvas; Serif apenas em Board-Ready */}
-        <p
+        {/*
+         * 1. Rótulo — Sans no canvas; Serif apenas em Board-Ready.
+         * h2 (não <p>): fecha a cadeia de headings do dossiê — h1 (sr-only,
+         * público) → h2 aqui → h3 (ComparisonVerdictCard) → h4 (colunas do
+         * racional). Puramente semântico: classes idênticas, zero mudança
+         * visual (achado do critique: heading pulado h1→h3, sem h2).
+         */}
+        <h2
           id="tribia-fvh-title"
           className={cn(
             "text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground",
@@ -280,12 +293,15 @@ export function FinancialVerdictHeroCard({
           )}
         >
           Veredito Financeiro
-        </p>
+        </h2>
 
         {deltaValid && visuals ? (
           <>
-            {/* 2. Selo — Shield + rótulo institucional + a11y (nunca só cor) */}
-            <div id="tribia-fvh-seal">
+            {/* 2. Selo — Shield + rótulo institucional + a11y (nunca só cor);
+                chip navy "Ano de foco" ao lado (A1 — o ano não pode ficar só
+                em letra miúda na proveniência). Sempre visível, nunca atrás
+                de hover — sobrevive à impressão. */}
+            <div id="tribia-fvh-seal" className="flex flex-wrap items-center gap-2">
               <Badge
                 variant={visuals.badgeVariant}
                 className={cn(
@@ -298,6 +314,15 @@ export function FinancialVerdictHeroCard({
                   aria-hidden
                 />
                 {visuals.sealLabel}
+              </Badge>
+              <Badge
+                variant="verdictFocusYear"
+                className={cn(
+                  "gap-1 px-2.5 py-0.5 text-xs font-semibold font-mono tabular-nums h-auto",
+                  "board-ready:font-board-report board-ready:text-[11px] board-ready:border board-ready:border-current/30",
+                )}
+              >
+                Ano de foco {focusYear}
               </Badge>
             </div>
 
@@ -357,26 +382,41 @@ export function FinancialVerdictHeroCard({
                 )}
               </div>
 
-              {/* 4. Variação % — da API Go, sem recálculo */}
+              {/* 4. Variação % — da API Go, sem recálculo. Guarda de fim de rampa
+                  (achado do re-critique): quando o percentual chega zerado com
+                  delta material (carga legada zerada, ex. 2033), "0,0%" ao lado
+                  de "+R$ X" é uma contradição aparente — declarar em vez de exibir. */}
               {rawDeltaPct ? (
-                <p
-                  className={cn(
-                    "text-sm tabular-nums text-muted-foreground",
-                    presentationMode && "font-board-report",
-                    "tribia-print-narrative-serif",
-                  )}
-                >
-                  <span className={cn("font-semibold", deltaTextClass)}>
-                    {formatPct(rawDeltaPct)}
-                  </span>{" "}
-                  sobre a carga líquida atual estimada
-                </p>
+                parseApiDecimal(rawDeltaPct)?.isZero() && deltaValid && !isNeutral ? (
+                  <p
+                    className={cn(
+                      "text-sm text-muted-foreground",
+                      presentationMode && "font-board-report",
+                      "tribia-print-narrative-serif",
+                    )}
+                  >
+                    Variação percentual não aplicável — a carga líquida do regime atual está zerada neste ano.
+                  </p>
+                ) : (
+                  <p
+                    className={cn(
+                      "text-sm tabular-nums text-muted-foreground",
+                      presentationMode && "font-board-report",
+                      "tribia-print-narrative-serif",
+                    )}
+                  >
+                    <span className={cn("font-semibold", deltaTextClass)}>
+                      {formatPct(rawDeltaPct)}
+                    </span>{" "}
+                    sobre a carga líquida atual estimada
+                  </p>
+                )
               ) : null}
             </div>
 
             {/* 5. Proveniência — rastro do dado para a lei */}
             <p className="text-[10px] font-medium text-muted-foreground/80">
-              Motor Go · {lawLabel}
+              Motor determinístico · {lawLabel}
             </p>
           </>
         ) : (

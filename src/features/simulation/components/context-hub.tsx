@@ -145,7 +145,7 @@ export function ContextHub() {
             {rayxCalloutMode === "tease" && (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="min-w-0 flex-1">
-                  O sistema identificou o trecho correspondente; no Pro o realce fica nítido no contexto e o briefing reúne a trilha completa na {changelog.label} com evidências RAG.
+                  O sistema identificou o trecho correspondente; no Pro o realce fica nítido no contexto e o briefing reúne a trilha completa na {changelog.label} com as evidências citadas da lei.
                 </p>
                 <Button
                   type="button"

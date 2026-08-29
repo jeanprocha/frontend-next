@@ -56,7 +56,7 @@ const PIPELINE_STEPS = [
   },
   {
     title: "Classificação",
-    hint: "IA consulta a legislação vigente via RAG",
+    hint: "A IA consulta a legislação vigente e cita a fonte",
     Icon: BrainCircuit,
   },
   {
@@ -146,7 +146,7 @@ export function ResultSidebar({
             </span>
             <div className="flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1">
               <span className="text-xs font-bold uppercase tracking-tighter text-emerald-400">
-                {showEducational ? "Pipeline" : "Análise ativa"}
+                {showEducational ? "Etapas da análise" : "Análise ativa"}
               </span>
               {!showEducational && (
                 <span
@@ -254,7 +254,7 @@ export function ResultSidebar({
                         Inteligência de crédito
                       </p>
                       <p className="text-xs leading-relaxed text-emerald-900/75 dark:text-emerald-100/70">
-                        A IA classifica cada despesa consultando a legislação vigente via RAG antes de calcular o impacto.
+                        A IA classifica cada despesa consultando a legislação vigente, com citação da fonte, antes de calcular o impacto.
                       </p>
                     </div>
                   </div>

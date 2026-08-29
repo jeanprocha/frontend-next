@@ -15,7 +15,7 @@ export const AUDIT_TRAIL_STEPS: { label: string; detail: string; href: string }[
     href: "#tribia-journey-transicao",
   },
   {
-    label: "Dossiê de Auditoria (RAG)",
+    label: "Dossiê de auditoria",
     detail: "Certificado de cobertura, base legal e prova documental para o CFO.",
     href: "#tribia-dossie-auditoria",
   },

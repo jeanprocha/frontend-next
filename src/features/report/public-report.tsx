@@ -1,12 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { Link2 } from "lucide-react"
 import { CapabilityProvider, PUBLIC_REPORT_CAPABILITIES } from "@/features/plg"
 import { Button } from "@/components/ui/button"
 import { getPublicSimulationRecord } from "@/lib/api"
 import { simulationDetailToRecord } from "@/lib/history-hydrate"
 import { deriveSessionCompanyLabel } from "@/lib/session-labels"
 import { cn } from "@/lib/utils"
+import { formatPrintDate } from "./components/print-report-chrome"
 import { ReportRenderer } from "./report-renderer"
 import type { ReportSection, SimulationRecord } from "@/lib/report-contract"
 
@@ -27,6 +29,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
   const [err, setErr] = useState<string | null>(null)
   const [record, setRecord] = useState<SimulationRecord | null>(null)
   const [focusYear, setFocusYear] = useState(2026)
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle")
 
   useEffect(() => {
     let cancelled = false
@@ -55,6 +58,22 @@ export function PublicReport({ id, sections }: PublicReportProps) {
     if (typeof window !== "undefined") window.print()
   }, [])
 
+  // D3/Frente D — "Copiar link do dossiê" ao lado de "Exportar para PDF":
+  // já é a página pública, a URL corrente já É o link do dossiê.
+  const handleCopyLink = useCallback(async () => {
+    if (typeof window === "undefined") return
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyState("copied")
+      window.setTimeout(() => setCopyState("idle"), 2000)
+    } catch {
+      // clipboard indisponível (permissão negada, contexto não seguro) —
+      // achado do re-critique: falha silenciosa deixava o leitor sem resposta.
+      setCopyState("failed")
+      window.setTimeout(() => setCopyState("idle"), 3000)
+    }
+  }, [])
+
   if (loading) {
     return (
       <div
@@ -78,6 +97,11 @@ export function PublicReport({ id, sections }: PublicReportProps) {
   }
 
   const sessionCompanyLabel = deriveSessionCompanyLabel(record.meta?.companyContext)
+  // A5 — achado do critique: "Relatório linear · referência pública · {uuid}"
+  // era metalinguagem de sistema. Identifica o documento pelos mesmos dados
+  // do PrintReportHeader (empresa + data de geração); omite a data quando o
+  // registro não a traz — nunca inventa "hoje" no lugar dela.
+  const generatedAtLabel = record.meta?.createdAt ? formatPrintDate(record.meta.createdAt) : null
 
   return (
     <CapabilityProvider value={PUBLIC_REPORT_CAPABILITIES}>
@@ -93,8 +117,10 @@ export function PublicReport({ id, sections }: PublicReportProps) {
             "supports-[backdrop-filter]:bg-white/90",
           )}
         >
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
+          {/* P0 do re-critique: em 375px os dois botões espremiam o rótulo numa
+              coluna de ~65px (letra a letra) — abaixo de sm, empilha. */}
+          <div className="mx-auto flex max-w-4xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3 sm:flex-1">
               {record.reportBrand?.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -103,7 +129,7 @@ export function PublicReport({ id, sections }: PublicReportProps) {
                   className="h-8 w-auto max-w-[140px] object-contain object-left"
                 />
               ) : null}
-              <div className="min-w-0 text-right sm:text-left">
+              <div className="min-w-0 text-left">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-800">
                   Auditado contra o texto da lei
                 </p>
@@ -112,23 +138,39 @@ export function PublicReport({ id, sections }: PublicReportProps) {
                 ) : null}
               </div>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="default"
-              className={cn("shrink-0 bg-emerald-700 hover:bg-emerald-800", REPORT_PDF_FAB)}
-              data-report-pdf-fab
-              onClick={handlePrint}
-            >
-              Exportar para PDF
-            </Button>
+            <div className="flex shrink-0 items-center gap-2 no-print print:hidden">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={handleCopyLink}
+              >
+                <Link2 className="h-4 w-4 shrink-0" aria-hidden />
+                {copyState === "copied"
+                  ? "Link copiado"
+                  : copyState === "failed"
+                    ? "Não foi possível copiar — use a barra de endereço"
+                    : "Copiar link do dossiê"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+                className={cn("bg-emerald-700 hover:bg-emerald-800", REPORT_PDF_FAB)}
+                data-report-pdf-fab
+                onClick={handlePrint}
+              >
+                Exportar para PDF
+              </Button>
+            </div>
           </div>
         </header>
 
         <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 sm:px-6 print:space-y-6 print:py-4">
           <p className="text-center text-xs text-muted-foreground print:text-foreground/80">
-            Relatório linear · referência pública
-            {record.meta?.recordId ? ` · ${record.meta.recordId.slice(0, 8)}…` : ""}
+            {sessionCompanyLabel}
+            {generatedAtLabel ? ` · gerado em ${generatedAtLabel}` : ""}
           </p>
 
           <h1 className="sr-only">Veredito financeiro — dossiê TribIA</h1>

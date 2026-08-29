@@ -238,6 +238,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  /** Seleção de texto — sem isto o navegador usa o azul padrão (fora da paleta). */
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-foreground);
+  }
   /**
    * Escala global do root: 110% = +10% face ao tamanho por defeito do browser (ex. 16px → 17,6px por 1rem).
    * Tamanhos de texto Tailwind (`text-sm`, `text-base`, …) e espaçamentos em `rem` acompanham na mesma proporção.

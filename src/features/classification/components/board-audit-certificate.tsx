@@ -1,23 +1,38 @@
 "use client"
 
-import { AlertTriangle, CheckCircle2, FileCheck, Layers2 } from "lucide-react"
+import { AlertTriangle, CheckCircle2, FileCheck, Layers2, ShieldCheck } from "lucide-react"
 import { formatDecimalPtBR } from "@/lib/format-money"
+import { confidenceTierShortLabel } from "@/lib/confidence-tiers"
+import type { ConfidenceTier } from "@/lib/confidence-tiers"
 import { cn } from "@/lib/utils"
 
 export interface BoardAuditCertificateProps {
   literalPct: number | null
   avgEvPerLine: number | null
   tenuousLineCount: number
+  /** Item A3 — antes card próprio com escudo ~130px; agora linha discreta neste bloco. */
+  coveragePct: number | null
+  withEvidence: number
+  total: number
+  tier: ConfidenceTier | null
+  score: number | null | undefined
+  solidityHint: string | null
   className?: string
 }
 
 /**
- * Certificado de auditoria digital — três pilares (board) sem jargão RAG na linha de frente.
+ * Certificado de auditoria digital — quatro pilares (board) sem jargão RAG na linha de frente.
  */
 export function BoardAuditCertificate({
   literalPct,
   avgEvPerLine,
   tenuousLineCount,
+  coveragePct,
+  withEvidence,
+  total,
+  tier,
+  score,
+  solidityHint,
   className,
 }: BoardAuditCertificateProps) {
   return (
@@ -31,6 +46,25 @@ export function BoardAuditCertificate({
         Certificado de auditoria digital
       </p>
       <ul className="mt-2.5 space-y-3">
+        <li className="flex gap-2.5">
+          <ShieldCheck
+            className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+            aria-hidden
+          />
+          <div className="min-w-0 space-y-1">
+            <p className="text-[11px] font-medium leading-snug text-foreground">Cobertura legal</p>
+            <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+              {coveragePct != null ? `${coveragePct}%` : "—"}
+            </p>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Fundamentos encontrados para {withEvidence} das {total} despesas processadas neste simulador
+              {tier && score != null && Number.isFinite(score) ? ` · ${confidenceTierShortLabel(tier)}` : ""}.
+            </p>
+            {solidityHint ? (
+              <p className="text-[11px] leading-relaxed text-muted-foreground">{solidityHint}</p>
+            ) : null}
+          </div>
+        </li>
         <li className="flex gap-2.5">
           <FileCheck
             className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
@@ -76,17 +110,21 @@ export function BoardAuditCertificate({
           )}
           <div className="min-w-0 space-y-1">
             <p className="text-[11px] font-medium leading-snug text-foreground">Segurança interpretativa</p>
-            <p className="font-mono text-sm font-semibold tabular-nums text-foreground">{tenuousLineCount}</p>
+            {/* "0" cru lia-se "segurança zero" (achado do critique) — o valor
+                zero é a melhor notícia deste bloco, então vira frase positiva
+                em vez de dígito ambíguo; N > 0 nomeia o que precisa revisão. */}
+            <p className="text-sm font-semibold text-foreground">
+              {tenuousLineCount === 0
+                ? "Nenhum nexo tênue detectado"
+                : `${tenuousLineCount} ${tenuousLineCount === 1 ? "nexo tênue" : "nexos tênues"} para revisar`}
+            </p>
             {tenuousLineCount === 0 ? (
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Nenhuma detecção de nexo tênue: sem analogias forçadas entre a despesa e o dispositivo — leitura
-                conservadora para auditoria.
+                Sem analogias forçadas entre a despesa e o dispositivo — leitura conservadora para auditoria.
               </p>
             ) : (
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                {tenuousLineCount}{" "}
-                {tenuousLineCount === 1 ? "linha com" : "linhas com"} nexo interpretativo tênue — rever na Classificação
-                IA.
+                Revise essas linhas na Classificação IA antes de fechar o parecer.
               </p>
             )}
           </div>

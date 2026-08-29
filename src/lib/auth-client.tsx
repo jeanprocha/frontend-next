@@ -166,7 +166,7 @@ function FakeUserButton(_props: ComponentProps<typeof ClerkUserButton>) {
   return (
     <span
       aria-label="Sessão de teste E2E"
-      className="inline-flex size-8 items-center justify-center rounded-full bg-muted font-mono text-[10px] font-bold text-muted-foreground"
+      className="inline-flex size-8 items-center justify-center rounded-full bg-muted font-mono text-[11px] font-bold text-muted-foreground"
     >
       E2E
     </span>

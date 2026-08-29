@@ -1,6 +1,10 @@
 /** Base URL pública do API Go (Vercel: definir `NEXT_PUBLIC_API_URL` = URL do Railway). */
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
+/** Mensagem em voz de parecer para falha de rede/CORS — nunca o "Failed to fetch" cru do browser. */
+const NETWORK_ERROR_MESSAGE =
+  "Não foi possível contactar o motor de cálculo. Verifique a conexão e tente novamente."
+
 /** Erro de API com campos opcionais alinhados a `ErrorResponse` do backend Go (`request_id` para suporte). */
 export class ApiError extends Error {
   readonly requestId?: string
@@ -29,6 +33,25 @@ export class ApiError extends Error {
     this.limit = opts?.limit
     this.used = opts?.used
     this.plan = opts?.plan
+  }
+}
+
+/**
+ * Wrapper único de `fetch` para o motor de cálculo (Go/Railway) — todo endpoint
+ * em `lib/api/*.ts` chama isto em vez de `fetch` diretamente. `fetch` rejeita
+ * com `TypeError` quando a rede cai, o CORS bloqueia ou o host está fora do ar
+ * — sem isto, o "Failed to fetch" cru do browser subia intacto até a UI. Uma
+ * resposta HTTP normal (2xx–5xx) passa intacta: quem chamou continua a tratar
+ * `!res.ok` com `throwApiError` (403 de quota, 404, etc. não mudam).
+ */
+export async function tribiaFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init)
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw new ApiError(NETWORK_ERROR_MESSAGE)
+    }
+    throw e
   }
 }
 

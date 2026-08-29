@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -113,6 +113,76 @@ describe("ReportRenderer — capacidades", () => {
       </CapabilityProvider>,
     )
     expect(screen.getByTestId("content-gated")).toBeInTheDocument()
+  })
+})
+
+describe("ReportRenderer — controle canônico de ano de foco (D2)", () => {
+  function recordWithSeries(): SimulationRecord {
+    const base = minimalRecord()
+    return {
+      ...base,
+      simulation: {
+        ...base.simulation,
+        transition_series: [
+          { year: 2026, old_tax_net: "1", new_tax_net: "2", total_tax_net: "3" },
+          { year: 2029, old_tax_net: "1", new_tax_net: "2", total_tax_net: "3" },
+          { year: 2033, old_tax_net: "1", new_tax_net: "2", total_tax_net: "3" },
+        ],
+      },
+    }
+  }
+
+  const veredito = stubSection({ id: "v", screenTab: "veredito", print: "always" })
+
+  it("screen-tabs: um único controle no topo, com os anos da série (não hardcoded)", () => {
+    const onFocusYearChange = vi.fn()
+    render(
+      <ReportRenderer
+        record={recordWithSeries()}
+        sections={[veredito]}
+        mode="screen-tabs"
+        focusYear={2026}
+        onFocusYearChange={onFocusYearChange}
+      />,
+    )
+    const control = screen.getByLabelText("Ano de foco")
+    expect(control).toHaveValue("2026")
+    const options = screen.getAllByRole("option").map((o) => (o as HTMLOptionElement).value)
+    expect(options).toEqual(["2026", "2029", "2033"])
+  })
+
+  it("mudar o ano no controle chama onFocusYearChange — mesmo callback que propaga a todo o documento", async () => {
+    const onFocusYearChange = vi.fn()
+    render(
+      <ReportRenderer
+        record={recordWithSeries()}
+        sections={[veredito]}
+        mode="board"
+        focusYear={2026}
+        onFocusYearChange={onFocusYearChange}
+      />,
+    )
+    await userEvent.selectOptions(screen.getByLabelText("Ano de foco"), "2029")
+    expect(onFocusYearChange).toHaveBeenCalledWith(2029)
+  })
+
+  it("public-linear também recebe o mesmo controle canônico", () => {
+    const onFocusYearChange = vi.fn()
+    render(
+      <ReportRenderer
+        record={recordWithSeries()}
+        sections={[veredito]}
+        mode="public-linear"
+        focusYear={2033}
+        onFocusYearChange={onFocusYearChange}
+      />,
+    )
+    expect(screen.getByLabelText("Ano de foco")).toHaveValue("2033")
+  })
+
+  it("sem onFocusYearChange, não monta um controle fake (nada para o usuário acionar)", () => {
+    render(<ReportRenderer {...baseInput([veredito], "screen-tabs")} />)
+    expect(screen.queryByLabelText("Ano de foco")).not.toBeInTheDocument()
   })
 })
 

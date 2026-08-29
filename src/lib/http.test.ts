@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
-import { ApiError, setPlgLimitListener, throwApiError, type PlgLimitErrorInfo } from "./http"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { ApiError, setPlgLimitListener, throwApiError, tribiaFetch, type PlgLimitErrorInfo } from "./http"
 
 function res(status: number): Response {
   return { status } as Response
@@ -7,6 +7,46 @@ function res(status: number): Response {
 
 afterEach(() => {
   setPlgLimitListener(null)
+})
+
+describe("tribiaFetch — harden de rede (C5)", () => {
+  const originalFetch = globalThis.fetch
+
+  beforeEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  it("mapeia TypeError (rede/CORS) para ApiError em voz de parecer, sem 'Failed to fetch' cru", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"))
+
+    let thrown: unknown
+    try {
+      await tribiaFetch("https://motor.invalido/simulations")
+    } catch (e) {
+      thrown = e
+    }
+
+    expect(thrown).toBeInstanceOf(ApiError)
+    const err = thrown as ApiError
+    expect(err.message).not.toMatch(/failed to fetch/i)
+    expect(err.message).toBe(
+      "Não foi possível contactar o motor de cálculo. Verifique a conexão e tente novamente.",
+    )
+  })
+
+  it("repassa uma Response normal (2xx–5xx) intacta — não mascara erros HTTP", async () => {
+    const httpRes = res(403)
+    globalThis.fetch = vi.fn().mockResolvedValue(httpRes)
+
+    const result = await tribiaFetch("https://motor.valido/plg/quota")
+    expect(result).toBe(httpRes)
+  })
+
+  it("relança erros que não são de rede (ex.: bug de programação) sem reescrever a mensagem", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new RangeError("algo não relacionado a rede"))
+
+    await expect(tribiaFetch("https://motor.valido/plg/quota")).rejects.toBeInstanceOf(RangeError)
+  })
 })
 
 describe("throwApiError — interceptor 403 PLG", () => {

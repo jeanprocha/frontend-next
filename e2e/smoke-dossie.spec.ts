@@ -22,7 +22,9 @@ test("demo: formulário → classificação IA → veredito → dossiê", async 
   // "Alíq. ISS" já vem preenchida com 0.05 — não precisa tocar.
 
   // Passo 2 — despesa. Agora existem 2 campos "Valor (BRL)" na tela.
-  await page.getByRole("button", { name: /Passo 2 do pipeline/ }).click()
+  await page
+    .getByRole("button", { name: "Passo 2: adicionar a primeira despesa para análise de créditos com citação da lei" })
+    .click()
   await page.getByLabel("Identificação da despesa").fill("Licença de software ERP")
   await page.getByLabel("Valor (BRL)").last().fill("3000.00")
 
@@ -49,17 +51,22 @@ test("demo: formulário → classificação IA → veredito → dossiê", async 
   // devolve E2E_RECORD_ID) assim que a simulação terminou.
   await page.goto(`/report/${E2E_RECORD_ID}`)
   await expect(page.getByRole("button", { name: /Exportar para PDF/ })).toBeVisible()
-  await expect(page.getByRole("heading", { name: /Mesa de operações/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /Fundamentação de créditos/ })).toBeVisible()
 
-  // Export CSV audit-ready (Etapa M/PR 7): o dossiê público sempre abre com
-  // capabilities de Premium (PUBLIC_REPORT_CAPABILITIES), então o botão
-  // aparece desbloqueado aqui independente do tier de quem gerou o link.
-  await expect(page.getByRole("button", { name: "Exportar CSV" })).toBeEnabled()
+  // Cédula canônica do dossiê público (decisão B1): a Mesa de rastreabilidade
+  // — e o "Exportar CSV" que só existia nela — deixou de montar fora do
+  // screen-tabs; quem prova evidência acessível aqui é a Fundamentação de
+  // créditos, com "Ver lei" sempre visível (sem gating por apresentação).
+  await expect(page.getByRole("button", { name: "Ver lei" }).first()).toBeVisible()
 
-  // Selo de base legal (W1/PR 9) — só aparece com o corpus ao vivo (LAW_CORPUS_FIXTURE,
-  // publicado 2026-08-20); prova end-to-end que a data-base não sofre off-by-one de fuso.
+  // Metade "Base legal" da faixa selo-autoridade (item A4 — substituiu o
+  // antigo selo isolado de base-legal-selo.tsx) — só aparece com o corpus ao
+  // vivo (LAW_CORPUS_FIXTURE, publicado 2026-08-20); prova end-to-end que a
+  // data-base não sofre off-by-one de fuso.
   // Desde a Onda 2/PR 2 o documento vem do PREFIXO das âncoras que este registro
   // citou (lc68_), não do documento corrente do corpus — por isso os fixtures de
   // classificação carregam evidência real.
-  await expect(page.getByRole("note", { name: /Base legal LC 68\/2024 atualizada em 20\/08\/2026/ })).toBeVisible()
+  await expect(
+    page.getByRole("note", { name: /Base legal: LC 68\/2024 · data-base 20\/08\/2026/ }),
+  ).toBeVisible()
 })

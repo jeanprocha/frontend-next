@@ -352,8 +352,6 @@ interface TransitionChartProps {
   chartMode?: "full" | "sparkline"
   /** Pro: linha vertical no ano de leitura */
   focusYear?: number
-  /** Pro: alterar ano de foco */
-  onFocusYearChange?: (year: number) => void
   /** Board-Ready: serif em título/legendas, anotação de inflexão */
   presentationMode?: boolean
   /** Ambient UI coeso com o Veredito: dimmed + pulse só na área de plotagem */
@@ -362,14 +360,11 @@ interface TransitionChartProps {
   pendingSimulationSync?: boolean
 }
 
-const FOCUS_YEARS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033] as const
-
 export function TransitionChart({
   result,
   abBaselineResult,
   chartMode = "full",
   focusYear,
-  onFocusYearChange,
   presentationMode = false,
   isRecalculating = false,
   pendingSimulationSync = false,
@@ -522,30 +517,6 @@ export function TransitionChart({
                 </span>
               </div>
             )}
-
-            {/* Selector de ano de foco (Pro) */}
-            {onFocusYearChange && fy != null && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <label
-                  htmlFor="transition-focus-year"
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Ano de foco
-                </label>
-                <select
-                  id="transition-focus-year"
-                  className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium shadow-sm"
-                  value={fy}
-                  onChange={(e) => onFocusYearChange(Number(e.target.value))}
-                >
-                  {FOCUS_YEARS.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
           {/* Toggle R$ / % receita — sem pulse aqui (informação estável) */}
@@ -610,7 +581,7 @@ export function TransitionChart({
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart
               data={(abMode ? chartDataAb : chartDataSingle) as object[]}
-              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+              margin={{ top: 20, right: 8, left: 0, bottom: 0 }}
             >
               {/*
                * Gradiente de convivência — tapete atrás da grelha e das linhas.

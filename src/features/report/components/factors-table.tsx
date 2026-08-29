@@ -104,5 +104,5 @@ export function FactorsTable({
 
 /** Reutilizado por quem monta tooltip de célula fora desta tabela (ver calculation-trace-panel.tsx). */
 export function gridCellTooltip(focusYear: number, label: string): string {
-  return `Valor determinístico do motor Go para ${focusYear} — ${label}. Sem float64 na conta central.`
+  return `Valor determinístico do motor de cálculo para ${focusYear} — ${label}. Aritmética decimal de precisão fixa na conta central.`
 }

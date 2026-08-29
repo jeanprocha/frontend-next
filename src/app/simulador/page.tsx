@@ -14,14 +14,13 @@ import {
   planoDeAcaoSection,
   printMastheadSection,
   rodapeLegalSection,
+  seloAutoridadeSection,
   transicaoTabelaSection,
   vereditoSection,
   watermarkSection,
 } from "@/features/report"
 import { AnalystBriefingSheet, classificationReportSections } from "@/features/classification"
 import { getImporterPanelEntries } from "@/features/import"
-import { baseLegalSeloSection } from "@/features/legal-corpus"
-import { motorValidadoSeloSection } from "@/features/engine-validation"
 import type { ReportRenderInput, ReportSection } from "@/lib/report-contract"
 
 // Ordem canónica do dossié logado — mastheads/rodapé de impressão intercalados
@@ -33,16 +32,16 @@ const DASHBOARD_SECTIONS: ReportSection[] = [
   printMastheadSection,
   boardMastheadSection,
   watermarkSection,
-  baseLegalSeloSection,
-  motorValidadoSeloSection,
+  seloAutoridadeSection,
   vereditoSection,
   comparativoABSection,
   anatomiaSection,
   cronogramaSection,
   memoriaDeCalculoSection,
-  planoDeAcaoSection,
   transicaoTabelaSection,
   ...classificationReportSections,
+  // O documento termina em ação: o plano fecha o dossiê, antes só do rodapé legal.
+  planoDeAcaoSection,
   rodapeLegalSection,
 ]
 

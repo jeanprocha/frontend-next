@@ -2,28 +2,8 @@
 
 import { useLawCorpus } from "@/lib/use-law-corpus"
 import { lawDocumentsCitedByRecord } from "@/lib/record-law-documents"
+import { formatIsoDatePtBR as formatDataBase } from "@/lib/format-iso-date-ptbr"
 import type { ReportSection, ReportSectionProps } from "@/lib/report-contract"
-
-/**
- * O backend emite published_at como data pura "YYYY-MM-DD" (sem hora) —
- * new Date(...) interpreta isso como meia-noite UTC. Sem timeZone: "UTC"
- * aqui, toLocaleDateString converte para o fuso local do navegador antes de
- * formatar: em qualquer fuso negativo (Brasil, UTC-3) o dia exibido regride
- * um dia (22/07 vira 21/07). timeZone: "UTC" lê o calendário como o backend
- * quis dizer, e continua correto se um dia published_at virar timestamp completo.
- */
-function formatDataBase(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      timeZone: "UTC",
-    })
-  } catch {
-    return iso
-  }
-}
 
 /**
  * PRODUCT.md: "a UI não deve exibir selos de atualização normativa que o

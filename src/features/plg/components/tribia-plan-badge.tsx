@@ -25,7 +25,7 @@ export function TribiaPlanBadge() {
       role="status"
       aria-label={`Plano da conta: ${LABEL[tier]}`}
       className={cn(
-        "inline-flex max-w-[5.5rem] shrink-0 items-center justify-center truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider tabular-nums sm:max-w-none sm:px-2.5 sm:text-xs",
+        "inline-flex max-w-[5.5rem] shrink-0 items-center justify-center truncate rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider tabular-nums sm:max-w-none sm:px-2.5 sm:text-xs",
         tier === "free" &&
           "border-border/80 bg-muted/80 text-muted-foreground",
         tier === "pro" &&

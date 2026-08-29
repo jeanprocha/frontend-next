@@ -16,7 +16,7 @@ export type SimulationResultsAnchorKey = keyof typeof SIMULATION_RESULTS_ANCHORS
 const ITEMS: { key: SimulationResultsAnchorKey; label: string; step: number }[] = [
   { key: "veredito", label: "Veredito", step: 1 },
   { key: "cronograma", label: "Cronograma", step: 2 },
-  { key: "dossie", label: "Dossiê RAG", step: 3 },
+  { key: "dossie", label: "Dossiê", step: 3 },
   { key: "mesa", label: "Mesa", step: 4 },
 ]
 

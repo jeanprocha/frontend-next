@@ -1,4 +1,4 @@
-import { API_BASE, authHeaders, throwApiError, tribiaPlanHeader, type ClassifySimulatePlgOpts } from "@/lib/http"
+import { API_BASE, authHeaders, throwApiError, tribiaFetch, tribiaPlanHeader, type ClassifySimulatePlgOpts } from "@/lib/http"
 import type { BatchClassificationResponse } from "@/types/api"
 
 // classifyBatch envia uma lista de descrições de despesas para o endpoint
@@ -14,7 +14,7 @@ export async function classifyBatch(
     Object.assign(headers, authHeaders(plg.token, plg.userId, tribiaPlanHeader(plg.plan)) as Record<string, string>)
   }
 
-  const res = await fetch(`${API_BASE}/credit-classifications/batch`, {
+  const res = await tribiaFetch(`${API_BASE}/credit-classifications/batch`, {
     method: "POST",
     headers,
     body: JSON.stringify({ expenses, max_concurrency: maxConcurrency }),

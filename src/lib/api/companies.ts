@@ -1,4 +1,4 @@
-import { API_BASE, authHeaders, throwApiError, tribiaPlanHeader } from "@/lib/http"
+import { API_BASE, authHeaders, throwApiError, tribiaFetch, tribiaPlanHeader } from "@/lib/http"
 import type { CompanyCreatePayload, CompanyTemplate } from "@/types/api"
 
 export async function listCompanies(
@@ -6,7 +6,7 @@ export async function listCompanies(
   userId: string,
   plan?: string,
 ): Promise<CompanyTemplate[]> {
-  const res = await fetch(`${API_BASE}/companies`, {
+  const res = await tribiaFetch(`${API_BASE}/companies`, {
     headers: authHeaders(token, userId, plan ? tribiaPlanHeader(plan) : undefined),
   })
   if (!res.ok) {
@@ -26,7 +26,7 @@ export async function createCompany(
   payload: CompanyCreatePayload,
   plan?: string,
 ): Promise<{ id: string }> {
-  const res = await fetch(`${API_BASE}/companies`, {
+  const res = await tribiaFetch(`${API_BASE}/companies`, {
     method: "POST",
     headers: authHeaders(token, userId, {
       "Content-Type": "application/json",
@@ -49,7 +49,7 @@ export async function deleteCompany(
   userId: string,
   id: string,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/companies/${encodeURIComponent(id)}`, {
+  const res = await tribiaFetch(`${API_BASE}/companies/${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers: authHeaders(token, userId),
   })

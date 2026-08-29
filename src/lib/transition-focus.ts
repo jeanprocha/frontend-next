@@ -55,3 +55,16 @@ export function simulationAtFocusYear(
 export function clampTransitionYear(y: number): number {
   return Math.min(MAX_Y, Math.max(MIN_Y, y))
 }
+
+/**
+ * Anos com ponto na série de transição, ordenados e sem duplicatas — fonte
+ * única para o controle canônico de ano de foco (D2/Frente D:
+ * focus-year-control.tsx). Nunca hardcoda 2026–2033: cai para `[base.year]`
+ * quando o registro não trouxe série (ex.: registro antigo sem
+ * transition_series).
+ */
+export function availableFocusYears(base: SimulationResponse): number[] {
+  const years = base.transition_series?.map((p) => p.year) ?? []
+  const unique = Array.from(new Set(years)).sort((a, b) => a - b)
+  return unique.length > 0 ? unique : [base.year]
+}

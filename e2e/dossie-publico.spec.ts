@@ -34,7 +34,7 @@ test("dossiê público: cold load direto na URL renderiza conteúdo real", async
 
   await page.goto(`/report/${RECORD_ID}`)
   await expect(page.getByRole("button", { name: /Exportar para PDF/ })).toBeVisible()
-  await expect(page.getByRole("heading", { name: /Mesa de operações/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /Fundamentação de créditos/ })).toBeVisible()
 })
 
 // Etapa C/PR4, achado 9: consultant_override precisa sobreviver ao
@@ -62,7 +62,7 @@ test("dossiê público: divergência IA × consultor persiste e aparece ao reabr
   })
 
   await page.goto(`/report/${DIVERGENT_RECORD_ID}`)
-  await expect(page.getByRole("heading", { name: /Mesa de operações/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /Fundamentação de créditos/ })).toBeVisible()
 
   // `hidden print:block` é display:none na tela — fora da árvore de
   // acessibilidade (getByRole não encontraria nada), mas presente no DOM.
@@ -98,10 +98,16 @@ test("dossiê público: plano de ação mostra a tabela ordenada com o total em 
   await page.goto(`/report/${LEAKS_RECORD_ID}`)
   const section = page.locator("#tribia-plano-de-acao")
   await expect(section.getByRole("heading", { name: "Plano de ação" })).toBeVisible()
-  await expect(section.getByText("Licença de software ERP")).toBeVisible()
-  await expect(section.getByText("Art. 47, LC 214/2025")).toBeVisible()
-  await expect(section.getByText("Total recuperável (ano simulado)")).toBeVisible()
-  await expect(section.getByText("−R$ 30,00").first()).toBeVisible()
+  // Tabela (≥sm) e gêmeo mobile em cartões montam os dois no DOM — escopar à
+  // tabela evita o strict-mode violation do texto duplicado (ambos os
+  // registos existem; só a tabela fica visível no viewport padrão do e2e).
+  const table = section.locator("table")
+  await expect(table.getByText("Licença de software ERP")).toBeVisible()
+  await expect(table.getByText("Art. 47, LC 214/2025")).toBeVisible()
+  await expect(table.getByText("Total recuperável se documentado")).toBeVisible()
+  // Fixture tem annual_values (2026 + 2033) — coluna some o acumulado da
+  // série, convenção de sinal positivo (crédito recuperável, não perdido).
+  await expect(table.getByText("+R$ 825,00").first()).toBeVisible()
 })
 
 test("dossiê público: UUID inexistente mostra erro em vez de tela em branco", async ({ page }) => {

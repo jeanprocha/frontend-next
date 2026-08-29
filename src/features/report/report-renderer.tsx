@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { FocusYearControl } from "./components/focus-year-control"
 import {
   SIMULATION_RESULTS_ANCHORS,
   SimulationResultsStickyIndex,
@@ -8,6 +9,7 @@ import {
 } from "./components/simulation-results-sticky-index"
 import { SimulationSessionAuthorityStamp } from "./components/simulation-session-authority-stamp"
 import { usePlgCapabilities } from "@/features/plg"
+import { availableFocusYears } from "@/lib/transition-focus"
 import { cn } from "@/lib/utils"
 import type {
   ReportRenderInput,
@@ -90,6 +92,17 @@ export function ReportRenderer({
     const mounted = eligible.filter((s) => (s.screenTab ? true : chromeMounts(s, mode)))
     return (
       <>
+        {/* D2 — controle canônico no topo do documento, junto à identidade;
+            print:hidden nele mesmo (o ano de foco impresso vem do
+            masthead/veredito, não deste controle). */}
+        {onFocusYearChange && (
+          <FocusYearControl
+            years={availableFocusYears(record.simulation)}
+            focusYear={focusYear}
+            onFocusYearChange={onFocusYearChange}
+            className="mb-4 justify-start"
+          />
+        )}
         {mounted.map((s) => (
           <s.Component key={s.id} {...sectionProps} />
         ))}
@@ -118,6 +131,15 @@ export function ReportRenderer({
                 sessionScenarioLabel={sessionScenarioLabel ?? ""}
                 className="min-w-0 py-0"
               />
+              {/* D2 — controle canônico junto ao carimbo de sessão/índice sticky. */}
+              {onFocusYearChange && (
+                <FocusYearControl
+                  years={availableFocusYears(record.simulation)}
+                  focusYear={focusYear}
+                  onFocusYearChange={onFocusYearChange}
+                  className="shrink-0"
+                />
+              )}
               {slots?.dossierCta ? <div className="shrink-0 sm:ml-auto">{slots.dossierCta}</div> : null}
             </div>
             {slots?.sessionStampAside ? (

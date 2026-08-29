@@ -178,19 +178,19 @@ export function TransitionAuditPanelBody({
       ) : null}
 
       {creditsNote ? (
-        <div className="rounded-md border border-sky-500/35 bg-sky-500/10 px-2.5 py-2.5 dark:border-sky-500/40 dark:bg-sky-950/35">
-          <p className="flex items-start gap-2 text-[11px] leading-snug text-sky-950 dark:text-sky-100">
+        <div className="rounded-md border border-border/80 bg-muted/30 px-2.5 py-2.5 dark:bg-muted/15">
+          <p className="flex items-start gap-2 text-[11px] leading-snug text-foreground/90">
             <Info
-              className="mt-0.5 size-4 shrink-0 text-sky-600 dark:text-sky-400"
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
               aria-hidden
             />
 
             <span>
-              <span className="font-semibold text-sky-900 dark:text-sky-50">
+              <span className="font-semibold text-foreground">
                 Insight de auditoria
               </span>
 
-              <span className="mt-1 block text-sky-950/95 dark:text-sky-100">
+              <span className="mt-1 block text-muted-foreground">
                 {creditsNote}
               </span>
             </span>

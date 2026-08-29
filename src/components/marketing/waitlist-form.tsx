@@ -33,7 +33,7 @@ export function WaitlistForm() {
 
   if (status === "done") {
     return (
-      <p role="status" className="text-sm font-medium text-accent">
+      <p role="status" className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
         Você está na lista. Avisamos assim que houver vaga.
       </p>
     )

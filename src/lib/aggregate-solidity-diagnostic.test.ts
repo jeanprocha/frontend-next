@@ -54,16 +54,20 @@ describe("resolveAdherencePercentForDiagnostic", () => {
 describe("buildAggregateSolidityDiagnosticMessage — tier verde", () => {
   const greenScore = CONFIDENCE_TIER_GREEN_MIN + 0.01 // 0.86
 
-  it("Pro com evidence_coverage: inclui percentagem de aderência", () => {
+  it("Pro: percentagem de aderência é sempre a do score (mesma da barra), mesmo com evidence_coverage diferente", () => {
+    // evidenceCoverage01 (0.9) diverge deliberadamente do score (0.86) — a
+    // frase não pode citar 90% enquanto a barra de solidez mostra 86%
+    // (achado do critique: "duas verdades na mesma dobra").
     const r = buildAggregateSolidityDiagnosticMessage({
       score: greenScore,
       evidenceCoverage01: 0.9,
       isPro: true,
     })
     expect(r.tier).toBe("green")
-    expect(r.adherencePct).toBe(90)
+    expect(r.adherencePct).toBe(86)
     expect(r.reviewPct).toBeNull()
-    expect(r.message).toContain("90%")
+    expect(r.message).toContain("86%")
+    expect(r.message).not.toContain("90%")
     expect(r.message).toContain("lei recuperada")
   })
 
@@ -93,16 +97,19 @@ describe("buildAggregateSolidityDiagnosticMessage — tier verde", () => {
 describe("buildAggregateSolidityDiagnosticMessage — tier âmbar", () => {
   const amberScore = CONFIDENCE_TIER_YELLOW_MIN + 0.1 // 0.70
 
-  it("Pro com evidence_coverage: inclui Y% de revisão", () => {
+  it("Pro: percentagem de revisão é sempre o complemento do score (mesmo com evidence_coverage diferente)", () => {
+    // evidenceCoverage01 (0.65) divergiria para 35% pela lógica antiga —
+    // a frase agora usa 100 − score (30%), coerente com a barra de solidez.
     const r = buildAggregateSolidityDiagnosticMessage({
       score: amberScore,
       evidenceCoverage01: 0.65,
       isPro: true,
     })
     expect(r.tier).toBe("yellow")
-    expect(r.reviewPct).toBe(35)
+    expect(r.reviewPct).toBe(30)
     expect(r.adherencePct).toBeNull()
-    expect(r.message).toContain("35%")
+    expect(r.message).toContain("30%")
+    expect(r.message).not.toContain("35%")
     expect(r.message.toLowerCase()).toContain("revisão")
   })
 
@@ -149,15 +156,18 @@ describe("buildAggregateSolidityDiagnosticMessage — tier âmbar", () => {
 describe("buildAggregateSolidityDiagnosticMessage — tier vermelho", () => {
   const redScore = CONFIDENCE_TIER_YELLOW_MIN - 0.01 // 0.59
 
-  it("Pro com evidence_coverage: inclui Y% e risco de enquadramento", () => {
+  it("Pro: percentagem de revisão é sempre o complemento do score, com risco de enquadramento", () => {
+    // evidenceCoverage01 (0.3) divergiria para 70% pela lógica antiga —
+    // a frase agora usa 100 − score (41%), coerente com a barra de solidez.
     const r = buildAggregateSolidityDiagnosticMessage({
       score: redScore,
       evidenceCoverage01: 0.3,
       isPro: true,
     })
     expect(r.tier).toBe("red")
-    expect(r.reviewPct).toBe(70)
-    expect(r.message).toContain("70%")
+    expect(r.reviewPct).toBe(41)
+    expect(r.message).toContain("41%")
+    expect(r.message).not.toContain("70%")
     expect(r.message.toLowerCase()).toContain("risco")
     expect(r.message.toLowerCase()).toContain("validação")
   })

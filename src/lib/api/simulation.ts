@@ -1,4 +1,4 @@
-import { API_BASE, authHeaders, throwApiError, tribiaPlanHeader, type ClassifySimulatePlgOpts } from "@/lib/http"
+import { API_BASE, authHeaders, throwApiError, tribiaFetch, tribiaPlanHeader, type ClassifySimulatePlgOpts } from "@/lib/http"
 import type {
   SimulationRecordCreatePayload,
   SimulationRecordCreateResponse,
@@ -23,7 +23,7 @@ export async function simulate(
     Object.assign(headers, authHeaders(plg.token, plg.userId, tribiaPlanHeader(plg.plan)) as Record<string, string>)
   }
 
-  const res = await fetch(`${API_BASE}/simulations`, {
+  const res = await tribiaFetch(`${API_BASE}/simulations`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
@@ -44,7 +44,7 @@ export async function saveSimulationRecord(
   userId: string,
   payload: SimulationRecordCreatePayload,
 ): Promise<SimulationRecordCreateResponse> {
-  const res = await fetch(`${API_BASE}/simulation-records`, {
+  const res = await tribiaFetch(`${API_BASE}/simulation-records`, {
     method: "POST",
     headers: authHeaders(token, userId, { "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
@@ -64,7 +64,7 @@ export async function listSimulationRecords(
 ): Promise<SimulationRecordSummary[]> {
   const q = new URLSearchParams({ limit: String(limit) })
   if (companyId) q.set("company_id", companyId)
-  const res = await fetch(`${API_BASE}/simulation-records?${q}`, {
+  const res = await tribiaFetch(`${API_BASE}/simulation-records?${q}`, {
     headers: authHeaders(token, userId),
   })
   if (!res.ok) {
@@ -79,7 +79,7 @@ export async function getSimulationRecord(
   userId: string,
   id: string,
 ): Promise<SimulationRecordDetailResponse> {
-  const res = await fetch(`${API_BASE}/simulation-records/${encodeURIComponent(id)}`, {
+  const res = await tribiaFetch(`${API_BASE}/simulation-records/${encodeURIComponent(id)}`, {
     headers: authHeaders(token, userId),
   })
   if (!res.ok) {
@@ -103,7 +103,7 @@ function resolvePublicSimulationRecordUrl(id: string): string {
 
 /** Leitura pública do dossié (sem JWT; o UUID de simulação é o segredo de partilha). */
 export async function getPublicSimulationRecord(id: string): Promise<SimulationRecordDetailResponse> {
-  const res = await fetch(resolvePublicSimulationRecordUrl(id), { cache: "no-store" })
+  const res = await tribiaFetch(resolvePublicSimulationRecordUrl(id), { cache: "no-store" })
   if (!res.ok) {
     const raw = await res.json().catch(() => ({ error: res.statusText }))
     throwApiError(res, raw, "Erro ao carregar dossiê")

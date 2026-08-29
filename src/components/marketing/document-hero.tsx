@@ -21,7 +21,7 @@ export function DocumentHero() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-4 py-12 lg:grid-cols-[392px_1fr] lg:gap-11 lg:py-14">
         {/* Coluna de texto */}
         <div className="flex flex-col">
-          <span className="font-mono text-xs font-medium tracking-[0.12em] text-accent uppercase">
+          <span className="font-mono text-xs font-medium tracking-[0.12em] text-emerald-700 uppercase dark:text-emerald-300">
             Diagnóstico da reforma tributária
           </span>
 
@@ -39,7 +39,7 @@ export function DocumentHero() {
           <div className="mt-7 flex flex-col items-start gap-2.5">
             <Link
               href={ROTAS.exemplo}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-sm transition-colors hover:bg-accent/90"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-6 py-3 text-sm font-semibold text-accent-foreground shadow-sm transition-colors hover:bg-emerald-800 dark:bg-accent dark:hover:bg-accent/90"
             >
               Abrir este dossiê
               <ArrowRight className="size-4" aria-hidden />
@@ -58,7 +58,7 @@ export function DocumentHero() {
               "a conta abre passo a passo, com a origem de cada regra",
             ].map((nota, i) => (
               <div key={nota} className="flex items-start gap-3 py-3.5">
-                <dt className="font-mono text-xs text-accent">{String(i + 1).padStart(2, "0")}</dt>
+                <dt className="font-mono text-xs text-emerald-700 dark:text-emerald-300">{String(i + 1).padStart(2, "0")}</dt>
                 <dd className="font-mono text-xs leading-relaxed text-muted-foreground">{nota}</dd>
               </div>
             ))}

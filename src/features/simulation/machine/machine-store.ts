@@ -117,6 +117,10 @@ export function createSimulationMachineStore(steps: readonly Step[] = PIPELINE_S
 
   /**
    * Fluxo do dossiê digital: replica handleOpenDossier passo a passo (FE-1).
+   * Garante persistência (com recalc pendente embutido, se houver) e devolve
+   * o link público — abre em nova aba, ou copia para a área de transferência
+   * com `copyOnly` (D3/Frente D — "Copiar link do dossiê", mesmo fluxo do
+   * "Gerar Dossiê digital", só muda o destino final da URL).
    *
    * Falha ao persistir (o caso real de produção) já chega como evento
    * PERSIST_FAILED normal — dispatchAndAwait/runCommand nunca lançam por
@@ -129,12 +133,13 @@ export function createSimulationMachineStore(steps: readonly Step[] = PIPELINE_S
    */
   async function openDossier(opts: {
     reportBrand: { logo_url?: string | null; org_name?: string | null } | null
-  }): Promise<void> {
-    if (store.getState().fsm.status !== "ready") return
+    copyOnly?: boolean
+  }): Promise<string | null> {
+    if (store.getState().fsm.status !== "ready") return null
     dispatchSync({ type: "DOSSIER_STARTED" })
     try {
       const token = await getStepCtx().getToken()
-      if (!token) return
+      if (!token) return null
 
       const beforeRecalc = store.getState().fsm
       if (beforeRecalc.status === "ready" && beforeRecalc.sync.pendingSync) {
@@ -143,19 +148,28 @@ export function createSimulationMachineStore(steps: readonly Step[] = PIPELINE_S
       }
 
       const current = store.getState().fsm
-      if (current.status !== "ready") return
+      if (current.status !== "ready") return null
       if (!current.results.meta?.recordId) {
         await runCommand({ kind: "persist", origin: "dossier", reportBrand: opts.reportBrand })
       }
 
       const afterPersist = store.getState().fsm
       const recordId = afterPersist.status === "ready" ? afterPersist.results.meta?.recordId : undefined
-      if (recordId) {
-        window.open(`/report/${recordId}`, "_blank", "noopener,noreferrer")
+      if (!recordId) return null
+      // window.location só é tocado no ramo copyOnly — o ramo "abrir nova
+      // aba" (o caminho já coberto por machine-store.test.ts, ambiente node
+      // sem window.location real) nunca precisou da URL absoluta.
+      if (opts.copyOnly) {
+        const url = `${window.location.origin}/report/${recordId}`
+        await navigator.clipboard.writeText(url)
+        return url
       }
+      window.open(`/report/${recordId}`, "_blank", "noopener,noreferrer")
+      return recordId
     } catch (e) {
       console.error("[TribIA] Dossié digital:", e)
       dispatchSync({ type: "PERSIST_FAILED", error: e, origin: "dossier", extra: { reportBrand: opts.reportBrand } })
+      return null
     } finally {
       dispatchSync({ type: "DOSSIER_FINISHED" })
     }
