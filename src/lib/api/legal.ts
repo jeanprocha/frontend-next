@@ -65,3 +65,21 @@ export async function fetchLawPdfAnchor(
   }
   return res.json()
 }
+
+/**
+ * Ancoragem ao PDF oficial sem sessão — o dossiê público (`/report/[id]`) é
+ * lido por quem não tem conta, e a rota autenticada respondia 401 justamente
+ * a esse leitor. Mesma resolução do lado do servidor; o gate Pro continua
+ * valendo dentro da ferramenta (ver backend: publicLawPdfAnchorHandler).
+ */
+export async function fetchPublicLawPdfAnchor(
+  chunkArticleId: string,
+): Promise<LawPdfAnchorResponse> {
+  const enc = encodeURIComponent(chunkArticleId)
+  const res = await fetch(`${API_BASE}/public/law-articles/${enc}/pdf-anchor`)
+  if (!res.ok) {
+    const raw = await res.json().catch(() => ({ error: res.statusText }))
+    throwApiError(res, raw, "Erro ao carregar ancoragem PDF")
+  }
+  return res.json()
+}
