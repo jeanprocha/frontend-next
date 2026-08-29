@@ -48,18 +48,14 @@ export const FISCAL_LAW_CHANGELOG: FiscalLawChangelogPayload = {
   date: "2026-06-16",
   label: "LC 214/2025",
   sourceUrl: LAW_SOURCE_URL,
-  updates: [
-    {
-      type: "rule",
-      label: "Créditos SaaS (CBS)",
-      desc: "Parâmetros de simulação para licenciamento de software foram alinhados às premissas do motor; revisite cenários antigos se usar esta faixa.",
-    },
-    {
-      type: "ia",
-      label: "Motor RAG — despesas cloud",
-      desc: "Prompts e recuperação de trechos da lei para custos de infraestrutura em nuvem; classificações antigas podem mudar ligeiramente ao reexecutar.",
-    },
-  ],
+  // Vazio de propósito. O changelog real é FATO DE INDEXAÇÃO servido por
+  // `GET /law/corpus` ("N trechos, data-base DD/MM/AAAA"), e o fallback não tem
+  // como saber o que está ingerido. Até 28/08/2026 havia aqui duas entradas
+  // inventadas ("Créditos SaaS (CBS)", "Motor RAG — despesas cloud") que
+  // descreviam mudanças de regra que nunca existiram — fabricação dentro do
+  // produto, contra o princípio 4 do PRODUCT.md. Sem servidor, a UI declara a
+  // ausência (ver ChangelogFiscalPanel) em vez de inventar histórico.
+  updates: [],
 }
 
 /** Rótulo para rodapé de relatório / racional executivo (Plano 10). */

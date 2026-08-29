@@ -86,6 +86,19 @@ describe("motorValidadoSeloSection", () => {
     )
   })
 
+  // "Validado" é a afirmação mais forte do dossiê; o que a validação NÃO cobre
+  // precisa estar na mesma superfície, não só no payload da API.
+  it("declara o que a validação não cobre, junto do selo", () => {
+    renderWithQueryData(VALIDATED_FIXTURE)
+    expect(screen.getByText("A validação não cobre: PIS/COFINS, ISS, ICMS.")).toBeInTheDocument()
+  })
+
+  it("sem out_of_scope declarado, não inventa a linha nem renderiza vazio", () => {
+    renderWithQueryData({ ...VALIDATED_FIXTURE, out_of_scope: [] })
+    expect(screen.queryByText(/não cobre/)).not.toBeInTheDocument()
+    expect(screen.getByRole("note")).toBeInTheDocument()
+  })
+
   // A calculadora é beta e muda de versão: "validado" sem dizer contra qual
   // versão afirma mais do que a evidência sustenta. O backend já barra isso
   // (enginevalidation.Build exige calculadora_versao); a guarda no componente

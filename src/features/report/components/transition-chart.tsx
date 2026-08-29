@@ -16,7 +16,7 @@ import {
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { formatBRL } from "@/lib/format-money"
+import { formatBRL, formatDecimalPtBR } from "@/lib/format-money"
 import { TransitionSparkline } from "@/components/shared/transition-sparkline"
 import { parseApiDecimalForChart } from "@/lib/money-decimal"
 import { clampTransitionYear } from "@/lib/transition-focus"
@@ -195,7 +195,7 @@ function TransitionTooltip({
   const row = payload[0]?.payload
   const raw = (row as ChartRow | ChartRowAb | undefined)?._raw
   const fmt = (v: number) =>
-    mode === "brl" ? formatBRL(v.toFixed(2)) : `${v.toFixed(2)}% da receita`
+    mode === "brl" ? formatBRL(v.toFixed(2)) : `${formatDecimalPtBR(v, 2)}% da receita`
 
   return (
     <div className="rounded-lg border border-border/60 bg-popover shadow-md max-w-[240px] overflow-hidden">

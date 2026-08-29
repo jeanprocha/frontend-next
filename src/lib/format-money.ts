@@ -70,7 +70,7 @@ export function formatBRL(value: string): string {
   return `R$ ${sign}${formatIntegerPtBR(whole)},${fracStr}`
 }
 
-/** Percentual já em forma percentual (ex.: "-10.5" → "-10.5%"); uma casa decimal, HALF-UP. */
+/** Percentual já em forma percentual (ex.: "-10.5" → "-10,5%"); uma casa decimal, HALF-UP. */
 export function formatPct(value: string): string {
   const s = sanitizeDecimalString(value)
   if (!s || s === "-") return "—"
@@ -90,7 +90,7 @@ export function formatPct(value: string): string {
   const sign = tenths < 0n ? "-" : ""
   const whole = t / 10n
   const d = t % 10n
-  return `${sign}${whole.toString()}.${d.toString()}%`
+  return `${sign}${whole.toString()},${d.toString()}%`
 }
 
 /**
@@ -137,7 +137,7 @@ function fractionToTenthsPercent(raw: string): bigint | null {
   return (num * 1000n + den / 2n) / den
 }
 
-/** Fração 0–1 (ex.: "0.05" ou número) → "5.0%". */
+/** Fração 0–1 (ex.: "0.05" ou número) → "5,0%". */
 export function formatPctFraction(value: string | number): string {
   const raw =
     typeof value === "number"
@@ -151,5 +151,15 @@ export function formatPctFraction(value: string | number): string {
   const t = neg ? -tenths : tenths
   const whole = t / 10n
   const d = t % 10n
-  return `${neg ? "-" : ""}${whole.toString()}.${d.toString()}%`
+  return `${neg ? "-" : ""}${whole.toString()},${d.toString()}%`
+}
+
+/**
+ * Número decimal em convenção PT-BR (vírgula), para valores que não são
+ * dinheiro nem percentual — ex.: "7,0 trechos". Mantém a conversão dentro de
+ * `lib/`, como exige a invariante 2: componente não formata número cru.
+ */
+export function formatDecimalPtBR(value: number, casas = 1): string {
+  if (!Number.isFinite(value)) return "—"
+  return value.toFixed(casas).replace(".", ",")
 }

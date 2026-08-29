@@ -60,7 +60,7 @@ export function RayXAnchorCallout({
 
   const freeHint = (
     <p className="text-xs leading-relaxed text-muted-foreground">
-      Texto remontado a partir dos chunks indexados. A abertura directa no PDF do Diário Oficial na página indexada é
+      Texto remontado a partir dos chunks indexados. A abertura direta no PDF do Diário Oficial na página indexada é
       recurso <span className="font-medium text-foreground/90">Pro</span>.
     </p>
   )

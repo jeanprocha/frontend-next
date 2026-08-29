@@ -62,7 +62,7 @@ function MotorGoTransitionTimeline({ years, focusYear }: { years: number[]; focu
         })}
       </ul>
       <p className="text-[11px] leading-snug text-muted-foreground">
-        O ano de foco posiciona-se na rampa de convivência entre regimes; os valores desta aba são reprodutíveis para
+        O ano de foco está na rampa de convivência entre regimes; os valores desta aba são reprodutíveis para
         esse ano e auditáveis externamente.
       </p>
     </div>

@@ -143,7 +143,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
           <p className="text-muted-foreground">
 
-            Registo sem desagregado numérico; o percentual mostrado é o score consolidado guardado.
+            Registro sem desagregado numérico; o percentual mostrado é o score consolidado armazenado.
 
           </p>
 
@@ -173,7 +173,7 @@ function HowCalculatedBody({ meta }: { meta: AiMetadata }) {
 
 /**
 
- * Faixa compacta de fontes RAG (badges + popover «Como calculámos isto»).
+ * Faixa compacta de fontes RAG (badges + popover «Como calculamos isto»).
  * Na UI principal: aba «Dados do cliente» da esteira (`audit-confidence-tabs`).
 
  */
@@ -279,7 +279,7 @@ export function RagAuditCard({ aiMetadata, onOpenBriefing, className }: RagAudit
 
               >
 
-                Como calculámos isto
+                Como calculamos isto
 
               </Button>
 

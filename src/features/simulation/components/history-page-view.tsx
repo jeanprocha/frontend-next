@@ -321,14 +321,13 @@ export function HistoryPageView({
             <div className="flex flex-col items-center gap-3 py-16 px-4 text-muted-foreground">
               <FileClock className="h-10 w-10 shrink-0 opacity-60" aria-hidden />
               <p className="text-sm font-medium text-foreground/85">
-                Passo 3/3: suas simulações ficam guardadas aqui
+                Suas simulações ficam salvas aqui
               </p>
               <p className="text-xs text-center max-w-md leading-relaxed opacity-90">
                 No simulador, o fluxo é <span className="font-medium text-foreground/80">Contexto</span> →{" "}
-                <span className="font-medium text-foreground/80">Classificação (RAG)</span> →{" "}
+                <span className="font-medium text-foreground/80">Classificação</span> →{" "}
                 <span className="font-medium text-foreground/80">Veredito</span>. Cada simulação concluída
-                aparece aqui para comparação estratégica de longo prazo (horizonte 2026–2033), com trajetórias
-                e cenários A/B conforme o seu plano.
+                aparece aqui para comparar cenários ao longo da transição 2026–2033, conforme o seu plano.
               </p>
               <p className="text-xs text-center max-w-xs opacity-80">
                 Ainda não há registros — comece pela primeira simulação.

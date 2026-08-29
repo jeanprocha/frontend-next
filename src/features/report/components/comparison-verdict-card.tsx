@@ -25,7 +25,7 @@ import type { AiMetadata, ClassificationItem, SimulationResponse } from "@/types
 import { useLawCorpus } from "@/lib/use-law-corpus"
 
 function singleRacionalBody(lawLabel: string, ragSources?: string[] | null): string {
-  const base = `A simulação assenta nas premissas do modelo TribIA para a ${lawLabel}, com regimes de transição e elegibilidade a créditos conforme o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
+  const base = `A simulação parte das premissas do modelo TribIA para a ${lawLabel}, com regimes de transição e elegibilidade a créditos conforme o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
   if (ragSources && ragSources.length > 0) {
     const list = ragSources.slice(0, 6).join(", ")
     const more = ragSources.length > 6 ? ` (+${ragSources.length - 6} outras)` : ""
@@ -102,7 +102,7 @@ export function ComparisonVerdictCard({
     : singleVereditoSentence(currentSimulation)
 
   const racionalBody = isComparison
-    ? `A simulação assenta nas premissas do modelo TribIA para a ${lawLabel}. A elegibilidade a créditos e regimes de transição seguem o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
+    ? `A simulação parte das premissas do modelo TribIA para a ${lawLabel}. A elegibilidade a créditos e regimes de transição seguem o quadro legal aplicável (incluindo Art. 131 da ${lawLabel}, no âmbito do modelo).`
     : singleRacionalBody(lawLabel, ragSources)
 
   const recomendacao =
@@ -132,7 +132,7 @@ export function ComparisonVerdictCard({
       score01 != null && Number.isFinite(score01) ? confidenceTierFromScore01(score01) : null
     const solidityHint =
       score01 != null && Number.isFinite(score01) ? humanReviewHintFromAggregatedScore01(score01) : null
-    const lawSeal = `Auditado via RAG Engine · ${lawLabel}`
+    const lawSeal = `Auditado contra o texto da ${lawLabel}`
 
     return (
       <Card
@@ -263,11 +263,11 @@ export function ComparisonVerdictCard({
               </div>
 
               <div className="hidden board-ready:block print:block space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auditado via RAG Engine</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auditado contra o texto da lei</p>
                 {ragSources && ragSources.length > 0 ? (
                   <p className="max-w-prose text-xs leading-snug text-muted-foreground">
-                    Citações normativas remontam a metadados determinísticos do índice legislativo (artigo, parágrafo,
-                    inciso, alínea) quando o chunk estiver enriquecido após re-ingestão.
+                    A referência de cada citação — artigo, parágrafo, inciso e alínea — é remontada pelo servidor a
+                    partir da estrutura do próprio texto da lei, não escrita pela IA.
                   </p>
                 ) : null}
               </div>
@@ -454,11 +454,11 @@ export function ComparisonVerdictCard({
             </div>
 
             <div className="hidden board-ready:block print:block space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auditado via RAG Engine</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auditado contra o texto da lei</p>
               {ragSources && ragSources.length > 0 ? (
                 <p className="text-xs text-muted-foreground leading-snug max-w-prose">
-                  Citações normativas remontam a metadados determinísticos do índice legislativo (artigo, parágrafo,
-                  inciso, alínea) quando o chunk estiver enriquecido após re-ingestão.
+                  A referência de cada citação — artigo, parágrafo, inciso e alínea — é remontada pelo servidor a
+                  partir da estrutura do próprio texto da lei, não escrita pela IA.
                 </p>
               ) : null}
             </div>
