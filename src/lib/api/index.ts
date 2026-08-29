@@ -17,6 +17,7 @@ export { joinWaitlist } from "@/lib/api/waitlist"
 export {
   fetchLawArticle,
   fetchLawPdfAnchor,
+  fetchPublicLawPdfAnchor,
   fetchLawCorpus,
   type LawCorpusDocument,
   type LawCorpusResponse,

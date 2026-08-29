@@ -5,7 +5,7 @@ import { ExternalLink } from "lucide-react"
 import { useAuth } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { useCapability, useTribiaPlgTier } from "@/features/plg"
-import { fetchLawPdfAnchor } from "@/lib/api"
+import { fetchLawPdfAnchor, fetchPublicLawPdfAnchor } from "@/lib/api"
 import { buildLawPdfExternalUrl } from "@/lib/law-pdf-external-url"
 import type { LawPdfAnchorResponse } from "@/types/api"
 
@@ -36,12 +36,15 @@ export function LawPdfOpenButton({
     setError(null)
     try {
       const token = await getToken()
-      if (!token || !userId) {
-        setError("Inicie sessão para abrir o PDF oficial.")
-        return
-      }
+      // Sem sessão = dossiê público, lido por quem não tem conta. Antes isto
+      // era um beco sem saída ("Inicie sessão para abrir o PDF oficial") no
+      // ponto que materializa o diferencial do parecer; agora resolve pela
+      // rota pública, que devolve a mesma ancoragem de um PDF oficial.
       const anchor =
-        prefetchedAnchor ?? (await fetchLawPdfAnchor(chunkArticleId, token, userId, tier))
+        prefetchedAnchor ??
+        (token && userId
+          ? await fetchLawPdfAnchor(chunkArticleId, token, userId, tier)
+          : await fetchPublicLawPdfAnchor(chunkArticleId))
       const href = buildLawPdfExternalUrl(anchor.pdf_url, anchor.page)
       if (href) {
         window.open(href, "_blank", "noopener,noreferrer")
@@ -70,7 +73,7 @@ export function LawPdfOpenButton({
         onClick={() => void openOfficialPdf()}
       >
         <ExternalLink className="size-3.5" aria-hidden />
-        {opening ? "A abrir…" : "Abrir no PDF oficial"}
+        {opening ? "Abrindo…" : "Abrir no PDF oficial"}
       </Button>
       {error ? <span className="ml-2 text-xs text-destructive">{error}</span> : null}
     </span>

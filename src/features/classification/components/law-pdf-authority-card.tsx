@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-client"
 import { useCapability, useTribiaPlgTier } from "@/features/plg"
 import { cn } from "@/lib/utils"
-import { fetchLawPdfAnchor } from "@/lib/api"
+import { fetchLawPdfAnchor, fetchPublicLawPdfAnchor } from "@/lib/api"
 import { formatArticleLabel } from "@/lib/rag-metadata"
 import { labelForChunkId } from "@/lib/law-document-labels"
 import { LawPdfOpenButton } from "./law-pdf-open-button"
@@ -58,12 +58,14 @@ export function LawPdfAuthorityCard({
     ;(async () => {
       try {
         const token = await getToken()
-        if (!token || !userId) {
-          if (!cancelled) setError(null)
-          return
-        }
-        // article_id do chunk = chave de GET /law/articles/{id}/pdf-anchor; resposta traz `page` para #page=N
-        const res = await fetchLawPdfAnchor(safeChunkId, token, userId, tier)
+        // article_id do chunk = chave da ancoragem; a resposta traz `page` para #page=N.
+        // Sem sessão (dossiê público) resolve pela rota pública: antes o efeito
+        // saía aqui em silêncio e o leitor perdia o número da página — a frase
+        // caía para "o dispositivo indexado", sem a prova concreta.
+        const res =
+          token && userId
+            ? await fetchLawPdfAnchor(safeChunkId, token, userId, tier)
+            : await fetchPublicLawPdfAnchor(safeChunkId)
         if (!cancelled) setData(res)
       } catch (e: unknown) {
         if (!cancelled) {
@@ -133,7 +135,7 @@ export function LawPdfAuthorityCard({
         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{eyebrow.trim()}</p>
       ) : null}
       {loading ? (
-        <p className="mt-2 text-xs text-muted-foreground">A carregar ancoragem do PDF…</p>
+        <p className="mt-2 text-xs text-muted-foreground">Carregando ancoragem do PDF…</p>
       ) : error && !data ? (
         <p className="mt-2 text-xs text-destructive">{error}</p>
       ) : (
